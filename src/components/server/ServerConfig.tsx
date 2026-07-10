@@ -8,7 +8,7 @@ import { SegmentedControl } from "../ui/segmented-control";
 import { Checkbox } from "../ui/checkbox";
 import { invokeCmd } from "../../lib/tauri";
 import type { DbListResponse, StartServerArgs } from "../../types";
-import { ChevronDown, ChevronUp, Play, Square, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronUp, Play, Square, RotateCcw, Loader2 } from "lucide-react";
 
 const MODE_OPTIONS = [
   { value: "normal", label: "Normal" },
@@ -21,12 +21,14 @@ const MODE_OPTIONS = [
 export function ServerConfig({
   version,
   running,
+  busy,
   onStart,
   onStop,
   onRestart,
 }: {
   version: string;
   running: boolean;
+  busy: boolean;
   onStart: (args: StartServerArgs) => void;
   onStop: () => void;
   onRestart: () => void;
@@ -184,19 +186,19 @@ export function ServerConfig({
 
         <div className="flex gap-2">
           {!running ? (
-            <Button onClick={() => onStart(buildArgs())}>
-              <Play className="h-4 w-4" />
-              Start Server
+            <Button onClick={() => onStart(buildArgs())} disabled={busy}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {busy ? "Starting..." : "Start Server"}
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={onRestart}>
-                <RotateCcw className="h-4 w-4" />
-                Restart
+              <Button variant="outline" onClick={onRestart} disabled={busy}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                {busy ? "Restarting..." : "Restart"}
               </Button>
-              <Button variant="destructive" onClick={onStop}>
-                <Square className="h-4 w-4" />
-                Stop
+              <Button variant="destructive" onClick={onStop} disabled={busy}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+                {busy ? "Stopping..." : "Stop"}
               </Button>
             </>
           )}

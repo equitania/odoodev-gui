@@ -91,10 +91,10 @@ export function LogViewer({
             <button
               key={level}
               onClick={() => toggleLevel(level)}
-              className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+              className={`rounded px-1.5 py-0.5 text-xs font-medium transition-all active:scale-95 ${
                 enabledLevels.has(level)
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               {level}

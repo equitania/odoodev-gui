@@ -5,8 +5,9 @@ import { StatusBadge } from "./StatusBadge";
 import { usePolling } from "../../hooks/usePolling";
 import { invokeCmd } from "../../lib/tauri";
 import { VERSION_COLORS, VERSION_BG, POLL_INTERVALS } from "../../lib/constants";
+import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { DockerStatus, ServerStatus, VenvStatus, VersionInfo, ViewKey } from "../../types";
-import { Rocket, Database as DbIcon, ArrowUp, ArrowDown } from "lucide-react";
+import { Rocket, Database as DbIcon, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 
 export function VersionCard({
   version,
@@ -22,6 +23,7 @@ export function VersionCard({
   const [venvStatus, setVenvStatus] = useState<VenvStatus | null>(null);
   const [dockerStatus, setDockerStatus] = useState<DockerStatus | null>(null);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
+  const [dockerBusy, setDockerBusy] = useState(false);
 
   usePolling(
     () => {
@@ -83,23 +85,41 @@ export function VersionCard({
     : { status: "stopped" as const, label: "Odoo stopped" };
 
   const handleDockerUp = async () => {
+    setDockerBusy(true);
+    const tid = toastLoading(`Starting PostgreSQL for v${version}...`);
     try {
-      await invokeCmd("docker_up", { version, runtime: dockerStatus?.runtime });
+      const result = await invokeCmd<{ success: boolean; error: string | null }>("docker_up", { version, runtime: dockerStatus?.runtime });
+      if (result.success) {
+        toastUpdate(tid, "success", `PostgreSQL started for v${version}`);
+      } else {
+        toastUpdate(tid, "error", `Failed to start PostgreSQL`, result.error ?? "");
+      }
     } catch (e) {
-      console.error(e);
+      toastUpdate(tid, "error", `Failed to start PostgreSQL`, String(e));
+    } finally {
+      setDockerBusy(false);
     }
   };
 
   const handleDockerDown = async () => {
+    setDockerBusy(true);
+    const tid = toastLoading(`Stopping PostgreSQL for v${version}...`);
     try {
-      await invokeCmd("docker_down", { version, runtime: dockerStatus?.runtime });
+      const result = await invokeCmd<{ success: boolean; error: string | null }>("docker_down", { version, runtime: dockerStatus?.runtime });
+      if (result.success) {
+        toastUpdate(tid, "success", `PostgreSQL stopped for v${version}`);
+      } else {
+        toastUpdate(tid, "error", `Failed to stop PostgreSQL`, result.error ?? "");
+      }
     } catch (e) {
-      console.error(e);
+      toastUpdate(tid, "error", `Failed to stop PostgreSQL`, String(e));
+    } finally {
+      setDockerBusy(false);
     }
   };
 
   return (
-    <Card className={active ? "" : "opacity-50"}>
+    <Card className={`transition-opacity ${active ? "" : "opacity-50"} hover:shadow-md`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className={`flex items-center gap-2 rounded-md border px-3 py-1 ${VERSION_COLORS[version] ?? ""} ${VERSION_BG[version] ?? ""}`}>
@@ -142,13 +162,13 @@ export function VersionCard({
             Databases
           </Button>
           {dockerRunning ? (
-            <Button size="sm" variant="outline" onClick={handleDockerDown} disabled={!active}>
-              <ArrowDown className="h-3.5 w-3.5" />
+            <Button size="sm" variant="outline" onClick={handleDockerDown} disabled={!active || dockerBusy}>
+              {dockerBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDown className="h-3.5 w-3.5" />}
               {dockerRuntime === "apple" ? "Stop" : "Docker Down"}
             </Button>
           ) : (
-            <Button size="sm" variant="outline" onClick={handleDockerUp} disabled={!active}>
-              <ArrowUp className="h-3.5 w-3.5" />
+            <Button size="sm" variant="outline" onClick={handleDockerUp} disabled={!active || dockerBusy}>
+              {dockerBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5" />}
               {dockerRuntime === "apple" ? "Start" : "Docker Up"}
             </Button>
           )}

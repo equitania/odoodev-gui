@@ -27,13 +27,16 @@ export function Sidebar({
             onClick={() => onSelect(item.key)}
             title={item.label}
             className={cn(
-              "mb-1 flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+              "group relative mb-1 flex h-10 w-10 items-center justify-center rounded-lg transition-all active:scale-90",
               active
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >
             <Icon className="h-5 w-5" />
+            {active && (
+              <span className="absolute -left-2 top-1/2 h-6 -translate-y-1/2 w-1 rounded-r-full bg-primary" />
+            )}
           </button>
         );
       })}

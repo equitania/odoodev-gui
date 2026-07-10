@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { InstallDialog } from "./components/InstallDialog";
+import { ToastContainer } from "./components/ui/toast";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { ServerPanel } from "./components/server/ServerPanel";
 import { DatabasePanel } from "./components/database/DatabasePanel";
@@ -48,6 +49,7 @@ export default function App() {
         </main>
       </div>
       <InstallDialog />
+      <ToastContainer />
     </div>
   );
 }

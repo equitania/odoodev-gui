@@ -4,12 +4,14 @@ import { Button } from "../ui/button";
 import { Select } from "../ui/select";
 import { Input } from "../ui/input";
 import { invokeCmd } from "../../lib/tauri";
+import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { DbListResponse, OpResult, VersionsResponse } from "../../types";
 import { BackupDialog } from "./BackupDialog";
 import { RestoreDialog } from "./RestoreDialog";
 import { DropConfirmDialog } from "./DropConfirmDialog";
 import { OperationProgress } from "./OperationProgress";
-import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil } from "lucide-react";
+import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2 } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 export function DatabasePanel({ preselectVersion }: { preselectVersion: string | null }) {
   const [versions, setVersions] = useState<VersionsResponse | null>(null);
@@ -22,6 +24,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [sortAsc, setSortAsc] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dockerRuntime, setDockerRuntime] = useState<string>("");
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const [backupTarget, setBackupTarget] = useState<string | null>(null);
   const [showRestore, setShowRestore] = useState(false);
@@ -64,44 +67,75 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     invokeCmd<string>("get_runtime").then(setDockerRuntime).catch(() => {});
   }, [selectedVersion]);
 
+  const setDbAction = (name: string, busy: boolean) => {
+    setActionLoading((prev) => ({ ...prev, [name]: busy }));
+  };
+
   const handleDrop = async (name: string) => {
+    setDbAction(name, true);
+    const tid = toastLoading(`Dropping database '${name}'...`);
+    setDropTarget(null);
     setProgressTitle(`Drop: ${name}`);
     setProgressEvent("drop-progress");
     setShowProgress(true);
-    setDropTarget(null);
     try {
-      await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
+      const result = await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
+      if (result.success) {
+        toastUpdate(tid, "success", `Database '${name}' dropped`);
+      } else {
+        toastUpdate(tid, "error", `Failed to drop '${name}'`, result.error ?? "");
+      }
       await fetchDatabases();
     } catch (e) {
-      console.error(e);
+      toastUpdate(tid, "error", `Failed to drop '${name}'`, String(e));
+    } finally {
+      setDbAction(name, false);
     }
   };
 
   const handleCopy = async (name: string) => {
     const dst = prompt(`Copy '${name}' to new name:`);
     if (!dst) return;
+    setDbAction(name, true);
+    const tid = toastLoading(`Copying '${name}' → '${dst}'...`);
     setProgressTitle(`Copy: ${name} → ${dst}`);
     setProgressEvent("copy-progress");
     setShowProgress(true);
     try {
-      await invokeCmd<OpResult>("copy_db", { version: selectedVersion, src: name, dst, terminateConnections: true });
+      const result = await invokeCmd<OpResult>("copy_db", { version: selectedVersion, src: name, dst, terminateConnections: true });
+      if (result.success) {
+        toastUpdate(tid, "success", `Copied '${name}' → '${dst}'`);
+      } else {
+        toastUpdate(tid, "error", `Copy failed`, result.error ?? "");
+      }
       await fetchDatabases();
     } catch (e) {
-      console.error(e);
+      toastUpdate(tid, "error", `Copy failed`, String(e));
+    } finally {
+      setDbAction(name, false);
     }
   };
 
   const handleRename = async (name: string) => {
     const dst = prompt(`Rename '${name}' to new name:`);
     if (!dst) return;
+    setDbAction(name, true);
+    const tid = toastLoading(`Renaming '${name}' → '${dst}'...`);
     setProgressTitle(`Rename: ${name} → ${dst}`);
     setProgressEvent("rename-progress");
     setShowProgress(true);
     try {
-      await invokeCmd<OpResult>("rename_db", { version: selectedVersion, src: name, dst, terminateConnections: true });
+      const result = await invokeCmd<OpResult>("rename_db", { version: selectedVersion, src: name, dst, terminateConnections: true });
+      if (result.success) {
+        toastUpdate(tid, "success", `Renamed '${name}' → '${dst}'`);
+      } else {
+        toastUpdate(tid, "error", `Rename failed`, result.error ?? "");
+      }
       await fetchDatabases();
     } catch (e) {
-      console.error(e);
+      toastUpdate(tid, "error", `Rename failed`, String(e));
+    } finally {
+      setDbAction(name, false);
     }
   };
 
@@ -124,11 +158,18 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   };
 
   const handleBulkDrop = async () => {
-    for (const name of selected) {
-      await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
+    const names = Array.from(selected);
+    const tid = toastLoading(`Dropping ${names.length} database(s)...`);
+    for (const name of names) {
+      try {
+        await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
+      } catch (e) {
+        console.error(e);
+      }
     }
     setSelected(new Set());
     await fetchDatabases();
+    toastUpdate(tid, "success", `Dropped ${names.length} database(s)`);
   };
 
   return (
@@ -142,7 +183,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
             ))}
           </Select>
           <Button size="sm" variant="outline" onClick={fetchDatabases} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           </Button>
           <Button size="sm" variant="outline" onClick={() => setShowRestore(true)}>
             <HardDriveUpload className="h-3.5 w-3.5" />
@@ -197,45 +238,83 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
             )}
           </div>
 
-          <div className="rounded-lg border border-border">
+          <div className="rounded-lg border border-border overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
+                <tr className="border-b border-border text-left bg-muted/50">
                   <th className="w-8 p-2"></th>
                   <th className="p-2 font-medium text-muted-foreground">Database Name</th>
                   <th className="p-2 font-medium text-muted-foreground text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((db) => (
-                  <tr key={db} className="border-b border-border/50 hover:bg-accent/30">
-                    <td className="p-2">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(db)}
-                        onChange={() => toggleSelect(db)}
-                        className="h-4 w-4 rounded border-input accent-primary"
-                      />
-                    </td>
-                    <td className="p-2 font-mono">{db}</td>
-                    <td className="p-2">
-                      <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => setBackupTarget(db)} title="Backup">
-                          <HardDriveDownload className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleCopy(db)} title="Copy">
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleRename(db)} title="Rename">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setDropTarget(db)} title="Drop">
-                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((db) => {
+                  const isSel = selected.has(db);
+                  const isBusy = actionLoading[db];
+                  return (
+                    <tr
+                      key={db}
+                      className={cn(
+                        "border-b border-border/50 transition-colors",
+                        isSel ? "bg-primary/5" : "hover:bg-accent/40",
+                      )}
+                    >
+                      <td className="p-2">
+                        <input
+                          type="checkbox"
+                          checked={isSel}
+                          onChange={() => toggleSelect(db)}
+                          className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                        />
+                      </td>
+                      <td className="p-2 font-mono">{db}</td>
+                      <td className="p-2">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setBackupTarget(db)}
+                            title="Backup"
+                            disabled={isBusy}
+                            className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-500"
+                          >
+                            {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <HardDriveDownload className="h-3.5 w-3.5" />}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleCopy(db)}
+                            title="Copy"
+                            disabled={isBusy}
+                            className="h-7 w-7 p-0 hover:bg-green-500/10 hover:text-green-500"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRename(db)}
+                            title="Rename"
+                            disabled={isBusy}
+                            className="h-7 w-7 p-0 hover:bg-yellow-500/10 hover:text-yellow-500"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDropTarget(db)}
+                            title="Drop"
+                            disabled={isBusy}
+                            className="h-7 w-7 p-0 hover:bg-red-500/10 hover:text-red-500"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

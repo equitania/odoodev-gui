@@ -15,13 +15,16 @@ export function Tabs({ tabs, onChange, className }: TabsProps) {
           key={tab.key}
           onClick={() => onChange(tab.key)}
           className={cn(
-            "px-4 py-2 text-sm font-medium transition-colors",
+            "relative px-4 py-2 text-sm font-medium transition-colors",
             tab.active
-              ? "border-b-2 border-primary text-foreground"
-              : "text-muted-foreground hover:text-foreground",
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-accent/30",
           )}
         >
           {tab.label}
+          {tab.active && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+          )}
         </button>
       ))}
     </div>

@@ -4,6 +4,7 @@ import { ServerConfig } from "./ServerConfig";
 import { LogViewer } from "./LogViewer";
 import { useAppStore } from "../../store/appStore";
 import { useLogStream } from "../../hooks/useLogStream";
+import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { StartServerArgs } from "../../types";
 import { Plus } from "lucide-react";
 
@@ -20,6 +21,7 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
   const allTabs = Array.from(new Set([...versionKeys.filter(k => serverKeys.includes(k)), ...serverKeys]));
 
   const [activeTab, setActiveTab] = useState<string>("");
+  const [serverBusy, setServerBusy] = useState(false);
 
   useEffect(() => {
     if (preselectVersion) {
@@ -33,18 +35,45 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
   const handleStart = async (args: StartServerArgs) => {
     initServerTab(args.version);
     setActiveTab(args.version);
-    await startServer(args);
+    setServerBusy(true);
+    const tid = toastLoading(`Starting server v${args.version}...`);
+    try {
+      await startServer(args);
+      toastUpdate(tid, "success", `Server v${args.version} started (PID running)`);
+    } catch (e) {
+      toastUpdate(tid, "error", `Failed to start server v${args.version}`, String(e));
+    } finally {
+      setServerBusy(false);
+    }
   };
 
   const handleStop = async (version: string) => {
-    await stopServer(version);
+    setServerBusy(true);
+    const tid = toastLoading(`Stopping server v${version}...`);
+    try {
+      await stopServer(version);
+      toastUpdate(tid, "success", `Server v${version} stopped`);
+    } catch (e) {
+      toastUpdate(tid, "error", `Failed to stop server v${version}`, String(e));
+    } finally {
+      setServerBusy(false);
+    }
   };
 
   const handleRestart = async (version: string) => {
-    await stopServer(version, true, false);
-    const server = servers[version];
-    if (server?.config) {
-      await startServer(server.config);
+    setServerBusy(true);
+    const tid = toastLoading(`Restarting server v${version}...`);
+    try {
+      await stopServer(version, true, false);
+      const server = servers[version];
+      if (server?.config) {
+        await startServer(server.config);
+      }
+      toastUpdate(tid, "success", `Server v${version} restarted`);
+    } catch (e) {
+      toastUpdate(tid, "error", `Failed to restart server v${version}`, String(e));
+    } finally {
+      setServerBusy(false);
     }
   };
 
@@ -56,8 +85,10 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
     label: (
       <span className="flex items-center gap-2">
         v{key}
-        {servers[key]?.status?.running && (
-          <span className="h-2 w-2 rounded-full bg-green-500" />
+        {servers[key]?.status?.running ? (
+          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+        ) : (
+          <span className="h-2 w-2 rounded-full bg-gray-400" />
         )}
       </span>
     ),
@@ -87,7 +118,7 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
               setActiveTab(next);
             }
           }}
-          className="mr-2 flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
+          className="mr-2 flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="New server tab"
         >
           <Plus className="h-4 w-4" />
@@ -100,6 +131,7 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
             <ServerConfig
               version={activeVersion}
               running={isRunning}
+              busy={serverBusy}
               onStart={handleStart}
               onStop={() => handleStop(activeVersion)}
               onRestart={() => handleRestart(activeVersion)}
