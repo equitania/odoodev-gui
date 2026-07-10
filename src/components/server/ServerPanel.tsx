@@ -6,7 +6,6 @@ import { useAppStore } from "../../store/appStore";
 import { useLogStream } from "../../hooks/useLogStream";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { StartServerArgs } from "../../types";
-import { Plus } from "lucide-react";
 
 export function ServerPanel({ preselectVersion }: { preselectVersion: string | null }) {
   const versions = useAppStore((s) => s.versions);
@@ -17,29 +16,28 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
   const initServerTab = useAppStore((s) => s.initServerTab);
 
   const versionKeys = versions ? Object.keys(versions).sort() : [];
-  const serverKeys = Object.keys(servers);
-  const allTabs = Array.from(new Set([...versionKeys.filter(k => serverKeys.includes(k)), ...serverKeys]));
 
   const [activeTab, setActiveTab] = useState<string>("");
   const [serverBusy, setServerBusy] = useState(false);
 
   useEffect(() => {
-    if (preselectVersion) {
+    if (preselectVersion && versionKeys.includes(preselectVersion)) {
       initServerTab(preselectVersion);
       setActiveTab(preselectVersion);
-    } else if (allTabs.length > 0 && !allTabs.includes(activeTab)) {
-      setActiveTab(allTabs[0]);
+    } else if (versionKeys.length > 0 && !versionKeys.includes(activeTab)) {
+      setActiveTab(versionKeys[0]);
     }
-  }, [preselectVersion]);
+  }, [preselectVersion, versionKeys]);
+
+  const activeVersion = activeTab || versionKeys[0] || "";
+  useLogStream(activeVersion);
 
   const handleStart = async (args: StartServerArgs) => {
-    initServerTab(args.version);
-    setActiveTab(args.version);
     setServerBusy(true);
     const tid = toastLoading(`Starting server v${args.version}...`);
     try {
       await startServer(args);
-      toastUpdate(tid, "success", `Server v${args.version} started (PID running)`);
+      toastUpdate(tid, "success", `Server v${args.version} started`);
     } catch (e) {
       toastUpdate(tid, "error", `Failed to start server v${args.version}`, String(e));
     } finally {
@@ -77,10 +75,15 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
     }
   };
 
-  const activeVersion = activeTab || allTabs[0] || versionKeys[0] || "";
-  useLogStream(activeVersion);
+  if (versionKeys.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        No versions configured
+      </div>
+    );
+  }
 
-  const tabs = allTabs.map((key) => ({
+  const tabs = versionKeys.map((key) => ({
     key,
     label: (
       <span className="flex items-center gap-2">
@@ -92,39 +95,15 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
         )}
       </span>
     ),
-    active: activeTab === key || (activeTab === "" && allTabs[0] === key),
+    active: activeVersion === key,
   }));
-
-  if (versionKeys.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
-        No versions configured
-      </div>
-    );
-  }
 
   const currentServer = activeVersion ? servers[activeVersion] : null;
   const isRunning = currentServer?.status?.running ?? false;
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between">
-        <Tabs tabs={tabs.length > 0 ? tabs : [{ key: "new", label: "New", active: true }]} onChange={setActiveTab} />
-        <button
-          onClick={() => {
-            if (versionKeys.length > 0) {
-              const next = versionKeys.find(k => !allTabs.includes(k)) ?? versionKeys[0];
-              initServerTab(next);
-              setActiveTab(next);
-            }
-          }}
-          className="mr-2 flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="New server tab"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
-
+      <Tabs tabs={tabs} onChange={setActiveTab} />
       {activeVersion && (
         <div className="flex flex-1 overflow-hidden">
           <div className="w-96 shrink-0 overflow-auto border-r border-border p-3">
