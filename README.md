@@ -2,8 +2,8 @@
 
 Native desktop GUI for the [odoodev](https://github.com/equitania/odoo-dev) CLI tool.
 
-> **Status:** Planning phase — implementation not yet started.
-> See `docs/PLAN.md` for the full implementation plan.
+> **Status:** Phase 1 MVP implementiert — Dashboard, Server, Databases, Settings funktionsfähig.
+> Apple Container Integration aktiv. Phase 2 (Docker Panel, Venv, Repos, Playbooks, i18n) offen.
 
 ## What is this?
 
@@ -19,31 +19,54 @@ manages `uv` (installs if missing) and `odoodev` (installs / upgrades via `uv to
 
 - **Backend:** Rust + Tauri v2
 - **Frontend:** React 19 + TypeScript + Vite
-- **UI:** Tailwind CSS v4 + shadcn/ui
-- **State:** Zustand
+- **UI:** Tailwind CSS v4 + shadcn/ui primitives
+- **State:** Zustand (+ toast notification system)
+- **Icons:** lucide-react
+- **Virtual scrolling:** @tanstack/react-virtual (Log viewer with 10k+ lines)
 - **Distribution:** Native bundles (.dmg / .msi / .AppImage)
 
-## Features (Planned)
+## Features (Implemented)
 
-### Phase 1 — MVP
+### Phase 1 — MVP ✅
 
-- **Dashboard:** Status overview for all 4 Odoo versions (Docker, Venv, Odoo running)
-- **Server:** Start/stop Odoo in multiple modes (normal, dev, shell, test, prepare) with live log viewer (syntax highlighting + level filtering)
-- **Databases:** List, backup, restore (with sanitize wizard), copy, rename, drop
-- **Auto-Install:** Installs `uv` and `odoodev` if missing
-- **Auto-Update:** Update notification for `odoodev` (manual click to update)
-- **Parallel Servers:** Run multiple Odoo versions simultaneously
+- **Dashboard:** 4 Version-Cards (v16–v19) mit Status-Badges (Docker/Container, Venv, Python, Odoo),
+  Polling, Docker Up/Down inline, Quick-Actions (Start Server, Databases)
+- **Server:** Alle 4 Versionen als Tabs, ServerConfig (5 Modi: Normal/Dev/Shell/Test/Prepare,
+  Database-Dropdown, Module-Update/Install, Advanced: Host, Language, Clean-Sessions, Config,
+  Default-Credentials, Extra-Args), LogViewer mit Virtual Scrolling, Level-Filter (DEBUG/INFO/
+  WARNING/ERROR/CRITICAL), Search, Auto-Scroll, Copy, Syntax-Highlighting, Stop/Start-Buffer-Persistenz
+- **Databases:** DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Step Wizard mit Dry Run,
+  Sanitize, Anonymize, Purge, Recompute), Drop (type-to-confirm), Copy, Rename, Bulk-Drop,
+  Operation-Progress mit live stdout
+- **Settings:** odoodev Version + Update, uv Version + Reinstall, GUI Version, About
+- **Auto-Install:** InstallDialog bei fehlendem uv/odoodev
+- **Auto-Update:** UpdateBadge im Header bei neuer odoodev-Version (PyPI check)
+- **Toast-Notifications:** Success/Error/Loading mit Auto-dismiss
+- **Apple Container:** Runtime-Erkennung aus odoodev Config (`container_runtime: apple`),
+  `container ls --format json` für Container-Status, `--runtime apple` wird an odoodev durchgereicht,
+  Docker wird nie angerührt wenn Config apple sagt
 
-### Phase 2 — Extended
+### Phase 2 — Offen
 
-- Docker/Container panel (up/down/status/logs, benchmark)
-- Venv panel (setup/check/remove)
-- Repos panel (clone/update/config-regenerate)
-- Playbook runner (NDJSON live progress)
-- Init wizard (guided environment setup)
-- Migration group management
-- Doctor / health check
+- Docker/Container Panel (up/down/status/logs, benchmark)
+- Venv Panel (setup/check/remove)
+- Repos Panel (clone/update/config-regenerate)
+- Playbook Runner (NDJSON live progress)
+- Init Wizard (guided environment setup)
+- Migration Group Management
+- Doctor / Health Check
 - Full i18n (DE/EN)
+
+## Getting Started
+
+```bash
+pnpm install              # install frontend deps
+~/.cargo/bin/cargo-tauri dev   # launch dev mode (hot-reload frontend + Rust rebuild)
+~/.cargo/bin/cargo-tauri build  # production build
+```
+
+**Prerequisites:** Rust 1.75+, Node.js 20+, pnpm, Tauri CLI v2 (`cargo install tauri-cli --version "^2"`),
+`odoodev` installed (`uv tool install odoodev-equitania`)
 
 ## Documentation
 

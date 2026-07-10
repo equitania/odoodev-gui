@@ -150,3 +150,52 @@ pnpm test                 # Frontend tests (vitest, once added)
 
 - **odoodev CLI:** `/Users/picard/gitbase/PyPi-Projects/odoo-dev` (Python, PyPI package `odoodev-equitania`)
 - **Agent Capability Card:** `usage/AGENT.md` in the odoodev repo — documents every CLI command and flag
+
+## Current Project Status (Stand 10. Juli 2026)
+
+### Implemented — Phase 0 + Phase 1 MVP
+
+**Rust-Backend** (fertig):
+- `odoodev.rs`: subprocess wrapper (JSON/text/streaming/spawn), PATH augmentation
+- `log_parser.rs`: ported Odoo log regex parser with unit tests
+- `server_manager.rs`: parallel server process management (HashMap)
+- `installer.rs`: uv install + odoodev install/upgrade
+- `pypi.rs`: PyPI version check + uv status + PostgreSQL TCP probe
+- `docker_check.rs`: runtime detection (config → docker → apple), `container ls --format json` parsing
+- `config.rs`: odoodev YAML config reader (active_versions, container_runtime)
+- `models.rs`: serde structs for all CLI JSON responses
+- `commands/`: 6 command modules (versions, server, database, docker, system, self_update)
+
+**React-Frontend** (fertig):
+- App shell: Sidebar (4 views), Header (version + update badge), InstallDialog, ToastContainer
+- Dashboard: 4 VersionCards mit StatusBadges, Polling, Docker Up/Down
+- Server: alle 4 Version-Tabs sichtbar, ServerConfig (5 Modi + Advanced), LogViewer mit Virtual Scrolling
+- Database: Liste, Backup (3 Formate), Restore (3-Step Wizard + Dry Run), Drop/Copy/Rename, Bulk-Drop
+- Settings: Version-Info, Update, Reinstall, About
+- Zustand store mit platform/runtime detection + toast notification system
+- 11 shadcn/ui primitives
+
+### Open — Next Steps
+
+1. **Phase 1.9:** Manuelle Tests, Edge-Case-Handling, Loading/Empty-States verfeinern
+2. **Phase 2:** Docker Panel, Venv Panel, Repos Panel, Playbook Runner, Init Wizard, Migrate, Doctor, i18n
+
+### Key Architecture Decisions
+
+- **Runtime detection:** odoodev config `container_runtime` hat Vorrang vor PATH-Erkennung.
+  Wenn Config `apple` sagt, wird Docker nie angerührt (kein `docker ps`, keine Socket-Versuche).
+  Apple Container wird via `container ls --format json` abgefragt (port-match über `publishedPorts.hostPort`).
+- **Platform + Runtime** werden beim App-Start einmalig geladen und im Zustandsspeicher (Store) zwischengespeichert.
+- **Toast-System:** Loading → Success/Error mit Auto-dismiss (4s), Slide-in-Animation
+- **Server-Tabs:** Alle 4 Versionen sind immer sichtbar (kein "+"-Button), Log-Buffer persistiert über Stop/Start
+
+### Development Commands
+
+```bash
+pnpm install                    # frontend deps
+~/.cargo/bin/cargo-tauri dev   # dev mode (hot-reload)
+~/.cargo/bin/cargo-tauri build # production build
+pnpm run typecheck              # tsc --noEmit
+pnpm run lint                   # eslint
+cargo check                     # Rust compile check (src-tauri/)
+```
