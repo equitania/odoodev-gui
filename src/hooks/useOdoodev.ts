@@ -57,5 +57,7 @@ export function useOdoodev() {
     dockerDown: (version: string, runtime?: string) => invokeCmd<OpResult>("docker_down", { version, runtime }),
     dockerStatus: (version: string, versions: VersionsResponse) =>
       invokeCmd<DockerStatus>("docker_status", { version, versions }),
+    getRuntime: () => invokeCmd<string>("get_runtime"),
+    getRuntimeConfig: () => invokeCmd<string | null>("get_runtime_config"),
   };
 }

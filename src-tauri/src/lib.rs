@@ -62,6 +62,9 @@ pub fn run() {
             docker::docker_up,
             docker::docker_down,
             docker::docker_status,
+            // runtime detection
+            versions::get_runtime,
+            versions::get_runtime_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -9,16 +9,35 @@ use crate::models::{DockerStatus, OpResult, VersionInfo};
 use crate::odoodev;
 use crate::server_manager::ServerManager;
 
+/// Resolve the runtime to use: explicit override > odoodev config > auto-detect.
+async fn resolve_runtime(explicit: Option<String>) -> String {
+    if let Some(rt) = explicit {
+        if !rt.is_empty() {
+            return rt;
+        }
+    }
+    if let Some(rt) = crate::config::get_container_runtime() {
+        if !rt.is_empty() {
+            return rt;
+        }
+    }
+    docker_check::detect_runtime().await
+}
+
 #[tauri::command]
 pub async fn docker_up(
     version: String,
-    #[allow(unused_variables)] runtime: Option<String>,
+    runtime: Option<String>,
     window: tauri::Window,
 ) -> Result<OpResult, String> {
-    let mut cli = vec!["docker", "up", version.as_str()];
-    let mut rt = runtime.clone();
-    let _ = &mut rt;
-    let refs: Vec<&str> = cli.drain(..).collect();
+    let rt = resolve_runtime(runtime).await;
+    let mut cli = vec!["docker".to_string(), "up".to_string()];
+    if !rt.is_empty() {
+        cli.push("--runtime".to_string());
+        cli.push(rt);
+    }
+    cli.push(version);
+    let refs: Vec<&str> = cli.iter().map(|s| s.as_str()).collect();
 
     let mut cmd = Command::new(odoodev::find_odoodev());
     cmd.args(&refs);
@@ -58,10 +77,17 @@ pub async fn docker_up(
 #[tauri::command]
 pub async fn docker_down(
     version: String,
-    #[allow(unused_variables)] runtime: Option<String>,
+    runtime: Option<String>,
 ) -> Result<OpResult, String> {
-    let args = vec!["docker", "down", version.as_str()];
-    match odoodev::run_odoodev_text(&args).await {
+    let rt = resolve_runtime(runtime).await;
+    let mut args = vec!["docker".to_string(), "down".to_string()];
+    if !rt.is_empty() {
+        args.push("--runtime".to_string());
+        args.push(rt);
+    }
+    args.push(version);
+    let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+    match odoodev::run_odoodev_text(&refs).await {
         Ok(_) => Ok(OpResult {
             success: true,
             error: None,

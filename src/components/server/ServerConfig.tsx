@@ -45,6 +45,7 @@ export function ServerConfig({
   const [configPath, setConfigPath] = useState("");
   const [allowDefaultCreds, setAllowDefaultCreds] = useState(false);
   const [extraArgs, setExtraArgs] = useState("");
+  const [runtime, setRuntime] = useState("");
 
   useEffect(() => {
     invokeCmd<DbListResponse>("get_databases", { version })
@@ -56,6 +57,7 @@ export function ServerConfig({
         setDatabases([]);
         setDbError(String(e));
       });
+    invokeCmd<string>("get_runtime").then(setRuntime).catch(() => {});
   }, [version]);
 
   const buildArgs = (): StartServerArgs => ({
@@ -70,6 +72,7 @@ export function ServerConfig({
     clean_sessions: cleanSessions || undefined,
     config_path: configPath || undefined,
     allow_default_credentials: allowDefaultCreds || undefined,
+    runtime: runtime || undefined,
     extra_args: extraArgs || undefined,
   });
 
@@ -89,15 +92,15 @@ export function ServerConfig({
           {dbError ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-destructive">PostgreSQL not accessible</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version })}>
-                Start Docker
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime })}>
+                Start {runtime === "apple" ? "Container" : "Docker"}
               </Button>
             </div>
           ) : databases.length === 0 ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">No databases — start PostgreSQL first</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version })}>
-                Docker Up
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime })}>
+                {runtime === "apple" ? "Start" : "Docker Up"}
               </Button>
             </div>
           ) : (

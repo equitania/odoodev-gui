@@ -58,10 +58,10 @@ export function VersionCard({
   const dockerRuntime = dockerStatus?.runtime ?? "none";
 
   const dockerBadge = dockerRunning
-    ? { status: "running" as const, label: "Docker running" }
+    ? { status: "running" as const, label: dockerRuntime === "apple" ? "Container running" : "Docker running" }
     : dockerRuntime === "none"
       ? { status: "neutral" as const, label: "No runtime" }
-      : { status: "stopped" as const, label: "Docker stopped" };
+      : { status: "stopped" as const, label: dockerRuntime === "apple" ? "Container stopped" : "Docker stopped" };
 
   const venvBadge = !venvStatus?.exists
     ? { status: "error" as const, label: "Venv missing" }
@@ -84,7 +84,7 @@ export function VersionCard({
 
   const handleDockerUp = async () => {
     try {
-      await invokeCmd("docker_up", { version });
+      await invokeCmd("docker_up", { version, runtime: dockerStatus?.runtime });
     } catch (e) {
       console.error(e);
     }
@@ -92,7 +92,7 @@ export function VersionCard({
 
   const handleDockerDown = async () => {
     try {
-      await invokeCmd("docker_down", { version });
+      await invokeCmd("docker_down", { version, runtime: dockerStatus?.runtime });
     } catch (e) {
       console.error(e);
     }
@@ -144,12 +144,12 @@ export function VersionCard({
           {dockerRunning ? (
             <Button size="sm" variant="outline" onClick={handleDockerDown} disabled={!active}>
               <ArrowDown className="h-3.5 w-3.5" />
-              Docker Down
+              {dockerRuntime === "apple" ? "Stop" : "Docker Down"}
             </Button>
           ) : (
             <Button size="sm" variant="outline" onClick={handleDockerUp} disabled={!active}>
               <ArrowUp className="h-3.5 w-3.5" />
-              Docker Up
+              {dockerRuntime === "apple" ? "Start" : "Docker Up"}
             </Button>
           )}
         </div>

@@ -30,3 +30,7 @@ pub fn get_active_versions() -> Vec<String> {
         .and_then(|c| c.active_versions)
         .unwrap_or_default()
 }
+
+pub fn get_container_runtime() -> Option<String> {
+    read_config().and_then(|c| c.container_runtime)
+}

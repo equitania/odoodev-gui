@@ -21,6 +21,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [search, setSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [dockerRuntime, setDockerRuntime] = useState<string>("");
 
   const [backupTarget, setBackupTarget] = useState<string | null>(null);
   const [showRestore, setShowRestore] = useState(false);
@@ -60,6 +61,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
 
   useEffect(() => {
     fetchDatabases();
+    invokeCmd<string>("get_runtime").then(setDockerRuntime).catch(() => {});
   }, [selectedVersion]);
 
   const handleDrop = async (name: string) => {
@@ -154,8 +156,8 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-destructive">PostgreSQL not accessible: {error}</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion })}>
-                Start Docker
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime: dockerRuntime })}>
+                Start {dockerRuntime === "apple" ? "Container" : "Docker"}
               </Button>
             </div>
           </CardContent>
@@ -167,7 +169,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">No databases found</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion })}>
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime: dockerRuntime })}>
                 Start PostgreSQL
               </Button>
             </div>

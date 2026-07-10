@@ -46,7 +46,7 @@ export interface OdooLogEntry {
 export interface DockerStatus {
   running: boolean;
   container_name: string;
-  runtime: string;
+  runtime: ContainerRuntime;
 }
 
 export interface ServerStatus {
@@ -161,3 +161,5 @@ export interface ServerState {
 }
 
 export type ViewKey = "dashboard" | "server" | "database" | "settings";
+
+export type ContainerRuntime = "docker" | "apple" | "none";

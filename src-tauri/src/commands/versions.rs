@@ -181,3 +181,13 @@ pub async fn install_odoodev() -> Result<OdoodevInfoDto, String> {
         version: Some(v),
     })
 }
+
+#[tauri::command]
+pub async fn get_runtime() -> String {
+    docker_check::detect_runtime().await
+}
+
+#[tauri::command]
+pub async fn get_runtime_config() -> Option<String> {
+    config::get_container_runtime()
+}
