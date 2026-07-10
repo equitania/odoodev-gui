@@ -1,13 +1,15 @@
 import { create } from "zustand";
 import type {
+  ContainerRuntime,
   DashboardStatus,
   OdooLogEntry,
+  OdoodevInfoDto,
+  PlatformInfo,
   ServerState,
   ServerStatus,
   StartServerArgs,
-  UvInfoDto,
-  OdoodevInfoDto,
   UpdateCheckResult,
+  UvInfoDto,
   VersionsResponse,
 } from "../types";
 import { invokeCmd } from "../lib/tauri";
@@ -22,6 +24,10 @@ interface AppState {
   firstRunChecked: boolean;
   odoodevInstalled: boolean;
 
+  platform: PlatformInfo | null;
+  runtime: ContainerRuntime;
+  runtimeLoaded: boolean;
+
   versions: VersionsResponse | null;
   activeVersions: string[];
   dashboardLoading: boolean;
@@ -29,6 +35,7 @@ interface AppState {
   servers: Record<string, ServerState>;
 
   fetchAllDashboard: () => Promise<void>;
+  fetchPlatformAndRuntime: () => Promise<void>;
   checkOdoodevUpdate: () => Promise<void>;
   installOdoodev: () => Promise<void>;
   updateOdoodev: () => Promise<void>;
@@ -51,10 +58,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateCheck: null,
   firstRunChecked: false,
   odoodevInstalled: false,
+  platform: null,
+  runtime: "none",
+  runtimeLoaded: false,
   versions: null,
   activeVersions: [],
   dashboardLoading: false,
   servers: {},
+
+  fetchPlatformAndRuntime: async () => {
+    try {
+      const [platform, runtime] = await Promise.all([
+        invokeCmd<PlatformInfo>("get_platform_info"),
+        invokeCmd<string>("get_runtime"),
+      ]);
+      set({ platform, runtime: runtime as ContainerRuntime, runtimeLoaded: true });
+    } catch (e) {
+      console.error("fetchPlatformAndRuntime:", e);
+      set({ runtimeLoaded: true });
+    }
+  },
 
   fetchAllDashboard: async () => {
     set({ dashboardLoading: true });

@@ -15,17 +15,19 @@ export default function App() {
   const [preselectVersion, setPreselectVersion] = useState<string | null>(null);
 
   const fetchAllDashboard = useAppStore((s) => s.fetchAllDashboard);
+  const fetchPlatformAndRuntime = useAppStore((s) => s.fetchPlatformAndRuntime);
   const checkUvStatus = useAppStore((s) => s.checkUvStatus);
   const checkOdoodevStatus = useAppStore((s) => s.checkOdoodevStatus);
 
   useEffect(() => {
     (async () => {
+      await fetchPlatformAndRuntime();
       await checkUvStatus();
       await checkOdoodevStatus();
       useAppStore.setState({ firstRunChecked: true });
       await fetchAllDashboard();
     })();
-  }, [fetchAllDashboard, checkUvStatus, checkOdoodevStatus]);
+  }, [fetchAllDashboard, fetchPlatformAndRuntime, checkUvStatus, checkOdoodevStatus]);
 
   const handleNavigate = (view: ViewKey, version?: string) => {
     setActiveView(view);

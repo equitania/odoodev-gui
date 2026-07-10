@@ -7,6 +7,7 @@ import { Select } from "../ui/select";
 import { SegmentedControl } from "../ui/segmented-control";
 import { Checkbox } from "../ui/checkbox";
 import { invokeCmd } from "../../lib/tauri";
+import { useAppStore } from "../../store/appStore";
 import type { DbListResponse, StartServerArgs } from "../../types";
 import { ChevronDown, ChevronUp, Play, Square, RotateCcw, Loader2 } from "lucide-react";
 
@@ -47,7 +48,7 @@ export function ServerConfig({
   const [configPath, setConfigPath] = useState("");
   const [allowDefaultCreds, setAllowDefaultCreds] = useState(false);
   const [extraArgs, setExtraArgs] = useState("");
-  const [runtime, setRuntime] = useState("");
+  const runtime = useAppStore((s) => s.runtime);
 
   useEffect(() => {
     invokeCmd<DbListResponse>("get_databases", { version })
@@ -59,7 +60,6 @@ export function ServerConfig({
         setDatabases([]);
         setDbError(String(e));
       });
-    invokeCmd<string>("get_runtime").then(setRuntime).catch(() => {});
   }, [version]);
 
   const buildArgs = (): StartServerArgs => ({

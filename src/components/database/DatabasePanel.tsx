@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Select } from "../ui/select";
 import { Input } from "../ui/input";
 import { invokeCmd } from "../../lib/tauri";
+import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { DbListResponse, OpResult, VersionsResponse } from "../../types";
 import { BackupDialog } from "./BackupDialog";
@@ -14,6 +15,7 @@ import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Lo
 import { cn } from "../../lib/utils";
 
 export function DatabasePanel({ preselectVersion }: { preselectVersion: string | null }) {
+  const runtime = useAppStore((s) => s.runtime);
   const [versions, setVersions] = useState<VersionsResponse | null>(null);
   const [versionKeys, setVersionKeys] = useState<string[]>([]);
   const [selectedVersion, setSelectedVersion] = useState("");
@@ -23,7 +25,6 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [search, setSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [dockerRuntime, setDockerRuntime] = useState<string>("");
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const [backupTarget, setBackupTarget] = useState<string | null>(null);
@@ -56,7 +57,12 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
       setDbList(resp.databases);
     } catch (e) {
       setDbList([]);
-      setError(String(e));
+      const msg = String(e);
+      if (msg.includes("not accessible") || msg.includes("connection") || msg.includes("Connection")) {
+        setError("PostgreSQL is not running. Start the container first.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,7 +70,6 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
 
   useEffect(() => {
     fetchDatabases();
-    invokeCmd<string>("get_runtime").then(setDockerRuntime).catch(() => {});
   }, [selectedVersion]);
 
   const setDbAction = (name: string, busy: boolean) => {
@@ -197,8 +202,8 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-destructive">PostgreSQL not accessible: {error}</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime: dockerRuntime })}>
-                Start {dockerRuntime === "apple" ? "Container" : "Docker"}
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime })}>
+                Start {runtime === "apple" ? "Container" : "Docker"}
               </Button>
             </div>
           </CardContent>
@@ -210,7 +215,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">No databases found</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime: dockerRuntime })}>
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime })}>
                 Start PostgreSQL
               </Button>
             </div>
