@@ -5,36 +5,33 @@ use crate::odoodev;
 
 /// Check PostgreSQL container status for a version.
 /// Primary check: TCP probe on DB port (runtime-agnostic).
-/// Display: container name from `docker ps` or `container ls` depending on runtime.
+/// Display: container name + state from runtime CLI.
 pub async fn check_docker_status(_version: &str, db_port: u16) -> DockerStatus {
-    let running = crate::pypi::check_pg_port(db_port).await;
     let runtime = detect_runtime().await;
-    let mut container_name = String::new();
 
     match runtime.as_str() {
         "docker" => {
-            container_name = docker_container_for_port(db_port).await;
+            let running = crate::pypi::check_pg_port(db_port).await;
+            let container_name = docker_container_for_port(db_port).await;
+            DockerStatus { running, container_name, runtime }
         }
         "apple" => {
-            container_name = apple_container_for_port(db_port).await;
+            let (running, container_name) = apple_container_status(db_port).await;
+            DockerStatus { running, container_name, runtime }
         }
-        _ => {}
-    }
-
-    DockerStatus {
-        running,
-        container_name,
-        runtime,
+        _ => {
+            let running = crate::pypi::check_pg_port(db_port).await;
+            DockerStatus { running, container_name: String::new(), runtime }
+        }
     }
 }
 
 /// Detect the available container runtime.
-/// Checks odoodev config first, then falls back to PATH detection.
+/// Priority: odoodev config > PATH detection (docker → apple → none).
 pub async fn detect_runtime() -> String {
-    let cfg = crate::config::read_config();
-    if let Some(rt) = cfg.as_ref().and_then(|c| c.container_runtime.as_deref()) {
+    if let Some(rt) = crate::config::get_container_runtime() {
         if !rt.is_empty() {
-            return rt.to_string();
+            return rt;
         }
     }
     if which::which("docker").is_ok() {
@@ -46,7 +43,7 @@ pub async fn detect_runtime() -> String {
     "none".to_string()
 }
 
-/// Query `docker ps` for a container publishing the given DB port.
+/// Query `docker ps --format` for a container publishing the given DB port.
 async fn docker_container_for_port(db_port: u16) -> String {
     let Ok(docker_path) = which::which("docker") else {
         return String::new();
@@ -69,50 +66,57 @@ async fn docker_container_for_port(db_port: u16) -> String {
     String::new()
 }
 
-/// Query `container ls` (Apple Container) for a container name.
-/// Apple Container `container ls` prints a table with columns:
-/// ID  IMAGE  OS  ARCH  STATE  IP  CPUS  MEMORY  STARTED
-/// We match by the expected container name pattern: picard-dev-db-XX-native.
-async fn apple_container_for_port(db_port: u16) -> String {
+/// Query `container ls --format json` (Apple Container) for a container
+/// publishing the given DB port. Returns (is_running, container_name).
+/// Falls back to TCP probe if the API server is down or JSON parsing fails.
+async fn apple_container_status(db_port: u16) -> (bool, String) {
     let Ok(container_path) = which::which("container") else {
-        return String::new();
+        return (crate::pypi::check_pg_port(db_port).await, String::new());
     };
+
     let mut cmd = Command::new(container_path);
-    cmd.args(["ls"]);
+    cmd.args(["ls", "--format", "json"]);
     odoodev::augment_path(&mut cmd);
     let Ok(out) = cmd.output().await else {
-        return String::new();
+        return (crate::pypi::check_pg_port(db_port).await, String::new());
     };
+
+    if !out.status.success() {
+        // API server might be down — fall back to TCP probe
+        return (crate::pypi::check_pg_port(db_port).await, String::new());
+    }
+
     let stdout = String::from_utf8_lossy(&out.stdout);
+    let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(&stdout) else {
+        return (crate::pypi::check_pg_port(db_port).await, String::new());
+    };
 
-    // Apple Container `container ls` output is a table with the container ID
-    // in the first column. We can't directly map port→container from this output,
-    // but we know the naming convention from odoodev: picard-dev-db-XX-native.
-    // Map DB port to version and construct the expected container name.
-    let version = port_to_version(db_port);
-    let expected = format!("picard-dev-db-{}-native", version);
+    for item in &items {
+        let id = item
+            .pointer("/configuration/id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
 
-    for line in stdout.lines() {
-        if line.trim().is_empty() || line.starts_with("ID") {
-            continue;
-        }
-        // The ID column may contain the container name
-        if line.contains(&expected) {
-            if let Some(id) = line.split_whitespace().next() {
-                return id.trim().to_string();
+        let empty = Vec::new();
+        let ports = item
+            .pointer("/configuration/publishedPorts")
+            .and_then(|v| v.as_array())
+            .unwrap_or(&empty);
+
+        let state = item
+            .pointer("/status/state")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+
+        for port in ports {
+            let host_port = port.get("hostPort").and_then(|v| v.as_u64()).unwrap_or(0) as u16;
+            if host_port == db_port {
+                let running = state == "running";
+                return (running, id.to_string());
             }
         }
     }
-    String::new()
-}
 
-/// Map a DB port number to an Odoo version string.
-fn port_to_version(db_port: u16) -> &'static str {
-    match db_port {
-        16432 => "16",
-        17432 => "17",
-        18432 => "18",
-        19432 => "19",
-        _ => "",
-    }
+    // No matching container found — fall back to TCP probe for running check
+    (crate::pypi::check_pg_port(db_port).await, String::new())
 }
