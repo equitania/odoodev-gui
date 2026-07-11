@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { usePolling } from "../../hooks/usePolling";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -22,6 +23,7 @@ import { POLL_INTERVALS } from "../../lib/constants";
 import type { MigrationGroup, MigrationStatus, VersionInfo } from "../../types";
 
 export function MigratePanel() {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [groups, setGroups] = useState<MigrationGroup[]>([]);
   const [status, setStatus] = useState<MigrationStatus | null>(null);
@@ -158,21 +160,20 @@ export function MigratePanel() {
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Migration Groups</h1>
+          <h1 className="text-2xl font-semibold">{t("migrate.title")}</h1>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={refresh} disabled={busy}>
               <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
+              {t("common.refresh")}
             </Button>
             <Button size="sm" variant="default" onClick={() => setShowCreate(true)} disabled={busy}>
               <Plus className="h-3.5 w-3.5" />
-              New Group
+              {t("migrate.newGroup")}
             </Button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Share PostgreSQL container + filestore between two Odoo versions during
-          database migration. Each version keeps its own venv, repos, and config.
+          {t("migrate.description")}
         </p>
       </div>
 
@@ -187,15 +188,15 @@ export function MigratePanel() {
                     Active: {status.group_name ?? "unknown"}
                   </span>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleDeactivate}
-                  disabled={busy}
-                >
-                  <Square className="h-3.5 w-3.5" />
-                  Deactivate
-                </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDeactivate}
+              disabled={busy}
+            >
+              <Square className="h-3.5 w-3.5" />
+              {t("migrate.deactivate")}
+            </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
@@ -225,7 +226,7 @@ export function MigratePanel() {
 
         {groups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-sm">No migration groups defined</p>
+            <p className="text-sm">{t("migrate.noGroups")}</p>
             <Button
               size="sm"
               variant="outline"
@@ -233,7 +234,7 @@ export function MigratePanel() {
               onClick={() => setShowCreate(true)}
             >
               <Plus className="h-3.5 w-3.5" />
-              Create first group
+              {t("migrate.createFirst")}
             </Button>
           </div>
         ) : (
@@ -302,11 +303,11 @@ export function MigratePanel() {
 
       <Dialog open={showCreate} onClose={() => setShowCreate(false)}>
         <DialogHeader>
-          <DialogTitle>Create Migration Group</DialogTitle>
+          <DialogTitle>{t("migrate.createTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>From (source version)</Label>
+            <Label>{t("migrate.from")}</Label>
             <select
               value={fromVer}
               onChange={(e) => setFromVer(e.target.value)}
@@ -320,7 +321,7 @@ export function MigratePanel() {
             </select>
           </div>
           <div className="space-y-2">
-            <Label>To (target version)</Label>
+            <Label>{t("migrate.to")}</Label>
             <select
               value={toVer}
               onChange={(e) => setToVer(e.target.value)}
@@ -334,7 +335,7 @@ export function MigratePanel() {
             </select>
           </div>
           <div className="space-y-2">
-            <Label>Group name (optional)</Label>
+            <Label>{t("migrate.groupName")}</Label>
             <Input
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
@@ -343,23 +344,23 @@ export function MigratePanel() {
             />
           </div>
           <div className="space-y-2">
-            <Label>PostgreSQL image override (optional)</Label>
+            <Label>{t("migrate.pgOverride")}</Label>
             <Input
               value={pgVersion}
               onChange={(e) => setPgVersion(e.target.value)}
-              placeholder="e.g. 16.11-alpine"
+              placeholder={t("migrate.pgPlaceholder")}
               className="font-mono text-sm"
             />
           </div>
           {fromVer && toVer && fromVer === toVer && (
             <p className="text-sm text-red-500">
-              Source and target must be different versions.
+              {t("migrate.sourceTargetMustDiffer")}
             </p>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowCreate(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleCreate}
@@ -370,22 +371,21 @@ export function MigratePanel() {
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            Create
+            {t("common.create")}
           </Button>
         </DialogFooter>
       </Dialog>
 
       <Dialog open={!!removeTarget} onClose={() => setRemoveTarget(null)}>
         <DialogHeader>
-          <DialogTitle>Remove "{removeTarget}"?</DialogTitle>
+          <DialogTitle>{t("migrate.removeConfirmTitle", { name: removeTarget ?? "" })}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          This removes the migration group definition. Does not stop any
-          containers or delete data.
+          {t("migrate.removeConfirmText")}
         </p>
         <DialogFooter>
           <Button variant="outline" onClick={() => setRemoveTarget(null)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -393,7 +393,7 @@ export function MigratePanel() {
             disabled={busy}
           >
             <Trash2 className="h-4 w-4" />
-            Remove
+            {t("common.remove")}
           </Button>
         </DialogFooter>
       </Dialog>

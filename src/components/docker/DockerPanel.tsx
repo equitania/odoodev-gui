@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { usePolling } from "../../hooks/usePolling";
 import { useDockerLogs } from "../../hooks/useDockerLogs";
@@ -20,6 +21,7 @@ import type {
 type PanelMode = "overview" | "logs" | "bench";
 
 export function DockerPanel() {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [runtimeInfo, setRuntimeInfo] = useState<RuntimeInfo | null>(null);
   const [containers, setContainers] = useState<ContainerInfo[]>([]);
@@ -150,7 +152,7 @@ export function DockerPanel() {
   if (!versions) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        Loading...
+        {t("common.loading")}
       </div>
     );
   }
@@ -177,7 +179,7 @@ export function DockerPanel() {
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Docker / Containers</h1>
+          <h1 className="text-2xl font-semibold">{t("docker.title")}</h1>
           <div className="flex gap-1">
             {(["overview", "logs", "bench"] as PanelMode[]).map((m) => (
               <button
@@ -189,7 +191,7 @@ export function DockerPanel() {
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
-                {m === "overview" ? "Overview" : m === "logs" ? "Logs" : "Benchmark"}
+                {m === "overview" ? t("docker.overview") : m === "logs" ? t("docker.logs") : t("docker.benchmark")}
               </button>
             ))}
           </div>

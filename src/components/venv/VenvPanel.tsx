@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { usePolling } from "../../hooks/usePolling";
 import { useVenvSetup } from "../../hooks/useVenvSetup";
@@ -11,6 +12,7 @@ import { Button } from "../ui/button";
 import type { VersionInfo, VenvStatus } from "../../types";
 
 export function VenvPanel() {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [activeVersions, setActiveVersions] = useState<string[]>([]);
   const [venvStatuses, setVenvStatuses] = useState<Record<string, VenvStatus>>({});
@@ -88,7 +90,7 @@ export function VenvPanel() {
   if (!versions) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        Loading...
+        {t("common.loading")}
       </div>
     );
   }
@@ -99,14 +101,13 @@ export function VenvPanel() {
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Virtual Environments</h1>
+          <h1 className="text-2xl font-semibold">{t("venv.title")}</h1>
           <Button size="sm" variant="outline" onClick={refreshAll}>
-            Refresh All
+            {t("common.refreshAll")}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          Manage Python virtual environments for each Odoo version. UV creates and
-          installs requirements.txt automatically.
+          {t("venv.description")}
         </p>
       </div>
 
@@ -143,21 +144,20 @@ export function VenvPanel() {
 
       <Dialog open={!!removeDialog} onClose={() => setRemoveDialog(null)}>
         <DialogHeader>
-          <DialogTitle>Remove venv for v{removeDialog}?</DialogTitle>
+          <DialogTitle>{t("venv.removeConfirmTitle", { version: removeDialog ?? "" })}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          This will delete the virtual environment directory and all installed packages.
-          The venv can be recreated with "Setup" at any time.
+          {t("venv.removeConfirmText")}
         </p>
         <DialogFooter>
           <Button variant="outline" onClick={() => setRemoveDialog(null)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
             onClick={() => removeDialog && handleRemove(removeDialog)}
           >
-            Remove
+            {t("common.remove")}
           </Button>
         </DialogFooter>
       </Dialog>

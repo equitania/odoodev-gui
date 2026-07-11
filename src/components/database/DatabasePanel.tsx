@@ -3,6 +3,7 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Select } from "../ui/select";
 import { Input } from "../ui/input";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -15,6 +16,7 @@ import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Lo
 import { cn } from "../../lib/utils";
 
 export function DatabasePanel({ preselectVersion }: { preselectVersion: string | null }) {
+  const { t } = useTranslation();
   const runtime = useAppStore((s) => s.runtime);
   const [versions, setVersions] = useState<VersionsResponse | null>(null);
   const [versionKeys, setVersionKeys] = useState<string[]>([]);
@@ -180,7 +182,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Databases</h1>
+        <h1 className="text-2xl font-semibold">{t("database.title")}</h1>
         <div className="flex items-center gap-2">
           <Select value={selectedVersion} onChange={(e) => setSelectedVersion(e.target.value)} className="w-32">
             {versionKeys.map((k) => (

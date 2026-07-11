@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { useInitProgress } from "../../hooks/useInitProgress";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -18,6 +19,7 @@ import type { VersionInfo } from "../../types";
 type Mode = "init" | "setup";
 
 export function InitPanel() {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [mode, setMode] = useState<Mode>("init");
   const [selectedVersion, setSelectedVersion] = useState<string>("");
@@ -65,15 +67,15 @@ export function InitPanel() {
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
-        <h1 className="text-2xl font-semibold">Init Wizard</h1>
+        <h1 className="text-2xl font-semibold">{t("init.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Initialize Odoo development environments or configure odoodev settings.
+          {t("init.description")}
         </p>
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-6">
         <div className="space-y-2">
-          <Label>Mode</Label>
+          <Label>{t("init.mode")}</Label>
           <div className="flex gap-2">
             <button
               onClick={() => setMode("init")}
@@ -84,7 +86,7 @@ export function InitPanel() {
               }`}
             >
               <Rocket className="h-4 w-4" />
-              Init Version
+              {t("init.initVersion")}
             </button>
             <button
               onClick={() => setMode("setup")}
@@ -95,7 +97,7 @@ export function InitPanel() {
               }`}
             >
               <Settings2 className="h-4 w-4" />
-              Setup Config
+              {t("init.setupConfig")}
             </button>
           </div>
         </div>
@@ -134,16 +136,16 @@ export function InitPanel() {
             </div>
 
             <div className="space-y-3">
-              <Label>Options</Label>
+              <Label>{t("init.options")}</Label>
               <label className="flex items-center gap-3 cursor-pointer">
                 <Checkbox
                   checked={skipRepos}
                   onChange={(v) => setSkipRepos(v)}
                 />
                 <div>
-                  <div className="text-sm font-medium">Skip repository cloning</div>
+                  <div className="text-sm font-medium">{t("init.skipRepos")}</div>
                   <div className="text-xs text-muted-foreground">
-                    Don't run git clone — use existing repos or clone later
+                    {t("init.skipReposDesc")}
                   </div>
                 </div>
               </label>
@@ -153,9 +155,9 @@ export function InitPanel() {
                   onChange={(v) => setSkipDocker(v)}
                 />
                 <div>
-                  <div className="text-sm font-medium">Skip Docker startup</div>
+                  <div className="text-sm font-medium">{t("init.skipDocker")}</div>
                   <div className="text-xs text-muted-foreground">
-                    Don't start PostgreSQL container — start it manually later
+                    {t("init.skipDockerDesc")}
                   </div>
                 </div>
               </label>
@@ -165,11 +167,10 @@ export function InitPanel() {
 
         {mode === "setup" && (
           <div className="space-y-3">
-            <Label>Options</Label>
+            <Label>{t("init.options")}</Label>
             <div className="rounded-md border border-border p-3 space-y-2">
               <div className="text-sm">
-                Creates/updates <span className="font-mono text-xs">~/.config/odoodev/config.yaml</span>
-                with base directory, active versions, and database credentials.
+                {t("init.configPath")}
               </div>
             </div>
             <label className="flex items-center gap-3 cursor-pointer">
@@ -178,9 +179,9 @@ export function InitPanel() {
                 onChange={(v) => setResetConfig(v)}
               />
               <div>
-                <div className="text-sm font-medium">Reset to defaults</div>
+                <div className="text-sm font-medium">{t("init.resetToDefaults")}</div>
                 <div className="text-xs text-muted-foreground">
-                  Overwrite existing config with default values
+                  {t("init.resetToDefaultsDesc")}
                 </div>
               </div>
             </label>
@@ -199,7 +200,7 @@ export function InitPanel() {
             ) : (
               <Settings2 className="h-4 w-4" />
             )}
-            {mode === "init" ? `Initialize v${selectedVersion}` : resetConfig ? "Reset Config" : "Run Setup"}
+            {mode === "init" ? `Initialize v${selectedVersion}` : resetConfig ? t("init.resetConfig") : t("init.runSetup")}
           </Button>
         </div>
 

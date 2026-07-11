@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { useReposProgress } from "../../hooks/useReposProgress";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -7,6 +8,7 @@ import { ReposProgress } from "./ReposProgress";
 import type { VersionInfo } from "../../types";
 
 export function ReposPanel() {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [activeVersions, setActiveVersions] = useState<string[]>([]);
   const [busyVersion, setBusyVersion] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function ReposPanel() {
   if (!versions) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        Loading...
+        {t("common.loading")}
       </div>
     );
   }
@@ -61,11 +63,10 @@ export function ReposPanel() {
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Repositories</h1>
+          <h1 className="text-2xl font-semibold">{t("repos.title")}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Clone/update Git repositories and regenerate Odoo configuration from
-          repos.yaml. "Pull" updates existing repos without cloning.
+          {t("repos.description")}
         </p>
       </div>
 

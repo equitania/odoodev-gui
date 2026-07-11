@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { usePlaybookRun } from "../../hooks/usePlaybookRun";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -12,6 +13,7 @@ import { Play, FileText, Loader2, FlaskConical, Plus, X } from "lucide-react";
 import type { PlaybookInfo, VersionInfo } from "../../types";
 
 export function PlaybookPanel() {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [validSteps, setValidSteps] = useState<string[]>([]);
   const [playbooks, setPlaybooks] = useState<PlaybookInfo[]>([]);
@@ -62,7 +64,7 @@ export function PlaybookPanel() {
   const handleRun = async (dryRun: boolean) => {
     if (!selectedPlaybook && selectedSteps.length === 0) return;
     setShowResults(true);
-    const label = dryRun ? "Dry running playbook..." : "Running playbook...";
+    const label = dryRun ? t("playbook.dryRunning") : t("playbook.running");
     const tid = toastLoading(label);
     const success = await playbookRun.start(
       selectedPlaybook,
@@ -72,9 +74,9 @@ export function PlaybookPanel() {
       dryRun,
     );
     if (success) {
-      toastUpdate(tid, "success", dryRun ? "Dry run completed" : "Playbook completed");
+      toastUpdate(tid, "success", dryRun ? t("playbook.dryRunComplete") : t("playbook.playbookComplete"));
     } else {
-      toastUpdate(tid, "error", dryRun ? "Dry run failed" : "Playbook failed", "Check output below");
+      toastUpdate(tid, "error", dryRun ? t("playbook.dryRunFailed") : t("playbook.playbookFailed"), "Check output below");
     }
   };
 
@@ -83,17 +85,16 @@ export function PlaybookPanel() {
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
-        <h1 className="text-2xl font-semibold">Playbook Runner</h1>
+        <h1 className="text-2xl font-semibold">{t("playbook.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Execute YAML playbooks or build inline step sequences. NDJSON events
-          stream live per step.
+          {t("playbook.description")}
         </p>
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {playbooks.length > 0 && (
           <div className="space-y-2">
-            <Label>Saved Playbooks</Label>
+            <Label>{t("playbook.savedPlaybooks")}</Label>
             <div className="flex flex-wrap gap-2">
               {playbooks.map((pb) => (
                 <button
@@ -141,14 +142,14 @@ export function PlaybookPanel() {
         {!selectedPlaybook && validSteps.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Inline Steps ({selectedSteps.length} selected)</Label>
+              <Label>{t("playbook.inlineSteps", { count: selectedSteps.length })}</Label>
               {selectedSteps.length > 0 && (
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => setSelectedSteps([])}
                 >
-                  Clear
+                  {t("playbook.clear")}
                 </Button>
               )}
             </div>
@@ -187,18 +188,18 @@ export function PlaybookPanel() {
         )}
 
         <div className="space-y-2">
-          <Label>Variables (-D KEY=VALUE)</Label>
+          <Label>{t("playbook.variables")}</Label>
           <div className="flex gap-2">
             <Input
               value={varInput}
               onChange={(e) => setVarInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addVar()}
-              placeholder="name=v18_demo"
+              placeholder={t("playbook.varPlaceholder")}
               className="font-mono text-sm"
             />
             <Button size="sm" variant="outline" onClick={addVar}>
               <Plus className="h-3.5 w-3.5" />
-              Add
+              {t("playbook.add")}
             </Button>
           </div>
           {vars.length > 0 && (
@@ -228,7 +229,7 @@ export function PlaybookPanel() {
             ) : (
               <Play className="h-4 w-4" />
             )}
-            Run
+            {t("playbook.run")}
           </Button>
           <Button
             variant="outline"
@@ -236,7 +237,7 @@ export function PlaybookPanel() {
             disabled={!canRun || playbookRun.running}
           >
             <FlaskConical className="h-4 w-4" />
-            Dry Run
+            {t("playbook.dryRun")}
           </Button>
         </div>
 

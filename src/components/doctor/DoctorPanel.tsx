@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { Button } from "../ui/button";
@@ -110,13 +111,14 @@ function DoctorResultCard({ result }: { result: DoctorResult }) {
 }
 
 export function DoctorPanel() {
+  const { t } = useTranslation();
   const [results, setResults] = useState<DoctorResult[]>([]);
   const [generalResult, setGeneralResult] = useState<DoctorResult | null>(null);
   const [running, setRunning] = useState(false);
 
   const runDoctor = async () => {
     setRunning(true);
-    const tid = toastLoading("Running doctor checks...");
+    const tid = toastLoading(t("doctor.runningChecks"));
     try {
       const [general, allVersions] = await Promise.all([
         invokeCmd<DoctorResult>("doctor_general"),
@@ -126,12 +128,12 @@ export function DoctorPanel() {
       setResults(allVersions);
       const allOk = general.all_ok && allVersions.every((r) => r.all_ok);
       if (allOk) {
-        toastUpdate(tid, "success", "All health checks passed");
+        toastUpdate(tid, "success", t("doctor.allPassed"));
       } else {
-        toastUpdate(tid, "error", "Some checks failed", "See details below");
+        toastUpdate(tid, "error", t("doctor.someFailed"), "See details below");
       }
     } catch (e) {
-      toastUpdate(tid, "error", "Doctor run failed", String(e));
+      toastUpdate(tid, "error", t("doctor.doctorFailed"), String(e));
     } finally {
       setRunning(false);
     }
@@ -153,7 +155,7 @@ export function DoctorPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Stethoscope className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-semibold">Health Check</h1>
+            <h1 className="text-2xl font-semibold">{t("doctor.title")}</h1>
           </div>
           <Button
             variant="outline"
@@ -165,12 +167,11 @@ export function DoctorPanel() {
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            Re-run
+            {t("doctor.rerun")}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          Checks prerequisites (uv, Docker/Apple Container, PostgreSQL, Node.js,
-          system libs) and version-specific PostgreSQL port + venv packages.
+          {t("doctor.description")}
         </p>
       </div>
 
@@ -191,7 +192,7 @@ export function DoctorPanel() {
 
         {!running && results.length === 0 && !generalResult && (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-sm">No results yet. Click "Re-run" to start.</p>
+            <p className="text-sm">{t("doctor.noResults")}</p>
           </div>
         )}
       </div>

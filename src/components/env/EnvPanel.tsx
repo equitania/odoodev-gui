@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { useEnvSetup } from "../../hooks/useEnvSetup";
 import { usePolling } from "../../hooks/usePolling";
@@ -11,6 +12,7 @@ import { POLL_INTERVALS } from "../../lib/constants";
 import type { EnvCheckResult, VersionInfo } from "../../types";
 
 export function EnvPanel() {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [activeVersions, setActiveVersions] = useState<string[]>([]);
   const [envDirs, setEnvDirs] = useState<Record<string, string>>({});
@@ -83,7 +85,7 @@ export function EnvPanel() {
   if (!versions) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        Loading...
+        {t("common.loading")}
       </div>
     );
   }
@@ -93,10 +95,9 @@ export function EnvPanel() {
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
-        <h1 className="text-2xl font-semibold">Environment Files</h1>
+        <h1 className="text-2xl font-semibold">{t("env.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Manage .env files for each Odoo version. Contains ports, PostgreSQL
-          credentials, and platform configuration.
+          {t("env.description")}
         </p>
       </div>
 
@@ -158,14 +159,14 @@ export function EnvPanel() {
 
       <Dialog open={!!showDialog} onClose={() => setShowDialog(null)}>
         <DialogHeader>
-          <DialogTitle>.env for v{showDialog?.version}</DialogTitle>
+          <DialogTitle>{t("env.envDialogTitle", { version: showDialog?.version ?? "" })}</DialogTitle>
         </DialogHeader>
         <pre className="max-h-96 overflow-auto rounded-md bg-black/90 p-4 font-mono text-xs text-green-400">
           {showDialog?.content}
         </pre>
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowDialog(null)}>
-            Close
+            {t("common.close")}
           </Button>
         </DialogFooter>
       </Dialog>
