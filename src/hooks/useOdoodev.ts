@@ -11,6 +11,7 @@ import type {
   OdoodevInfoDto,
   OpResult,
   PlatformInfo,
+  PlaybookInfo,
   RestoreArgs,
   RestoreResult,
   RuntimeInfo,
@@ -79,5 +80,15 @@ export function useOdoodev() {
     envDir: (version: string) => invokeCmd<string>("env_dir", { version }),
     envShow: (version: string) => invokeCmd<string>("env_show", { version }),
     envSetup: (version: string) => invokeCmd<OpResult>("env_setup", { version }),
+    playbookList: () => invokeCmd<PlaybookInfo[]>("playbook_list"),
+    playbookValidSteps: () => invokeCmd<string[]>("playbook_valid_steps"),
+    playbookRun: (
+      playbook: string | null,
+      steps: string[],
+      version: string | null,
+      vars: string[],
+      dryRun: boolean,
+    ) =>
+      invokeCmd<OpResult>("playbook_run", { playbook, steps, version, vars, dry_run: dryRun }),
   };
 }

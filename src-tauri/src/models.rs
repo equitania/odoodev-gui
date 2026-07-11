@@ -56,6 +56,17 @@ pub struct PlaybookEvent {
     pub version: Option<String>,
     pub steps_ok: Option<u32>,
     pub steps_error: Option<u32>,
+    pub total_duration_ms: Option<u64>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PlaybookInfo {
+    pub name: String,
+    pub path: String,
+    pub description: Option<String>,
+    pub version: Option<String>,
+    pub steps: Option<Vec<String>>,
+    pub vars: Option<serde_json::Value>,
 }
 
 // === Docker status (Rust-native check) ===

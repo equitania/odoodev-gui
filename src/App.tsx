@@ -11,6 +11,7 @@ import { DockerPanel } from "./components/docker/DockerPanel";
 import { VenvPanel } from "./components/venv/VenvPanel";
 import { ReposPanel } from "./components/repos/ReposPanel";
 import { EnvPanel } from "./components/env/EnvPanel";
+import { PlaybookPanel } from "./components/playbook/PlaybookPanel";
 import { useAppStore } from "./store/appStore";
 import type { ViewKey } from "./types";
 
@@ -55,6 +56,7 @@ export default function App() {
           {activeView === "venv" && <VenvPanel />}
           {activeView === "repos" && <ReposPanel />}
           {activeView === "env" && <EnvPanel />}
+          {activeView === "playbook" && <PlaybookPanel />}
           {activeView === "settings" && <SettingsPanel />}
         </main>
       </div>

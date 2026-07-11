@@ -120,6 +120,32 @@ export interface EnvCheckResult {
   message: string;
 }
 
+export interface PlaybookEvent {
+  event: string;
+  name?: string;
+  command?: string;
+  status?: string;
+  message?: string;
+  exit_code?: number;
+  duration_ms?: number;
+  details?: Record<string, unknown>;
+  playbook?: string;
+  version?: string;
+  dry_run?: boolean;
+  steps_ok?: number;
+  steps_error?: number;
+  total_duration_ms?: number;
+}
+
+export interface PlaybookInfo {
+  name: string;
+  path: string;
+  description?: string;
+  version?: string;
+  steps?: string[];
+  vars?: Record<string, unknown>;
+}
+
 export interface DashboardStatus {
   versions: VersionsResponse;
   active_versions: string[];
@@ -185,6 +211,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";

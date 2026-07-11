@@ -1,6 +1,7 @@
 pub mod database;
 pub mod docker;
 pub mod env;
+pub mod playbook;
 pub mod repos;
 pub mod self_update;
 pub mod server;

@@ -11,6 +11,7 @@ mod server_manager;
 use commands::database;
 use commands::docker;
 use commands::env;
+use commands::playbook;
 use commands::repos;
 use commands::self_update;
 use commands::server;
@@ -80,6 +81,10 @@ pub fn run() {
             env::env_dir,
             env::env_show,
             env::env_setup,
+            // playbook
+            playbook::playbook_list,
+            playbook::playbook_valid_steps,
+            playbook::playbook_run,
             // runtime detection
             versions::get_runtime,
             versions::get_runtime_config,
