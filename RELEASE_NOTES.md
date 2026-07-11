@@ -1,5 +1,27 @@
 # Release Notes
 
+## Version 1.1.1 (11.07.2026)
+
+First release with built-in cross-platform auto-update.
+
+### Added
+- **Auto-update:** the app now updates itself on new releases via the Tauri
+  updater. It checks on launch and offers a one-click update under
+  **Settings → Check for Updates**; every update is cryptographically verified
+  (Ed25519/minisign) before it installs.
+- **Cross-platform release pipeline:** GitHub Actions + `tauri-action` builds
+  macOS/Windows/Linux installers on each `vX.Y.Z` tag and publishes them (with
+  `latest.json`) to GitHub Releases. macOS builds are notarized; Windows is
+  currently unsigned (SmartScreen prompt on first install).
+- README **Download & Install** section with per-platform instructions.
+
+### Fixed
+- Corrected the copyright year (2025 → 2026) across app metadata, locales and docs.
+
+### Internal
+- CI actions moved to the Node 24 runtime; lint is warning-free; the CI build
+  job uses `tauri build --no-bundle` as a compile check.
+
 ## Version 1.1.0 (11.07.2026)
 
 Audit-driven hardening and dependency-modernization release. No user-facing
