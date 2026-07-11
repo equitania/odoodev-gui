@@ -164,7 +164,7 @@ export function SettingsPanel() {
           <p>{t("settings.copyright")}</p>
           <p>{t("settings.license")}</p>
           <button
-            onClick={() => invokeCmd("open_external", { url: "https://github.com/equitania/odoodev-gui" }).catch(reportError("Could not open link"))}
+            onClick={() => invokeCmd("open_external", { url: "https://github.com/eqms/odoodev-gui" }).catch(reportError("Could not open link"))}
             className="text-blue-500 hover:underline"
           >
             {t("settings.githubLink")}

@@ -20,7 +20,7 @@ manages `uv` (installs if missing) and `odoodev` (installs / upgrades via `uv to
 ## Download & Install
 
 Grab the latest installer for your platform from the
-**[Releases page](https://github.com/equitania/odoodev-gui/releases/latest)**:
+**[Releases page](https://github.com/eqms/odoodev-gui/releases/latest)**:
 
 | Platform | File | Install |
 |----------|------|---------|

@@ -46,4 +46,7 @@ jobs:
         with:
           workspaces: src-tauri
       - run: pnpm install --frozen-lockfile || pnpm install
-      - run: pnpm tauri build
+      # --no-bundle: compile-check only. Full bundling would try to sign the
+      # updater artifacts (createUpdaterArtifacts) and fail without the signing
+      # key; producing signed installers is release.yml's job, not the CI check.
+      - run: pnpm tauri build --no-bundle
