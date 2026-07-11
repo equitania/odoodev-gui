@@ -69,6 +69,20 @@ pub fn find_odoodev() -> PathBuf {
     find_binary("odoodev")
 }
 
+/// Reject a user-supplied value that could be misparsed as a flag by the
+/// downstream odoodev (Click) parser. Args are always passed as an argv vector,
+/// so this is not a shell-injection guard — it is defense-in-depth against
+/// argument injection. Every legitimate value here (versions, DB names, module
+/// lists, file paths) never starts with '-', so a leading '-' is rejected early
+/// with a clear message instead of producing a confusing downstream CLI error.
+pub fn reject_flag_like(field: &str, value: &str) -> Result<(), String> {
+    if value.starts_with('-') {
+        Err(format!("Invalid {field}: value must not start with '-'"))
+    } else {
+        Ok(())
+    }
+}
+
 #[allow(dead_code)]
 pub fn find_uv() -> PathBuf {
     find_binary("uv")
@@ -165,6 +179,25 @@ pub async fn run_odoodev_spawn(args: &[&str]) -> Result<Child, String> {
         .kill_on_drop(false);
     cmd.spawn()
         .map_err(|e| format!("Failed to spawn odoodev: {e}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::reject_flag_like;
+
+    #[test]
+    fn accepts_normal_values() {
+        assert!(reject_flag_like("version", "19").is_ok());
+        assert!(reject_flag_like("name", "v19_exam").is_ok());
+        assert!(reject_flag_like("backup_file", "/home/user/dump.zip").is_ok());
+        assert!(reject_flag_like("modules", "sale,stock").is_ok());
+    }
+
+    #[test]
+    fn rejects_flag_like_values() {
+        assert!(reject_flag_like("name", "--drop").is_err());
+        assert!(reject_flag_like("version", "-d").is_err());
+    }
 }
 
 pub async fn get_odoodev_version() -> Option<String> {

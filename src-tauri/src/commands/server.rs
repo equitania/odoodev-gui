@@ -123,6 +123,21 @@ pub async fn start_server(
         return Err(format!("Server {} is already running", args.version));
     }
 
+    odoodev::reject_flag_like("version", &args.version)?;
+    for (field, val) in [
+        ("database", &args.database),
+        ("update_modules", &args.update_modules),
+        ("install_modules", &args.install_modules),
+        ("host", &args.host),
+        ("load_language", &args.load_language),
+        ("config_path", &args.config_path),
+        ("runtime", &args.runtime),
+    ] {
+        if let Some(v) = val {
+            odoodev::reject_flag_like(field, v)?;
+        }
+    }
+
     let port = port_for_version(&args.version);
     let cli_args = build_start_args(&args);
     let arg_refs: Vec<&str> = cli_args.iter().map(|s| s.as_str()).collect();

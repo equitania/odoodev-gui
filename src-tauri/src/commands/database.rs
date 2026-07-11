@@ -26,6 +26,13 @@ pub struct BackupArgs {
 
 #[tauri::command]
 pub async fn backup_db(args: BackupArgs, window: tauri::Window) -> Result<BackupResult, String> {
+    odoodev::reject_flag_like("version", &args.version)?;
+    odoodev::reject_flag_like("name", &args.name)?;
+    if let Some(dir) = &args.output_dir {
+        if !dir.is_empty() {
+            odoodev::reject_flag_like("output_dir", dir)?;
+        }
+    }
     let mut cli: Vec<String> = vec![
         "db".into(),
         "backup".into(),
@@ -140,6 +147,14 @@ pub struct RestoreArgs {
 
 #[tauri::command]
 pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<RestoreResult, String> {
+    odoodev::reject_flag_like("version", &args.version)?;
+    odoodev::reject_flag_like("name", &args.name)?;
+    odoodev::reject_flag_like("backup_file", &args.backup_file)?;
+    if let Some(m) = &args.uninstall_modules {
+        if !m.is_empty() {
+            odoodev::reject_flag_like("uninstall_modules", m)?;
+        }
+    }
     let mut cli: Vec<String> = vec![
         "db".into(),
         "restore".into(),
@@ -262,6 +277,11 @@ pub async fn drop_db(
     name: String,
     #[allow(unused_variables)] terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
+    for (f, v) in [("version", &version), ("name", &name)] {
+        if let Err(e) = odoodev::reject_flag_like(f, v) {
+            return Ok(OpResult { success: false, error: Some(e) });
+        }
+    }
     let args = vec!["db", "drop", &version, "-n", &name, "-y"];
     match odoodev::run_odoodev_text(&args).await {
         Ok(_) => Ok(OpResult {
@@ -282,6 +302,11 @@ pub async fn copy_db(
     dst: String,
     #[allow(unused_variables)] terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
+    for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
+        if let Err(e) = odoodev::reject_flag_like(f, v) {
+            return Ok(OpResult { success: false, error: Some(e) });
+        }
+    }
     let args = vec!["db", "copy", &version, "-s", &src, "-d", &dst, "-y"];
     match odoodev::run_odoodev_text(&args).await {
         Ok(_) => Ok(OpResult {
@@ -302,6 +327,11 @@ pub async fn rename_db(
     dst: String,
     #[allow(unused_variables)] terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
+    for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
+        if let Err(e) = odoodev::reject_flag_like(f, v) {
+            return Ok(OpResult { success: false, error: Some(e) });
+        }
+    }
     let args = vec!["db", "rename", &version, "-s", &src, "-d", &dst, "-y"];
     match odoodev::run_odoodev_text(&args).await {
         Ok(_) => Ok(OpResult {
