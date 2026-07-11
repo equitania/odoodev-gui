@@ -139,6 +139,20 @@ export interface MigrationStatus {
   filestore: string | null;
 }
 
+export interface DoctorCheck {
+  name: string;
+  status: string;
+  message: string;
+}
+
+export interface DoctorResult {
+  version: string | null;
+  checks: DoctorCheck[];
+  overall: string;
+  all_ok: boolean;
+  raw_output: string;
+}
+
 export interface PlaybookEvent {
   event: string;
   name?: string;
@@ -230,6 +244,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "init" | "migrate" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "init" | "migrate" | "doctor" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";

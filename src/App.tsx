@@ -14,6 +14,7 @@ import { EnvPanel } from "./components/env/EnvPanel";
 import { PlaybookPanel } from "./components/playbook/PlaybookPanel";
 import { InitPanel } from "./components/init/InitPanel";
 import { MigratePanel } from "./components/migrate/MigratePanel";
+import { DoctorPanel } from "./components/doctor/DoctorPanel";
 import { useAppStore } from "./store/appStore";
 import type { ViewKey } from "./types";
 
@@ -61,6 +62,7 @@ export default function App() {
           {activeView === "playbook" && <PlaybookPanel />}
           {activeView === "init" && <InitPanel />}
           {activeView === "migrate" && <MigratePanel />}
+          {activeView === "doctor" && <DoctorPanel />}
           {activeView === "settings" && <SettingsPanel />}
         </main>
       </div>

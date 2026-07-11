@@ -9,6 +9,7 @@ mod pypi;
 mod server_manager;
 
 use commands::database;
+use commands::doctor;
 use commands::docker;
 use commands::env;
 use commands::init_cmd;
@@ -97,6 +98,10 @@ pub fn run() {
             migrate::migrate_activate,
             migrate::migrate_deactivate,
             migrate::migrate_remove,
+            // doctor
+            doctor::doctor_general,
+            doctor::doctor_run,
+            doctor::doctor_all_versions,
             // runtime detection
             versions::get_runtime,
             versions::get_runtime_config,

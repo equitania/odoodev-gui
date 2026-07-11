@@ -197,3 +197,19 @@ pub struct MigrationStatus {
     pub shared_port: Option<u16>,
     pub filestore: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DoctorCheck {
+    pub name: String,
+    pub status: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DoctorResult {
+    pub version: Option<String>,
+    pub checks: Vec<DoctorCheck>,
+    pub overall: String,
+    pub all_ok: bool,
+    pub raw_output: String,
+}

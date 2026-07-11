@@ -1,4 +1,5 @@
 pub mod database;
+pub mod doctor;
 pub mod docker;
 pub mod env;
 pub mod init_cmd;

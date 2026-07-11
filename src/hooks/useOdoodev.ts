@@ -9,6 +9,7 @@ import type {
   EnvCheckResult,
   MigrationGroup,
   MigrationStatus,
+  DoctorResult,
   OdooLogEntry,
   OdoodevInfoDto,
   OpResult,
@@ -103,5 +104,8 @@ export function useOdoodev() {
     migrateActivate: (name: string) => invokeCmd<OpResult>("migrate_activate", { name }),
     migrateDeactivate: () => invokeCmd<OpResult>("migrate_deactivate"),
     migrateRemove: (name: string) => invokeCmd<OpResult>("migrate_remove", { name }),
+    doctorGeneral: () => invokeCmd<DoctorResult>("doctor_general"),
+    doctorRun: (version: string) => invokeCmd<DoctorResult>("doctor_run", { version }),
+    doctorAllVersions: () => invokeCmd<DoctorResult[]>("doctor_all_versions"),
   };
 }
