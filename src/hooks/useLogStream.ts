@@ -11,7 +11,7 @@ export function useLogStream(version: string) {
 
   useEffect(() => {
     initServerTab(version);
-    let unlistens: UnlistenFn[] = [];
+    const unlistens: UnlistenFn[] = [];
 
     (async () => {
       const u1 = await listen<OdooLogEntry>(`odoodev-log:${version}`, (event) => {

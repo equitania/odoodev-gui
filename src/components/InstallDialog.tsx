@@ -22,7 +22,7 @@ export function InstallDialog() {
     setError(null);
     try {
       if (needsUv) {
-        await useAppStore.getState().checkUvStatus === null;
+        await useAppStore.getState().checkUvStatus();
       }
       await installOdoodev();
       await checkOdoodevStatus();

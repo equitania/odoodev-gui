@@ -17,5 +17,12 @@ pub fn get_platform_info() -> PlatformInfo {
 
 #[tauri::command]
 pub async fn open_external(url: String) -> Result<(), String> {
+    // Only allow web schemes. Calling the opener library directly bypasses the
+    // plugin's built-in scheme allowlist, so an unvalidated URL could open
+    // file:// paths or arbitrary OS URI handlers. Enforce the allowlist here.
+    let allowed = url.starts_with("https://") || url.starts_with("http://");
+    if !allowed {
+        return Err(format!("Refused to open URL with disallowed scheme: {url}"));
+    }
     tauri_plugin_opener::open_url(url, None::<&str>).map_err(|e| format!("Failed to open: {e}"))
 }

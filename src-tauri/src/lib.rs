@@ -28,7 +28,6 @@ pub fn run() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .manage(ServerManager::new())
         .invoke_handler(tauri::generate_handler![
