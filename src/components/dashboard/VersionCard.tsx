@@ -7,7 +7,7 @@ import { invokeCmd } from "../../lib/tauri";
 import { VERSION_COLORS, VERSION_BG, POLL_INTERVALS } from "../../lib/constants";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { DockerStatus, ServerStatus, VenvStatus, VersionInfo, ViewKey } from "../../types";
-import { Rocket, Database as DbIcon, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
+import { Rocket, Database as DbIcon, ArrowUp, ArrowDown, Loader2, HardDrive } from "lucide-react";
 
 export function VersionCard({
   version,
@@ -162,14 +162,16 @@ export function VersionCard({
             Databases
           </Button>
           {dockerRunning ? (
-            <Button size="sm" variant="outline" onClick={handleDockerDown} disabled={!active || dockerBusy}>
+            <Button size="sm" variant="outline" onClick={handleDockerDown} disabled={!active || dockerBusy} title="Stop PostgreSQL container">
               {dockerBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDown className="h-3.5 w-3.5" />}
-              {dockerRuntime === "apple" ? "Stop" : "Docker Down"}
+              <HardDrive className="h-3.5 w-3.5" />
+              {dockerRuntime === "apple" ? "Stop PG" : "PG Down"}
             </Button>
           ) : (
-            <Button size="sm" variant="outline" onClick={handleDockerUp} disabled={!active || dockerBusy}>
+            <Button size="sm" variant="outline" onClick={handleDockerUp} disabled={!active || dockerBusy} title="Start PostgreSQL container">
               {dockerBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5" />}
-              {dockerRuntime === "apple" ? "Start" : "Docker Up"}
+              <HardDrive className="h-3.5 w-3.5" />
+              {dockerRuntime === "apple" ? "Start PG" : "PG Up"}
             </Button>
           )}
         </div>
