@@ -323,6 +323,15 @@
     "license": "License: AGPL-3.0",
     "githubLink": "GitHub"
   },
+  "gui": {
+    "updateAvailable": "GUI update available",
+    "updateHint": "Settings → Check for updates",
+    "updateCheckFailed": "Update check failed",
+    "upToDate": "odoodev-gui is up to date",
+    "installing": "Installing GUI update",
+    "installed": "Updated — restarting…",
+    "updateFailed": "GUI update failed"
+  },
   "install": {
     "odoodevNotInstalled": "odoodev is not installed",
     "odoodevNotInstalledText": "odoodev is the CLI tool that this GUI controls. It will be installed via uv (Python package manager).",

@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { useAppStore } from "../../store/appStore";
 import { invokeCmd } from "../../lib/tauri";
 import { logError, reportError } from "../../lib/errors";
+import { runAppUpdate } from "../../lib/appUpdate";
 import { setLanguage } from "../../i18n";
 
 export function SettingsPanel() {
@@ -20,6 +21,7 @@ export function SettingsPanel() {
 
   const [appVersion, setAppVersion] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [checkingGuiUpdate, setCheckingGuiUpdate] = useState(false);
   const [lang, setLang] = useState(i18n.language || "en");
 
   useEffect(() => {
@@ -44,6 +46,15 @@ export function SettingsPanel() {
       await installOdoodev();
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleGuiUpdate = async () => {
+    setCheckingGuiUpdate(true);
+    try {
+      await runAppUpdate();
+    } finally {
+      setCheckingGuiUpdate(false);
     }
   };
 
@@ -108,6 +119,9 @@ export function SettingsPanel() {
             <span className="text-muted-foreground">{t("common.version")}</span>
             <span className="font-mono">{appVersion}</span>
           </div>
+          <Button variant="outline" onClick={handleGuiUpdate} disabled={checkingGuiUpdate} className="mt-2">
+            {checkingGuiUpdate ? "…" : t("settings.checkForUpdates")}
+          </Button>
         </CardContent>
       </Card>
 

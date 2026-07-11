@@ -16,6 +16,7 @@ import { InitPanel } from "./components/init/InitPanel";
 import { MigratePanel } from "./components/migrate/MigratePanel";
 import { DoctorPanel } from "./components/doctor/DoctorPanel";
 import { useAppStore } from "./store/appStore";
+import { notifyIfAppUpdate } from "./lib/appUpdate";
 import type { ViewKey } from "./types";
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
       await checkOdoodevStatus();
       useAppStore.setState({ firstRunChecked: true });
       await fetchAllDashboard();
+      void notifyIfAppUpdate();
     })();
   }, [fetchAllDashboard, fetchPlatformAndRuntime, checkUvStatus, checkOdoodevStatus]);
 

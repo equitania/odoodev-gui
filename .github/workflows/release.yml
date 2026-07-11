@@ -33,8 +33,23 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Updater signing (minisign / Ed25519). Required so tauri-action emits the
+          # .sig files and latest.json the auto-updater verifies against the pubkey
+          # in tauri.conf.json. Generate with `pnpm tauri signer generate`.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS code signing + notarization (only consumed on the macOS runner;
+          # ignored on Linux/Windows). Requires an Apple Developer account.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "odoodev-gui ${{ github.ref_name }}"
-          releaseBody: "See the assets below to download for your platform."
-          releaseDraft: true
+          releaseBody: "Download the installer for your platform below. Installed apps update themselves automatically on the next launch."
+          # Must be published (not a draft): the updater resolves latest.json via
+          # the /releases/latest/download/ URL, which ignores drafts.
+          releaseDraft: false
