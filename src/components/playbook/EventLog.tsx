@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Loader2, Terminal, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, Terminal, CircleCheckBig, CircleX, CircleAlert } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
 import type { PlaybookEvent } from "../../types";
@@ -11,9 +11,9 @@ interface EventLogProps {
 }
 
 function statusIcon(status?: string) {
-  if (status === "ok") return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
-  if (status === "error") return <XCircle className="h-3.5 w-3.5 text-red-500" />;
-  if (status === "skipped") return <AlertCircle className="h-3.5 w-3.5 text-yellow-500" />;
+  if (status === "ok") return <CircleCheckBig className="h-3.5 w-3.5 text-green-500" />;
+  if (status === "error") return <CircleX className="h-3.5 w-3.5 text-red-500" />;
+  if (status === "skipped") return <CircleAlert className="h-3.5 w-3.5 text-yellow-500" />;
   return null;
 }
 

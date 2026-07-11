@@ -12,7 +12,7 @@ import {
   Settings2,
   Loader2,
   Terminal,
-  CheckCircle2,
+  CircleCheckBig,
 } from "lucide-react";
 import { VERSION_COLORS, VERSION_BG } from "../../lib/constants";
 import type { VersionInfo } from "../../types";
@@ -216,7 +216,7 @@ export function InitPanel() {
                 {initProgress.running ? (
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 ) : (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <CircleCheckBig className="h-4 w-4 text-green-500" />
                 )}
               </div>
               {!initProgress.running && (

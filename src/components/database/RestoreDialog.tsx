@@ -6,7 +6,7 @@ import { Label } from "../ui/label";
 import { Checkbox } from "../ui/checkbox";
 import type { RestoreArgs } from "../../types";
 import { invokeCmd } from "../../lib/tauri";
-import { AlertTriangle } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 
 export function RestoreDialog({
   open,
@@ -156,7 +156,7 @@ export function RestoreDialog({
               <Checkbox checked={purgeMasterData} onChange={setPurgeMasterData} label="Purge master data (--purge-master-data)" />
               {sanitize && purgeMasterData && (
                 <div className="flex items-start gap-2 rounded-md bg-yellow-500/10 p-2 text-xs text-yellow-600 dark:text-yellow-400">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span>WARNING: This DELETEs customers/vendors, CRM/HR data, messages, attachments. Keeps products, pricelists, users, companies, config.</span>
                 </div>
               )}

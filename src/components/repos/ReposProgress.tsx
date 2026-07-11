@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Loader2, CheckCircle2, Terminal } from "lucide-react";
+import { Loader2, CircleCheckBig, Terminal } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface ReposProgressProps {
@@ -30,7 +30,7 @@ export function ReposProgress({ version, command, lines, running, onClose }: Rep
           {running ? (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <CircleCheckBig className="h-4 w-4 text-green-500" />
           )}
         </div>
         {!running && (

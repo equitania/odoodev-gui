@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Loader2, CheckCircle2, Terminal } from "lucide-react";
+import { Loader2, CircleCheckBig, Terminal } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface SetupProgressProps {
@@ -29,7 +29,7 @@ export function SetupProgress({ version, lines, running, onClose }: SetupProgres
           {running ? (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <CircleCheckBig className="h-4 w-4 text-green-500" />
           )}
         </div>
         {!running && (

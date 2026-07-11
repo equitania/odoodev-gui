@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
+  CircleCheckBig,
+  CircleX,
+  TriangleAlert,
   Loader2,
   FileCog,
   Eye,
@@ -53,17 +53,17 @@ export function EnvCard({
             {checkResult ? (
               complete ? (
                 <Badge variant="success">
-                  <CheckCircle2 className="h-3 w-3" />
+                  <CircleCheckBig className="h-3 w-3" />
                   Complete
                 </Badge>
               ) : exists ? (
                 <Badge variant="warning">
-                  <AlertTriangle className="h-3 w-3" />
+                  <TriangleAlert className="h-3 w-3" />
                   Incomplete
                 </Badge>
               ) : (
                 <Badge variant="neutral">
-                  <XCircle className="h-3 w-3" />
+                  <CircleX className="h-3 w-3" />
                   Missing
                 </Badge>
               )

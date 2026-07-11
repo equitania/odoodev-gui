@@ -7,9 +7,9 @@ import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import {
   Stethoscope,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
+  CircleCheckBig,
+  CircleX,
+  TriangleAlert,
   Loader2,
   RefreshCw,
   ChevronDown,
@@ -18,9 +18,9 @@ import {
 import type { DoctorResult } from "../../types";
 
 function statusIcon(status: string) {
-  if (status === "ok") return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-  if (status === "fail") return <XCircle className="h-4 w-4 text-red-500" />;
-  if (status === "warn") return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+  if (status === "ok") return <CircleCheckBig className="h-4 w-4 text-green-500" />;
+  if (status === "fail") return <CircleX className="h-4 w-4 text-red-500" />;
+  if (status === "warn") return <TriangleAlert className="h-4 w-4 text-yellow-500" />;
   return null;
 }
 
@@ -74,11 +74,11 @@ function DoctorResultCard({ result }: { result: DoctorResult }) {
               {result.version ? `v${result.version}` : "General"}
             </span>
             {result.overall === "ok" ? (
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <CircleCheckBig className="h-5 w-5 text-green-500" />
             ) : result.overall === "fail" ? (
-              <XCircle className="h-5 w-5 text-red-500" />
+              <CircleX className="h-5 w-5 text-red-500" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <TriangleAlert className="h-5 w-5 text-yellow-500" />
             )}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

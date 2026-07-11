@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { CircleCheckBig, CircleX, Loader2 } from "lucide-react";
 
 export function OperationProgress({
   open,
@@ -49,7 +49,7 @@ export function OperationProgress({
       <DialogHeader>
         <div className="flex items-center gap-2">
           {done ? (
-            success ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-red-500" />
+            success ? <CircleCheckBig className="h-5 w-5 text-green-500" /> : <CircleX className="h-5 w-5 text-red-500" />
           ) : (
             <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
           )}

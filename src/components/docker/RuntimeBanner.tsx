@@ -1,4 +1,4 @@
-import { Apple, Container, AlertCircle, Loader2 } from "lucide-react";
+import { Apple, Container, CircleAlert, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { ContainerRuntime, RuntimeInfo } from "../../types";
 
@@ -33,7 +33,7 @@ export function RuntimeBanner({ info }: { info: RuntimeInfo | null }) {
       <div className="flex items-center gap-3">
         {isApple && <Apple className="h-5 w-5 text-blue-500" />}
         {isDocker && <Container className="h-5 w-5 text-cyan-500" />}
-        {isNone && <AlertCircle className="h-5 w-5 text-red-500" />}
+        {isNone && <CircleAlert className="h-5 w-5 text-red-500" />}
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">

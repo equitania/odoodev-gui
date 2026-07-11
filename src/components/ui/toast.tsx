@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle, Loader2, Info, X } from "lucide-react";
+import { CircleCheckBig, CircleX, Loader2, Info, X } from "lucide-react";
 import { useToastStore } from "../../store/toastStore";
 import { cn } from "../../lib/utils";
 
@@ -12,9 +12,9 @@ const TOAST_STYLES = {
 function ToastIcon({ type }: { type: "success" | "error" | "info" | "loading" }) {
   switch (type) {
     case "success":
-      return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      return <CircleCheckBig className="h-4 w-4 text-green-500" />;
     case "error":
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      return <CircleX className="h-4 w-4 text-red-500" />;
     case "loading":
       return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
     case "info":

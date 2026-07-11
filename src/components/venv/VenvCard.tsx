@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
+  CircleCheckBig,
+  CircleX,
+  TriangleAlert,
   Loader2,
   Package,
   Trash2,
@@ -55,15 +55,15 @@ export function VenvCard({
             {exists ? (
               <Badge variant={isStale || pythonMismatch ? "warning" : "success"}>
                 {isStale || pythonMismatch ? (
-                  <AlertTriangle className="h-3 w-3" />
+                  <TriangleAlert className="h-3 w-3" />
                 ) : (
-                  <CheckCircle2 className="h-3 w-3" />
+                  <CircleCheckBig className="h-3 w-3" />
                 )}
                 {isStale ? "Stale" : pythonMismatch ? "Mismatch" : "Ready"}
               </Badge>
             ) : (
               <Badge variant="neutral">
-                <XCircle className="h-3 w-3" />
+                <CircleX className="h-3 w-3" />
                 Missing
               </Badge>
             )}
