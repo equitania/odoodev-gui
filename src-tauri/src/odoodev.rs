@@ -35,7 +35,11 @@ pub fn augment_path(cmd: &mut Command) {
     };
 
     let current = std::env::var("PATH").unwrap_or_default();
-    let sep = if cfg!(target_os = "windows") { ";" } else { ":" };
+    let sep = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
     let extra_str = extra
         .iter()
         .map(|p| p.to_string_lossy().to_string())
@@ -173,7 +177,12 @@ pub async fn get_odoodev_version() -> Option<String> {
     }
     // Fallback: any version-like token
     for tok in stdout.split_whitespace() {
-        if tok.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+        if tok
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_digit())
+            .unwrap_or(false)
+        {
             return Some(tok.trim().to_string());
         }
     }

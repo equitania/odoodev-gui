@@ -2,6 +2,7 @@ import { invokeCmd } from "../lib/tauri";
 import type {
   BackupArgs,
   BackupResult,
+  ContainerInfo,
   DashboardStatus,
   DbListResponse,
   DockerStatus,
@@ -11,6 +12,7 @@ import type {
   PlatformInfo,
   RestoreArgs,
   RestoreResult,
+  RuntimeInfo,
   ServerStatus,
   StartServerArgs,
   UpdateCheckResult,
@@ -57,6 +59,12 @@ export function useOdoodev() {
     dockerDown: (version: string, runtime?: string) => invokeCmd<OpResult>("docker_down", { version, runtime }),
     dockerStatus: (version: string, versions: VersionsResponse) =>
       invokeCmd<DockerStatus>("docker_status", { version, versions }),
+    listContainers: () => invokeCmd<ContainerInfo[]>("list_containers"),
+    getRuntimeInfo: () => invokeCmd<RuntimeInfo>("get_runtime_info"),
+    dockerLogs: (version: string, runtime?: string, tail?: number) =>
+      invokeCmd<OpResult>("docker_logs", { version, runtime, tail }),
+    dockerBench: (version: string, runtime?: string, duration?: number, scale?: number) =>
+      invokeCmd<OpResult>("docker_bench", { version, runtime, duration, scale }),
     getRuntime: () => invokeCmd<string>("get_runtime"),
     getRuntimeConfig: () => invokeCmd<string | null>("get_runtime_config"),
   };

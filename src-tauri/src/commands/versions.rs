@@ -7,7 +7,8 @@ use crate::docker_check;
 use crate::installer;
 use crate::log_parser;
 use crate::models::{
-    DockerStatus, OdoodevInfoDto, ServerStatus, UvInfoDto, VenvStatus, VersionInfo, VersionsResponse,
+    DockerStatus, OdoodevInfoDto, ServerStatus, UvInfoDto, VenvStatus, VersionInfo,
+    VersionsResponse,
 };
 use crate::odoodev;
 use crate::pypi;
@@ -46,10 +47,7 @@ pub async fn get_docker_status(
 }
 
 #[tauri::command]
-pub fn get_server_status(
-    version: String,
-    manager: State<'_, ServerManager>,
-) -> ServerStatus {
+pub fn get_server_status(version: String, manager: State<'_, ServerManager>) -> ServerStatus {
     let running = manager.is_running(&version);
     ServerStatus {
         running,
@@ -91,10 +89,9 @@ pub struct DashboardStatus {
 pub async fn get_all_dashboard_status(
     manager: State<'_, ServerManager>,
 ) -> Result<DashboardStatus, String> {
-    let versions: VersionsResponse = serde_json::from_value(
-        odoodev::run_odoodev_json(&["config", "versions", "--json"]).await?,
-    )
-    .map_err(|e| format!("Failed to parse versions: {e}"))?;
+    let versions: VersionsResponse =
+        serde_json::from_value(odoodev::run_odoodev_json(&["config", "versions", "--json"]).await?)
+            .map_err(|e| format!("Failed to parse versions: {e}"))?;
 
     let active_versions = config::get_active_versions();
     let keys: Vec<String> = versions.keys().cloned().collect();

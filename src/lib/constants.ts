@@ -19,3 +19,4 @@ export const POLL_INTERVALS = {
 };
 
 export const LOG_BUFFER_CAP = 50_000;
+export const DOCKER_LOG_BUFFER_CAP = 10_000;

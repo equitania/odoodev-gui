@@ -15,9 +15,7 @@ pub async fn check_odoodev_update() -> UpdateCheckResult {
 }
 
 #[tauri::command]
-pub async fn upgrade_odoodev(
-    window: tauri::Window,
-) -> Result<OdoodevInfoDto, String> {
+pub async fn upgrade_odoodev(window: tauri::Window) -> Result<OdoodevInfoDto, String> {
     let new_version = installer::upgrade_odoodev().await?;
     let _ = window.emit("install-progress", "upgrade complete");
     Ok(OdoodevInfoDto {

@@ -1,11 +1,12 @@
 import { cn } from "../lib/utils";
-import { LayoutGrid, Rocket, Database, Settings } from "lucide-react";
+import { LayoutGrid, Rocket, Database, Container, Settings } from "lucide-react";
 import type { ViewKey } from "../types";
 
 const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof LayoutGrid }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutGrid },
   { key: "server", label: "Server", icon: Rocket },
   { key: "database", label: "Databases", icon: Database },
+  { key: "docker", label: "Docker", icon: Container },
   { key: "settings", label: "Settings", icon: Settings },
 ];
 

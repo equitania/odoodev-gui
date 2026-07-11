@@ -66,6 +66,29 @@ pub struct DockerStatus {
     pub runtime: String, // "docker", "apple", "none"
 }
 
+// === Container info (from runtime CLI) ===
+#[derive(Debug, Clone, Serialize)]
+pub struct ContainerInfo {
+    pub id: String,
+    pub image: String,
+    pub os: String,
+    pub arch: String,
+    pub state: String,
+    pub ip: String,
+    pub cpus: u64,
+    pub memory_mb: u64,
+    pub started: String,
+    pub host_port: u16,
+}
+
+// === Runtime info ===
+#[derive(Debug, Clone, Serialize)]
+pub struct RuntimeInfo {
+    pub runtime: String,
+    pub configured: Option<String>,
+    pub available: Vec<String>,
+}
+
 // === Server status ===
 #[derive(Debug, Clone, Serialize)]
 pub struct ServerStatus {

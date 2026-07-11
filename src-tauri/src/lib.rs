@@ -62,6 +62,10 @@ pub fn run() {
             docker::docker_up,
             docker::docker_down,
             docker::docker_status,
+            docker::list_containers,
+            docker::get_runtime_info,
+            docker::docker_logs,
+            docker::docker_bench,
             // runtime detection
             versions::get_runtime,
             versions::get_runtime_config,

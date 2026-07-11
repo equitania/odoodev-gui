@@ -25,10 +25,7 @@ pub struct BackupArgs {
 }
 
 #[tauri::command]
-pub async fn backup_db(
-    args: BackupArgs,
-    window: tauri::Window,
-) -> Result<BackupResult, String> {
+pub async fn backup_db(args: BackupArgs, window: tauri::Window) -> Result<BackupResult, String> {
     let mut cli: Vec<String> = vec![
         "db".into(),
         "backup".into(),
@@ -142,10 +139,7 @@ pub struct RestoreArgs {
 }
 
 #[tauri::command]
-pub async fn restore_db(
-    args: RestoreArgs,
-    window: tauri::Window,
-) -> Result<RestoreResult, String> {
+pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<RestoreResult, String> {
     let mut cli: Vec<String> = vec![
         "db".into(),
         "restore".into(),

@@ -7,6 +7,7 @@ import { Dashboard } from "./components/dashboard/Dashboard";
 import { ServerPanel } from "./components/server/ServerPanel";
 import { DatabasePanel } from "./components/database/DatabasePanel";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
+import { DockerPanel } from "./components/docker/DockerPanel";
 import { useAppStore } from "./store/appStore";
 import type { ViewKey } from "./types";
 
@@ -47,6 +48,7 @@ export default function App() {
           {activeView === "database" && (
             <DatabasePanel preselectVersion={preselectVersion} />
           )}
+          {activeView === "docker" && <DockerPanel />}
           {activeView === "settings" && <SettingsPanel />}
         </main>
       </div>

@@ -17,6 +17,5 @@ pub fn get_platform_info() -> PlatformInfo {
 
 #[tauri::command]
 pub async fn open_external(url: String) -> Result<(), String> {
-    tauri_plugin_opener::open_url(url, None::<&str>)
-        .map_err(|e| format!("Failed to open: {e}"))
+    tauri_plugin_opener::open_url(url, None::<&str>).map_err(|e| format!("Failed to open: {e}"))
 }

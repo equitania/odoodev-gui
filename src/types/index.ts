@@ -49,6 +49,25 @@ export interface DockerStatus {
   runtime: ContainerRuntime;
 }
 
+export interface ContainerInfo {
+  id: string;
+  image: string;
+  os: string;
+  arch: string;
+  state: string;
+  ip: string;
+  cpus: number;
+  memory_mb: number;
+  started: string;
+  host_port: number;
+}
+
+export interface RuntimeInfo {
+  runtime: ContainerRuntime;
+  configured: string | null;
+  available: string[];
+}
+
 export interface ServerStatus {
   running: boolean;
   pid: number | null;
@@ -160,6 +179,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";

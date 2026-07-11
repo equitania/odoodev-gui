@@ -40,11 +40,7 @@ impl ServerManager {
     }
 
     pub fn get_pid(&self, version: &str) -> Option<u32> {
-        self.processes
-            .lock()
-            .unwrap()
-            .get(version)
-            .map(|p| p.pid)
+        self.processes.lock().unwrap().get(version).map(|p| p.pid)
     }
 
     pub fn get_uptime(&self, version: &str) -> Option<u64> {
@@ -56,11 +52,7 @@ impl ServerManager {
     }
 
     pub fn get_port(&self, version: &str) -> Option<u16> {
-        self.processes
-            .lock()
-            .unwrap()
-            .get(version)
-            .map(|p| p.port)
+        self.processes.lock().unwrap().get(version).map(|p| p.port)
     }
 
     pub fn insert(&self, version: String, child: Child, pid: u32, port: u16) {
@@ -80,11 +72,6 @@ impl ServerManager {
     }
 
     pub fn versions(&self) -> Vec<String> {
-        self.processes
-            .lock()
-            .unwrap()
-            .keys()
-            .cloned()
-            .collect()
+        self.processes.lock().unwrap().keys().cloned().collect()
     }
 }

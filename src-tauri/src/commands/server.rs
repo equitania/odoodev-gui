@@ -231,10 +231,7 @@ pub async fn stop_server(
 }
 
 #[tauri::command]
-pub fn get_server_status_cmd(
-    version: String,
-    manager: State<'_, ServerManager>,
-) -> ServerStatus {
+pub fn get_server_status_cmd(version: String, manager: State<'_, ServerManager>) -> ServerStatus {
     let running = manager.is_running(&version);
     ServerStatus {
         running,

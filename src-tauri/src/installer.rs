@@ -42,7 +42,13 @@ pub async fn ensure_uv() -> Result<UvInfo, String> {
     install_uv().await?;
     // 4. Re-check
     let path = which::which("uv")
-        .or_else(|_| candidates.iter().find(|c| c.exists()).cloned().ok_or("uv not found"))
+        .or_else(|_| {
+            candidates
+                .iter()
+                .find(|c| c.exists())
+                .cloned()
+                .ok_or("uv not found")
+        })
         .map_err(|_| "uv still not found after install".to_string())?;
     let version = get_uv_version(&path).await;
     Ok(UvInfo { path, version })
