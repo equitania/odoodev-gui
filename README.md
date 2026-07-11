@@ -2,8 +2,10 @@
 
 Native desktop GUI for the [odoodev](https://github.com/equitania/odoo-dev) CLI tool.
 
-> **Status:** Phase 1 MVP implementiert — Dashboard, Server, Databases, Settings funktionsfähig.
-> Apple Container Integration aktiv. Phase 2 (Docker Panel, Venv, Repos, Playbooks, i18n) offen.
+> **Status:** v1.1.0 — feature-complete. Alle Panels für v16–v19 implementiert
+> (Dashboard, Server, Databases, Docker/Container, Venv, Repos, Env, Playbooks, Init,
+> Migrate, Doctor, Settings), Apple Container Integration aktiv, DE/EN i18n.
+> Cross-Platform-Builds (macOS/Windows/Linux) mit eingebautem Auto-Update.
 
 ## What is this?
 
@@ -65,16 +67,23 @@ no manual re-downloading for new releases.
   `container ls --format json` für Container-Status, `--runtime apple` wird an odoodev durchgereicht,
   Docker wird nie angerührt wenn Config apple sagt
 
-### Phase 2 — Offen
+### Phase 2 — Implementiert ✅
 
-- Docker/Container Panel (up/down/status/logs, benchmark)
-- Venv Panel (setup/check/remove)
-- Repos Panel (clone/update/config-regenerate)
-- Playbook Runner (NDJSON live progress)
-- Init Wizard (guided environment setup)
-- Migration Group Management
-- Doctor / Health Check
-- Full i18n (DE/EN)
+- **Docker/Container Panel:** up/down/status/logs, benchmark
+- **Venv Panel:** setup/check/remove
+- **Repos Panel:** clone/update/config-regenerate (streaming)
+- **Env Panel:** check/setup/show/dir per version
+- **Playbook Runner:** NDJSON live progress
+- **Init Wizard:** guided environment setup + config
+- **Migrate Panel:** migration group management (list/create/activate/deactivate/remove)
+- **Doctor / Health Check:** per-version + general checks
+- **i18n:** full DE/EN with language switch + persistence
+
+### Distribution — Implementiert ✅
+
+- 3-OS builds (macOS/Windows/Linux) via GitHub Actions + `tauri-action`
+- Built-in **auto-update** (Tauri updater, minisign-signed) — apps self-update on new releases
+- macOS notarization + (planned) Windows code signing
 
 ## Getting Started
 
