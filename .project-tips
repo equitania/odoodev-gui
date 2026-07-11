@@ -1,0 +1,10 @@
+# odoodev-gui v1.1.1 | tauri (react + rust)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▸ Install:  pnpm install
+▸ Dev:      pnpm tauri dev
+▸ Build:    pnpm tauri build          # needs TAURI_SIGNING_PRIVATE_KEY (updater)
+▸ Check:    pnpm tauri build --no-bundle   # compile-check, no signing
+▸ Front:    pnpm run typecheck && pnpm run lint
+▸ Rust:     cd src-tauri && cargo fmt && cargo clippy && cargo test
+▸ Release:  bump version → git tag vX.Y.Z → git push upstream vX.Y.Z
+▸ CI:       gh run list --repo eqms/odoodev-gui

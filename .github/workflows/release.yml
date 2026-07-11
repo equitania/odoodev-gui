@@ -38,14 +38,10 @@ jobs:
           # in tauri.conf.json. Generate with `pnpm tauri signer generate`.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # macOS code signing + notarization (only consumed on the macOS runner;
-          # ignored on Linux/Windows). Requires an Apple Developer account.
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # macOS code signing + notarization: add the APPLE_* env vars back here
+          # once real Apple Developer secrets exist. Empty secret references make
+          # tauri-action attempt (and fail) a keychain cert import, so they are
+          # intentionally omitted for now — macOS builds ad-hoc/unsigned.
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "odoodev-gui ${{ github.ref_name }}"
