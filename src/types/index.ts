@@ -211,6 +211,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "init" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";
