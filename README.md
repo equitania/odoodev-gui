@@ -15,6 +15,25 @@ The GUI is a **pure presentation layer**: it shells out to `odoodev` as a subpro
 and parses its JSON / stdout output. No Python logic is duplicated. The GUI also
 manages `uv` (installs if missing) and `odoodev` (installs / upgrades via `uv tool`).
 
+## Download & Install
+
+Grab the latest installer for your platform from the
+**[Releases page](https://github.com/equitania/odoodev-gui/releases/latest)**:
+
+| Platform | File | Install |
+|----------|------|---------|
+| **macOS** | `…_aarch64.dmg` (Apple Silicon) · `…_x64.dmg` (Intel) | Open the `.dmg`, drag **odoodev-gui** into **Applications**. |
+| **Windows** | `…_x64-setup.exe` | Run the installer. On first launch, Windows SmartScreen may warn — click **More info → Run anyway** (the app is not yet code-signed). |
+| **Linux** | `…_amd64.AppImage` · `…_amd64.deb` | Make the AppImage executable (`chmod +x`) and run it, or install the `.deb` on Debian/Ubuntu. |
+
+**Auto-update:** The app checks for updates on launch and offers a one-click update
+(also under **Settings → Check for Updates**). Every update is cryptographically
+verified against Equitania's signing key, so only authentic builds get installed —
+no manual re-downloading for new releases.
+
+> On first run, `odoodev-gui` installs its own dependencies (`uv` and the `odoodev`
+> CLI) if they are missing.
+
 ## Tech Stack
 
 - **Backend:** Rust + Tauri v2
@@ -23,7 +42,7 @@ manages `uv` (installs if missing) and `odoodev` (installs / upgrades via `uv to
 - **State:** Zustand (+ toast notification system)
 - **Icons:** lucide-react
 - **Virtual scrolling:** @tanstack/react-virtual (Log viewer with 10k+ lines)
-- **Distribution:** Native bundles (.dmg / .msi / .AppImage)
+- **Distribution:** Native bundles (.dmg / .exe / .AppImage) with built-in auto-update (Tauri updater)
 
 ## Features (Implemented)
 
