@@ -176,3 +176,24 @@ pub struct EnvCheckResult {
     pub complete: bool,
     pub message: String,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MigrationGroup {
+    pub name: String,
+    pub from_version: String,
+    pub to_version: String,
+    pub postgres: String,
+    pub shared_port: u16,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MigrationStatus {
+    pub active: bool,
+    pub no_active: bool,
+    pub group_name: Option<String>,
+    pub source: Option<String>,
+    pub target: Option<String>,
+    pub shared_port: Option<u16>,
+    pub filestore: Option<String>,
+}

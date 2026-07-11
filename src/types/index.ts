@@ -120,6 +120,25 @@ export interface EnvCheckResult {
   message: string;
 }
 
+export interface MigrationGroup {
+  name: string;
+  from_version: string;
+  to_version: string;
+  postgres: string;
+  shared_port: number;
+  status: string;
+}
+
+export interface MigrationStatus {
+  active: boolean;
+  no_active: boolean;
+  group_name: string | null;
+  source: string | null;
+  target: string | null;
+  shared_port: number | null;
+  filestore: string | null;
+}
+
 export interface PlaybookEvent {
   event: string;
   name?: string;
@@ -211,6 +230,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "init" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "init" | "migrate" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";

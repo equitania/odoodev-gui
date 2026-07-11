@@ -12,6 +12,7 @@ use commands::database;
 use commands::docker;
 use commands::env;
 use commands::init_cmd;
+use commands::migrate;
 use commands::playbook;
 use commands::repos;
 use commands::self_update;
@@ -89,6 +90,13 @@ pub fn run() {
             // init / setup
             init_cmd::init_version,
             init_cmd::setup_config,
+            // migrate
+            migrate::migrate_list,
+            migrate::migrate_status,
+            migrate::migrate_create,
+            migrate::migrate_activate,
+            migrate::migrate_deactivate,
+            migrate::migrate_remove,
             // runtime detection
             versions::get_runtime,
             versions::get_runtime_config,

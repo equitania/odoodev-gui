@@ -7,6 +7,8 @@ import type {
   DbListResponse,
   DockerStatus,
   EnvCheckResult,
+  MigrationGroup,
+  MigrationStatus,
   OdooLogEntry,
   OdoodevInfoDto,
   OpResult,
@@ -94,5 +96,12 @@ export function useOdoodev() {
       invokeCmd<OpResult>("init_version", { version, skip_repos: skipRepos, skip_docker: skipDocker }),
     setupConfig: (reset: boolean) =>
       invokeCmd<OpResult>("setup_config", { reset }),
+    migrateList: () => invokeCmd<MigrationGroup[]>("migrate_list"),
+    migrateStatus: () => invokeCmd<MigrationStatus>("migrate_status"),
+    migrateCreate: (from: string, to: string, name: string | null, pgVersion: string | null) =>
+      invokeCmd<OpResult>("migrate_create", { from, to, name, pg_version: pgVersion }),
+    migrateActivate: (name: string) => invokeCmd<OpResult>("migrate_activate", { name }),
+    migrateDeactivate: () => invokeCmd<OpResult>("migrate_deactivate"),
+    migrateRemove: (name: string) => invokeCmd<OpResult>("migrate_remove", { name }),
   };
 }
