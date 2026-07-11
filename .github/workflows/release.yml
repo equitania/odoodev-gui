@@ -37,7 +37,9 @@ jobs:
           # .sig files and latest.json the auto-updater verifies against the pubkey
           # in tauri.conf.json. Generate with `pnpm tauri signer generate`.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # The signing key was generated without a password, so no password env
+          # is passed (an empty password matches the key). If you ever regenerate
+          # the key WITH a password, add TAURI_SIGNING_PRIVATE_KEY_PASSWORD back.
           # macOS code signing + notarization: add the APPLE_* env vars back here
           # once real Apple Developer secrets exist. Empty secret references make
           # tauri-action attempt (and fail) a keychain cert import, so they are
