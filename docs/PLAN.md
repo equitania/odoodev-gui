@@ -469,7 +469,7 @@ interface AppState {
   - Radio: Deutsch / English (für zukünftige i18n — Phase 1 hardcodiert EN)
 - [ ] Section: "About"
   - "odoodev-gui — Odoo Development Manager"
-  - "Copyright 2025 Equitania Software GmbH"
+  - "Copyright 2026 Equitania Software GmbH"
   - "License: AGPL-3.0"
   - GitHub Link (opens in browser)
 

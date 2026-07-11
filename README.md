@@ -118,4 +118,4 @@ AGPL-3.0-or-later (same as odoodev)
 
 ## Copyright
 
-Copyright 2025 Equitania Software GmbH
+Copyright 2026 Equitania Software GmbH
