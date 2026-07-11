@@ -22,7 +22,7 @@ fn parse_detail_line(line: &str) -> Option<DoctorCheck> {
             message,
         })
     } else if trimmed.starts_with("[WARN]") {
-        let message = trimmed[5..].trim().to_string();
+        let message = trimmed[6..].trim().to_string();
         Some(DoctorCheck {
             name: extract_check_name(&message),
             status: "warn".to_string(),
