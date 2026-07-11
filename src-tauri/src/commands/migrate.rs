@@ -133,31 +133,55 @@ pub async fn migrate_create(
         args.push(pg);
     }
     match odoodev::run_odoodev_text(&args.iter().map(|s| s.as_str()).collect::<Vec<_>>()).await {
-        Ok(_) => Ok(OpResult { success: true, error: None }),
-        Err(e) => Ok(OpResult { success: false, error: Some(e) }),
+        Ok(_) => Ok(OpResult {
+            success: true,
+            error: None,
+        }),
+        Err(e) => Ok(OpResult {
+            success: false,
+            error: Some(e),
+        }),
     }
 }
 
 #[tauri::command]
 pub async fn migrate_activate(name: String) -> Result<OpResult, String> {
     match odoodev::run_odoodev_text(&["migrate", "activate", &name]).await {
-        Ok(_) => Ok(OpResult { success: true, error: None }),
-        Err(e) => Ok(OpResult { success: false, error: Some(e) }),
+        Ok(_) => Ok(OpResult {
+            success: true,
+            error: None,
+        }),
+        Err(e) => Ok(OpResult {
+            success: false,
+            error: Some(e),
+        }),
     }
 }
 
 #[tauri::command]
 pub async fn migrate_deactivate() -> Result<OpResult, String> {
     match odoodev::run_odoodev_text(&["migrate", "deactivate"]).await {
-        Ok(_) => Ok(OpResult { success: true, error: None }),
-        Err(e) => Ok(OpResult { success: false, error: Some(e) }),
+        Ok(_) => Ok(OpResult {
+            success: true,
+            error: None,
+        }),
+        Err(e) => Ok(OpResult {
+            success: false,
+            error: Some(e),
+        }),
     }
 }
 
 #[tauri::command]
 pub async fn migrate_remove(name: String) -> Result<OpResult, String> {
     match odoodev::run_odoodev_text(&["migrate", "remove", &name, "-y"]).await {
-        Ok(_) => Ok(OpResult { success: true, error: None }),
-        Err(e) => Ok(OpResult { success: false, error: Some(e) }),
+        Ok(_) => Ok(OpResult {
+            success: true,
+            error: None,
+        }),
+        Err(e) => Ok(OpResult {
+            success: false,
+            error: Some(e),
+        }),
     }
 }

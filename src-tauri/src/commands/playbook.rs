@@ -26,8 +26,8 @@ pub const VALID_STEPS: &[&str] = &[
 #[tauri::command]
 pub async fn playbook_list() -> Result<Vec<PlaybookInfo>, String> {
     let val = odoodev::run_odoodev_json(&["run", "--list", "--output", "json"]).await?;
-    let list: Vec<PlaybookInfo> = serde_json::from_value(val)
-        .map_err(|e| format!("Failed to parse playbook list: {e}"))?;
+    let list: Vec<PlaybookInfo> =
+        serde_json::from_value(val).map_err(|e| format!("Failed to parse playbook list: {e}"))?;
     Ok(list)
 }
 

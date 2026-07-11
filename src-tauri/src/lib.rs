@@ -9,8 +9,8 @@ mod pypi;
 mod server_manager;
 
 use commands::database;
-use commands::doctor;
 use commands::docker;
+use commands::doctor;
 use commands::env;
 use commands::init_cmd;
 use commands::migrate;

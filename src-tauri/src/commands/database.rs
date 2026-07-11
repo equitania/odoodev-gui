@@ -279,7 +279,10 @@ pub async fn drop_db(
 ) -> Result<OpResult, String> {
     for (f, v) in [("version", &version), ("name", &name)] {
         if let Err(e) = odoodev::reject_flag_like(f, v) {
-            return Ok(OpResult { success: false, error: Some(e) });
+            return Ok(OpResult {
+                success: false,
+                error: Some(e),
+            });
         }
     }
     let args = vec!["db", "drop", &version, "-n", &name, "-y"];
@@ -304,7 +307,10 @@ pub async fn copy_db(
 ) -> Result<OpResult, String> {
     for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
         if let Err(e) = odoodev::reject_flag_like(f, v) {
-            return Ok(OpResult { success: false, error: Some(e) });
+            return Ok(OpResult {
+                success: false,
+                error: Some(e),
+            });
         }
     }
     let args = vec!["db", "copy", &version, "-s", &src, "-d", &dst, "-y"];
@@ -329,7 +335,10 @@ pub async fn rename_db(
 ) -> Result<OpResult, String> {
     for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
         if let Err(e) = odoodev::reject_flag_like(f, v) {
-            return Ok(OpResult { success: false, error: Some(e) });
+            return Ok(OpResult {
+                success: false,
+                error: Some(e),
+            });
         }
     }
     let args = vec!["db", "rename", &version, "-s", &src, "-d", &dst, "-y"];

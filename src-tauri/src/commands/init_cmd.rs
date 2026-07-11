@@ -42,11 +42,7 @@ async fn run_streaming(
     let status = child.wait().await.map_err(|e| format!("wait: {e}"))?;
     Ok(OpResult {
         success: status.success(),
-        error: if status.success() {
-            None
-        } else {
-            Some(last)
-        },
+        error: if status.success() { None } else { Some(last) },
     })
 }
 
@@ -71,10 +67,7 @@ pub async fn init_version(
 }
 
 #[tauri::command]
-pub async fn setup_config(
-    reset: bool,
-    window: tauri::Window,
-) -> Result<OpResult, String> {
+pub async fn setup_config(reset: bool, window: tauri::Window) -> Result<OpResult, String> {
     let mut args = vec!["setup".to_string(), "--non-interactive".to_string()];
     if reset {
         args.push("--reset".to_string());

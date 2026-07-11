@@ -42,11 +42,7 @@ async fn run_streaming_to_completion(
     let status = child.wait().await.map_err(|e| format!("wait: {e}"))?;
     Ok(OpResult {
         success: status.success(),
-        error: if status.success() {
-            None
-        } else {
-            Some(last)
-        },
+        error: if status.success() { None } else { Some(last) },
     })
 }
 

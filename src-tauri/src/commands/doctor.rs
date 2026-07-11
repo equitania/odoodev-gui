@@ -3,26 +3,25 @@ use crate::odoodev;
 
 fn parse_detail_line(line: &str) -> Option<DoctorCheck> {
     let trimmed = line.trim();
-    if trimmed.starts_with("[OK]") {
-        let message = trimmed[4..].trim().to_string();
+    if let Some(rest) = trimmed.strip_prefix("[OK]") {
+        let message = rest.trim().to_string();
         Some(DoctorCheck {
             name: extract_check_name(&message),
             status: "ok".to_string(),
             message,
         })
-    } else if trimmed.starts_with("[FAIL]") || trimmed.starts_with("[ERROR]") {
-        let message = trimmed
-            .trim_start_matches("[FAIL]")
-            .trim_start_matches("[ERROR]")
-            .trim()
-            .to_string();
+    } else if let Some(rest) = trimmed
+        .strip_prefix("[FAIL]")
+        .or_else(|| trimmed.strip_prefix("[ERROR]"))
+    {
+        let message = rest.trim().to_string();
         Some(DoctorCheck {
             name: extract_check_name(&message),
             status: "fail".to_string(),
             message,
         })
-    } else if trimmed.starts_with("[WARN]") {
-        let message = trimmed[6..].trim().to_string();
+    } else if let Some(rest) = trimmed.strip_prefix("[WARN]") {
+        let message = rest.trim().to_string();
         Some(DoctorCheck {
             name: extract_check_name(&message),
             status: "warn".to_string(),
@@ -64,7 +63,11 @@ fn extract_check_name(message: &str) -> String {
     } else if lower.contains("pypi") {
         "pypi".to_string()
     } else {
-        message.split_whitespace().next().unwrap_or("unknown").to_string()
+        message
+            .split_whitespace()
+            .next()
+            .unwrap_or("unknown")
+            .to_string()
     }
 }
 

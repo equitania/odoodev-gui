@@ -36,11 +36,8 @@ pub async fn env_show(version: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn env_setup(
-    version: String,
-    window: tauri::Window,
-) -> Result<OpResult, String> {
-    let args = vec![
+pub async fn env_setup(version: String, window: tauri::Window) -> Result<OpResult, String> {
+    let args = [
         "env".to_string(),
         "setup".to_string(),
         "--non-interactive".to_string(),
@@ -76,10 +73,6 @@ pub async fn env_setup(
     let status = child.wait().await.map_err(|e| format!("wait: {e}"))?;
     Ok(OpResult {
         success: status.success(),
-        error: if status.success() {
-            None
-        } else {
-            Some(last)
-        },
+        error: if status.success() { None } else { Some(last) },
     })
 }
