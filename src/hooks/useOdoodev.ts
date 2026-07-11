@@ -6,6 +6,7 @@ import type {
   DashboardStatus,
   DbListResponse,
   DockerStatus,
+  EnvCheckResult,
   OdooLogEntry,
   OdoodevInfoDto,
   OpResult,
@@ -74,5 +75,9 @@ export function useOdoodev() {
       invokeCmd<OpResult>("repos_run", { version, config_only: configOnly }),
     reposPull: (version: string, noConfig: boolean) =>
       invokeCmd<OpResult>("repos_pull", { version, no_config: noConfig }),
+    envCheck: (version: string) => invokeCmd<EnvCheckResult>("env_check", { version }),
+    envDir: (version: string) => invokeCmd<string>("env_dir", { version }),
+    envShow: (version: string) => invokeCmd<string>("env_show", { version }),
+    envSetup: (version: string) => invokeCmd<OpResult>("env_setup", { version }),
   };
 }

@@ -114,6 +114,12 @@ export interface OpResult {
   error: string | null;
 }
 
+export interface EnvCheckResult {
+  exists: boolean;
+  complete: boolean;
+  message: string;
+}
+
 export interface DashboardStatus {
   versions: VersionsResponse;
   active_versions: string[];
@@ -179,6 +185,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";

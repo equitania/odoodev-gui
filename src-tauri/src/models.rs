@@ -158,3 +158,10 @@ pub struct OpResult {
     pub success: bool,
     pub error: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct EnvCheckResult {
+    pub exists: bool,
+    pub complete: bool,
+    pub message: String,
+}
