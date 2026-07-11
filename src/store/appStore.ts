@@ -37,6 +37,7 @@ interface AppState {
   fetchAllDashboard: () => Promise<void>;
   fetchPlatformAndRuntime: () => Promise<void>;
   checkOdoodevUpdate: () => Promise<void>;
+  installUv: () => Promise<void>;
   installOdoodev: () => Promise<void>;
   updateOdoodev: () => Promise<void>;
   checkUvStatus: () => Promise<void>;
@@ -100,6 +101,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ updateCheck: result });
     } catch (e) {
       console.error("checkOdoodevUpdate:", e);
+    }
+  },
+
+  installUv: async () => {
+    try {
+      // install_uv returns Err(String) if the astral.sh installer fails.
+      // Re-throw so the InstallDialog can surface the failure and skip the
+      // odoodev install (odoodev is installed via `uv tool`, so uv must exist).
+      const info = await invokeCmd<UvInfoDto>("install_uv");
+      set({ uvInfo: info });
+    } catch (e) {
+      console.error("installUv:", e);
+      throw e;
     }
   },
 

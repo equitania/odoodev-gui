@@ -7,6 +7,7 @@ export function InstallDialog() {
   const odoodevInfo = useAppStore((s) => s.odoodevInfo);
   const uvInfo = useAppStore((s) => s.uvInfo);
   const firstRunChecked = useAppStore((s) => s.firstRunChecked);
+  const installUv = useAppStore((s) => s.installUv);
   const installOdoodev = useAppStore((s) => s.installOdoodev);
   const checkUvStatus = useAppStore((s) => s.checkUvStatus);
   const checkOdoodevStatus = useAppStore((s) => s.checkOdoodevStatus);
@@ -21,12 +22,16 @@ export function InstallDialog() {
     setInstalling(true);
     setError(null);
     try {
+      // uv must be installed first — odoodev is installed via `uv tool`.
+      // installUv() re-throws on failure, so we won't attempt odoodev if uv fails.
       if (needsUv) {
-        await useAppStore.getState().checkUvStatus();
+        await installUv();
       }
-      await installOdoodev();
-      await checkOdoodevStatus();
+      if (needsOdoodev) {
+        await installOdoodev();
+      }
       await checkUvStatus();
+      await checkOdoodevStatus();
     } catch (e) {
       setError(String(e));
     } finally {
