@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
+import { logError } from "../../lib/errors";
 import { usePolling } from "../../hooks/usePolling";
 import { useDockerLogs } from "../../hooks/useDockerLogs";
 import { useDockerBench } from "../../hooks/useDockerBench";
@@ -36,14 +37,14 @@ export function DockerPanel() {
   useEffect(() => {
     invokeCmd<RuntimeInfo>("get_runtime_info")
       .then(setRuntimeInfo)
-      .catch(() => {});
+      .catch(logError("DockerPanel: get_runtime_info"));
     invokeCmd<Record<string, VersionInfo>>("get_versions")
       .then((v) => {
         setVersions(v);
         const keys = Object.keys(v).sort();
         if (keys.length > 0) setActiveVersion(keys[0]);
       })
-      .catch(() => {});
+      .catch(logError("DockerPanel: get_versions"));
   }, []);
 
   usePolling(

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
+import { logError } from "../../lib/errors";
 import { useInitProgress } from "../../hooks/useInitProgress";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { Button } from "../ui/button";
@@ -37,7 +38,7 @@ export function InitPanel() {
         const keys = Object.keys(v).sort();
         if (keys.length > 0) setSelectedVersion(keys[0]);
       })
-      .catch(() => {});
+      .catch(logError("InitPanel: get_versions"));
   }, []);
 
   const handleRun = async () => {

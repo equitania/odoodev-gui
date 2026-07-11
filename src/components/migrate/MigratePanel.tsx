@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
+import { logError } from "../../lib/errors";
 import { usePolling } from "../../hooks/usePolling";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { Button } from "../ui/button";
@@ -55,7 +56,7 @@ export function MigratePanel() {
           setToVer(keys[keys.length - 1]);
         }
       })
-      .catch(() => {});
+      .catch(logError("MigratePanel: get_versions"));
     refresh();
   }, [refresh]);
 

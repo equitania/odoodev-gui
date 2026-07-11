@@ -56,7 +56,8 @@ export function useInitProgress(): InitProgressState {
           reset,
         });
         return result.success;
-      } catch {
+      } catch (e) {
+        console.error("useInitProgress:", e);
         return false;
       } finally {
         setRunning(false);

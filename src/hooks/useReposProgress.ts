@@ -48,7 +48,8 @@ export function useReposProgress(): ReposProgressState {
           no_config: noConfig ?? false,
         });
         return result.success;
-      } catch {
+      } catch (e) {
+        console.error("useReposProgress:", e);
         return false;
       } finally {
         setRunning(false);

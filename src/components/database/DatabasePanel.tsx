@@ -5,6 +5,7 @@ import { Select } from "../ui/select";
 import { Input } from "../ui/input";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
+import { reportError } from "../../lib/errors";
 import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { DbListResponse, OpResult, VersionsResponse } from "../../types";
@@ -204,7 +205,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-destructive">PostgreSQL not accessible: {error}</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime })}>
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime }).catch(reportError("Failed to start PostgreSQL"))}>
                 Start {runtime === "apple" ? "Container" : "Docker"}
               </Button>
             </div>
@@ -217,7 +218,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">No databases found</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime })}>
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version: selectedVersion, runtime }).catch(reportError("Failed to start PostgreSQL"))}>
                 Start PostgreSQL
               </Button>
             </div>

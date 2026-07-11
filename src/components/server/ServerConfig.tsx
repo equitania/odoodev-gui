@@ -7,6 +7,7 @@ import { Select } from "../ui/select";
 import { SegmentedControl } from "../ui/segmented-control";
 import { Checkbox } from "../ui/checkbox";
 import { invokeCmd } from "../../lib/tauri";
+import { reportError } from "../../lib/errors";
 import { useAppStore } from "../../store/appStore";
 import type { DbListResponse, StartServerArgs } from "../../types";
 import { ChevronDown, ChevronUp, Play, Square, RotateCcw, Loader2 } from "lucide-react";
@@ -94,14 +95,14 @@ export function ServerConfig({
           {dbError ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-destructive">PostgreSQL not accessible</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime })}>
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime }).catch(reportError("Failed to start PostgreSQL"))}>
                 Start {runtime === "apple" ? "Container" : "Docker"}
               </Button>
             </div>
           ) : databases.length === 0 ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">No databases — start PostgreSQL first</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime })}>
+              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime }).catch(reportError("Failed to start PostgreSQL"))}>
                 {runtime === "apple" ? "Start" : "Docker Up"}
               </Button>
             </div>
@@ -116,7 +117,11 @@ export function ServerConfig({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => invokeCmd<DbListResponse>("get_databases", { version }).then((r) => setDatabases(r.databases))}
+                onClick={() =>
+                  invokeCmd<DbListResponse>("get_databases", { version })
+                    .then((r) => setDatabases(r.databases))
+                    .catch(reportError("Failed to refresh databases"))
+                }
               >
                 Refresh
               </Button>

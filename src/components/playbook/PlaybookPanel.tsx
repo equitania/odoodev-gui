@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
+import { logError } from "../../lib/errors";
 import { usePlaybookRun } from "../../hooks/usePlaybookRun";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { StepList } from "./StepList";
@@ -33,13 +34,13 @@ export function PlaybookPanel() {
         const keys = Object.keys(v).sort();
         if (keys.length > 0) setSelectedVersion(keys[0]);
       })
-      .catch(() => {});
+      .catch(logError("PlaybookPanel: load"));
     invokeCmd<string[]>("playbook_valid_steps")
       .then(setValidSteps)
-      .catch(() => {});
+      .catch(logError("PlaybookPanel: load"));
     invokeCmd<PlaybookInfo[]>("playbook_list")
       .then(setPlaybooks)
-      .catch(() => {});
+      .catch(logError("PlaybookPanel: load"));
   }, []);
 
   const toggleStep = (step: string) => {

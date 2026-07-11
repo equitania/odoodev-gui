@@ -35,7 +35,8 @@ export function useVenvSetup(): VenvSetupState {
           { version, force },
         );
         return result.success;
-      } catch {
+      } catch (e) {
+        console.error("useVenvSetup:", e);
         return false;
       } finally {
         setRunning(false);

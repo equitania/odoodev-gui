@@ -35,7 +35,8 @@ export function useEnvSetup(): EnvSetupState {
           { version },
         );
         return result.success;
-      } catch {
+      } catch (e) {
+        console.error("useEnvSetup:", e);
         return false;
       } finally {
         setRunning(false);

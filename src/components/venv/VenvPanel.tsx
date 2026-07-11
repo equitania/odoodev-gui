@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
+import { logError } from "../../lib/errors";
 import { usePolling } from "../../hooks/usePolling";
 import { useVenvSetup } from "../../hooks/useVenvSetup";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -25,10 +26,10 @@ export function VenvPanel() {
   useEffect(() => {
     invokeCmd<Record<string, VersionInfo>>("get_versions")
       .then((v) => setVersions(v))
-      .catch(() => {});
+      .catch(logError("VenvPanel: get_versions"));
     invokeCmd<string[]>("get_active_versions")
       .then(setActiveVersions)
-      .catch(() => {});
+      .catch(logError("VenvPanel: get_active_versions"));
   }, []);
 
   const refreshStatus = useCallback(

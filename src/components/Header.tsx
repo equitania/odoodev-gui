@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "../store/appStore";
 import { invokeCmd } from "../lib/tauri";
+import { logError } from "../lib/errors";
 import { UpdateBadge } from "./UpdateBadge";
 import { Settings as SettingsIcon } from "lucide-react";
 
@@ -11,7 +12,7 @@ export function Header({ onSelectSettings }: { onSelectSettings: () => void }) {
   const [appVersion, setAppVersion] = useState<string>("");
 
   useEffect(() => {
-    invokeCmd<string>("get_app_version").then(setAppVersion).catch(() => {});
+    invokeCmd<string>("get_app_version").then(setAppVersion).catch(logError("Header: get_app_version"));
     checkOdoodevUpdate();
     const id = setInterval(() => checkOdoodevUpdate(), 300_000);
     return () => clearInterval(id);

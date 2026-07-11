@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
+import { logError } from "../../lib/errors";
 import { useReposProgress } from "../../hooks/useReposProgress";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { ReposCard } from "./ReposCard";
@@ -20,10 +21,10 @@ export function ReposPanel() {
   useEffect(() => {
     invokeCmd<Record<string, VersionInfo>>("get_versions")
       .then((v) => setVersions(v))
-      .catch(() => {});
+      .catch(logError("ReposPanel: load"));
     invokeCmd<string[]>("get_active_versions")
       .then(setActiveVersions)
-      .catch(() => {});
+      .catch(logError("ReposPanel: load"));
   }, []);
 
   const execute = async (

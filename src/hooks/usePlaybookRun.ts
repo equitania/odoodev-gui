@@ -45,7 +45,8 @@ export function usePlaybookRun(): PlaybookRunState {
           { playbook, steps, version, vars, dry_run: dryRun },
         );
         return result.success;
-      } catch {
+      } catch (e) {
+        console.error("usePlaybookRun:", e);
         return false;
       } finally {
         setRunning(false);

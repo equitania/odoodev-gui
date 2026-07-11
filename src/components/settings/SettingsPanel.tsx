@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { useAppStore } from "../../store/appStore";
 import { invokeCmd } from "../../lib/tauri";
+import { logError, reportError } from "../../lib/errors";
 import { setLanguage } from "../../i18n";
 
 export function SettingsPanel() {
@@ -22,7 +23,7 @@ export function SettingsPanel() {
   const [lang, setLang] = useState(i18n.language || "en");
 
   useEffect(() => {
-    invokeCmd<string>("get_app_version").then(setAppVersion).catch(() => {});
+    invokeCmd<string>("get_app_version").then(setAppVersion).catch(logError("SettingsPanel: get_app_version"));
     checkOdoodevUpdate();
     checkUvStatus();
     checkOdoodevStatus();
@@ -92,7 +93,7 @@ export function SettingsPanel() {
             <span className="text-muted-foreground">{t("common.path")}</span>
             <span className="font-mono text-xs">{uvInfo?.path ?? "—"}</span>
           </div>
-          <Button variant="outline" onClick={() => invokeCmd("install_uv")} className="mt-2">
+          <Button variant="outline" onClick={() => invokeCmd("install_uv").catch(reportError("uv reinstall failed"))} className="mt-2">
             {t("common.reinstall")} uv
           </Button>
         </CardContent>
@@ -149,7 +150,7 @@ export function SettingsPanel() {
           <p>{t("settings.copyright")}</p>
           <p>{t("settings.license")}</p>
           <button
-            onClick={() => invokeCmd("open_external", { url: "https://github.com/equitania/odoodev-gui" })}
+            onClick={() => invokeCmd("open_external", { url: "https://github.com/equitania/odoodev-gui" }).catch(reportError("Could not open link"))}
             className="text-blue-500 hover:underline"
           >
             {t("settings.githubLink")}
