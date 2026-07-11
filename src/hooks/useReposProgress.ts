@@ -60,6 +60,9 @@ export function useReposProgress(): ReposProgressState {
 
   useEffect(() => {
     return () => {
+      // Intentional: unlisten every listener `start` accumulated over the
+      // component's lifetime, not a stale mount-time snapshot of the ref.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       unlistensRef.current.forEach((u) => u());
     };
   }, []);

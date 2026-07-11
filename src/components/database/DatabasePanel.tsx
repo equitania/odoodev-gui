@@ -49,6 +49,9 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   useEffect(() => {
     if (preselectVersion) setSelectedVersion(preselectVersion);
     else if (versionKeys.length > 0 && !selectedVersion) setSelectedVersion(versionKeys[0]);
+    // Pick a default version once when inputs change; reading selectedVersion
+    // (the "already chosen?" guard) is intentional, not a missing dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectVersion, versionKeys]);
 
   const fetchDatabases = async () => {
@@ -73,6 +76,9 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
 
   useEffect(() => {
     fetchDatabases();
+    // Re-fetch whenever the selected version changes; fetchDatabases is a plain
+    // (non-memoized) function, intentionally omitted to avoid a re-fetch loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVersion]);
 
   const setDbAction = (name: string, busy: boolean) => {

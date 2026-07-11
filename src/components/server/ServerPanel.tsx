@@ -27,6 +27,9 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
     } else if (versionKeys.length > 0 && !versionKeys.includes(activeTab)) {
       setActiveTab(versionKeys[0]);
     }
+    // Reconcile the active tab only when preselect/versionKeys change; reading
+    // the current activeTab and calling the stable store action are intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectVersion, versionKeys]);
 
   const activeVersion = activeTab || versionKeys[0] || "";
