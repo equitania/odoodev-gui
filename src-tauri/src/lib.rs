@@ -13,6 +13,7 @@ use commands::docker;
 use commands::self_update;
 use commands::server;
 use commands::system;
+use commands::venv;
 use commands::versions;
 use server_manager::ServerManager;
 
@@ -66,6 +67,9 @@ pub fn run() {
             docker::get_runtime_info,
             docker::docker_logs,
             docker::docker_bench,
+            // venv
+            venv::venv_setup,
+            venv::venv_remove,
             // runtime detection
             versions::get_runtime,
             versions::get_runtime_config,

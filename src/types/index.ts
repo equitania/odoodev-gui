@@ -179,6 +179,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "docker" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";

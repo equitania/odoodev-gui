@@ -67,5 +67,8 @@ export function useOdoodev() {
       invokeCmd<OpResult>("docker_bench", { version, runtime, duration, scale }),
     getRuntime: () => invokeCmd<string>("get_runtime"),
     getRuntimeConfig: () => invokeCmd<string | null>("get_runtime_config"),
+    venvSetup: (version: string, force: boolean) =>
+      invokeCmd<OpResult>("venv_setup", { version, force }),
+    venvRemove: (version: string) => invokeCmd<OpResult>("venv_remove", { version }),
   };
 }
