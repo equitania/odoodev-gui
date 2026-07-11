@@ -10,6 +10,7 @@ mod server_manager;
 
 use commands::database;
 use commands::docker;
+use commands::repos;
 use commands::self_update;
 use commands::server;
 use commands::system;
@@ -70,6 +71,9 @@ pub fn run() {
             // venv
             venv::venv_setup,
             venv::venv_remove,
+            // repos
+            repos::repos_run,
+            repos::repos_pull,
             // runtime detection
             versions::get_runtime,
             versions::get_runtime_config,

@@ -1,5 +1,5 @@
 import { cn } from "../lib/utils";
-import { LayoutGrid, Rocket, Database, Container, Package, Settings } from "lucide-react";
+import { LayoutGrid, Rocket, Database, Container, Package, GitBranch, Settings } from "lucide-react";
 import type { ViewKey } from "../types";
 
 const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof LayoutGrid }[] = [
@@ -8,6 +8,7 @@ const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof LayoutGrid }[] = [
   { key: "database", label: "Databases", icon: Database },
   { key: "docker", label: "Docker", icon: Container },
   { key: "venv", label: "Venv", icon: Package },
+  { key: "repos", label: "Repos", icon: GitBranch },
   { key: "settings", label: "Settings", icon: Settings },
 ];
 

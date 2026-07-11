@@ -9,6 +9,7 @@ import { DatabasePanel } from "./components/database/DatabasePanel";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { DockerPanel } from "./components/docker/DockerPanel";
 import { VenvPanel } from "./components/venv/VenvPanel";
+import { ReposPanel } from "./components/repos/ReposPanel";
 import { useAppStore } from "./store/appStore";
 import type { ViewKey } from "./types";
 
@@ -51,6 +52,7 @@ export default function App() {
           )}
           {activeView === "docker" && <DockerPanel />}
           {activeView === "venv" && <VenvPanel />}
+          {activeView === "repos" && <ReposPanel />}
           {activeView === "settings" && <SettingsPanel />}
         </main>
       </div>

@@ -70,5 +70,9 @@ export function useOdoodev() {
     venvSetup: (version: string, force: boolean) =>
       invokeCmd<OpResult>("venv_setup", { version, force }),
     venvRemove: (version: string) => invokeCmd<OpResult>("venv_remove", { version }),
+    reposRun: (version: string, configOnly: boolean) =>
+      invokeCmd<OpResult>("repos_run", { version, config_only: configOnly }),
+    reposPull: (version: string, noConfig: boolean) =>
+      invokeCmd<OpResult>("repos_pull", { version, no_config: noConfig }),
   };
 }
