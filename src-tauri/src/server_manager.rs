@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use tokio::process::Child;
 
 pub struct OdooProcess {
+    #[allow(dead_code)]
     pub child: Option<Child>,
     pub pid: u32,
     pub started_at: chrono::DateTime<Utc>,

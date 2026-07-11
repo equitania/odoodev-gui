@@ -69,6 +69,7 @@ pub fn find_odoodev() -> PathBuf {
     find_binary("odoodev")
 }
 
+#[allow(dead_code)]
 pub fn find_uv() -> PathBuf {
     find_binary("uv")
 }

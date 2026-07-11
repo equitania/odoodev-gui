@@ -2,6 +2,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OdoodevConfig {
+    #[allow(dead_code)]
     pub base_dir: Option<String>,
     pub active_versions: Option<Vec<String>>,
     #[serde(rename = "container_runtime")]
