@@ -6,6 +6,12 @@ on:
 
 jobs:
   release:
+    # tauri-action creates the GitHub Release and uploads assets via the
+    # GITHUB_TOKEN. Repos default that token to read-only, which makes the
+    # release-create call fail with "Resource not accessible by integration".
+    # contents: write grants exactly the release/asset write scope it needs.
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
