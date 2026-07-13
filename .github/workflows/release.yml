@@ -46,10 +46,22 @@ jobs:
           # The signing key was generated without a password, so no password env
           # is passed (an empty password matches the key). If you ever regenerate
           # the key WITH a password, add TAURI_SIGNING_PRIVATE_KEY_PASSWORD back.
-          # macOS code signing + notarization: add the APPLE_* env vars back here
-          # once real Apple Developer secrets exist. Empty secret references make
-          # tauri-action attempt (and fail) a keychain cert import, so they are
-          # intentionally omitted for now — macOS builds ad-hoc/unsigned.
+          # macOS code signing + notarization (see docs/MACOS_SIGNING.md).
+          # All six secrets must exist — an empty APPLE_CERTIFICATE makes
+          # tauri-action attempt (and fail) the keychain import.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+           # macOS code signing + notarization
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "odoodev-gui ${{ github.ref_name }}"
