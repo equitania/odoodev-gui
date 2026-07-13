@@ -9,6 +9,11 @@ pub const EXTRA_PATHS_UNIX: &[&str] = &[
     ".cargo/bin",
     "/opt/homebrew/bin",
     "/usr/local/bin",
+    // Homebrew's libpq is keg-only: psql/pg_dump live here and are NOT
+    // symlinked into /opt/homebrew/bin. Without these, odoodev subprocesses
+    // spawned from the packaged app find no pg client tools.
+    "/opt/homebrew/opt/libpq/bin",
+    "/usr/local/opt/libpq/bin",
 ];
 
 pub const EXTRA_PATHS_WIN: &[&str] = &[".local\\bin", ".cargo\\bin"];
