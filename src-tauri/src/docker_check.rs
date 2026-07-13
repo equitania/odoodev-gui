@@ -46,10 +46,10 @@ pub async fn detect_runtime() -> String {
             return rt;
         }
     }
-    if which::which("docker").is_ok() {
+    if odoodev::find_binary_opt("docker").is_some() {
         return "docker".to_string();
     }
-    if cfg!(target_os = "macos") && which::which("container").is_ok() {
+    if cfg!(target_os = "macos") && odoodev::find_binary_opt("container").is_some() {
         return "apple".to_string();
     }
     "none".to_string()
@@ -57,7 +57,7 @@ pub async fn detect_runtime() -> String {
 
 /// Query `docker ps --format` for a container publishing the given DB port.
 async fn docker_container_for_port(db_port: u16) -> String {
-    let Ok(docker_path) = which::which("docker") else {
+    let Some(docker_path) = odoodev::find_binary_opt("docker") else {
         return String::new();
     };
     let mut cmd = Command::new(docker_path);
@@ -82,7 +82,7 @@ async fn docker_container_for_port(db_port: u16) -> String {
 /// publishing the given DB port. Returns (is_running, container_name).
 /// Falls back to TCP probe if the API server is down or JSON parsing fails.
 async fn apple_container_status(db_port: u16) -> (bool, String) {
-    let Ok(container_path) = which::which("container") else {
+    let Some(container_path) = odoodev::find_binary_opt("container") else {
         return (crate::pypi::check_pg_port(db_port).await, String::new());
     };
 
@@ -135,7 +135,7 @@ async fn apple_container_status(db_port: u16) -> (bool, String) {
 
 /// List all Apple Containers via `container ls --format json`.
 pub async fn list_apple_containers() -> Vec<ContainerInfo> {
-    let Ok(container_path) = which::which("container") else {
+    let Some(container_path) = odoodev::find_binary_opt("container") else {
         return Vec::new();
     };
     let mut cmd = Command::new(container_path);
@@ -222,7 +222,7 @@ fn parse_apple_container(item: &serde_json::Value) -> ContainerInfo {
 
 /// List all Docker containers via `docker ps --format json`.
 pub async fn list_docker_containers() -> Vec<ContainerInfo> {
-    let Ok(docker_path) = which::which("docker") else {
+    let Some(docker_path) = odoodev::find_binary_opt("docker") else {
         return Vec::new();
     };
     let mut cmd = Command::new(docker_path);

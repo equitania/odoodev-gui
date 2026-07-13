@@ -51,8 +51,8 @@ export function useInitProgress(): InitProgressState {
       try {
         const result = await invokeCmd<{ success: boolean; error: string | null }>(cmd, {
           version,
-          skip_repos: skipRepos,
-          skip_docker: skipDocker,
+          skipRepos,
+          skipDocker,
           reset,
         });
         return result.success;

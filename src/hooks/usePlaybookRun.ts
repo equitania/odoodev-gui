@@ -42,7 +42,7 @@ export function usePlaybookRun(): PlaybookRunState {
       try {
         const result = await invokeCmd<{ success: boolean; error: string | null }>(
           "playbook_run",
-          { playbook, steps, version, vars, dry_run: dryRun },
+          { playbook, steps, version, vars, dryRun },
         );
         return result.success;
       } catch (e) {

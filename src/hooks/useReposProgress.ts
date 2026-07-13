@@ -44,8 +44,8 @@ export function useReposProgress(): ReposProgressState {
       try {
         const result = await invokeCmd<{ success: boolean; error: string | null }>(cmd, {
           version,
-          config_only: configOnly ?? false,
-          no_config: noConfig ?? false,
+          configOnly: configOnly ?? false,
+          noConfig: noConfig ?? false,
         });
         return result.success;
       } catch (e) {

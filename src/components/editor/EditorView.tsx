@@ -59,8 +59,8 @@ export function EditorView({
       invokeCmd<void>("fs_write_file", {
         path,
         content,
-        allow_create: false,
-        extra_roots: extraRoots,
+        allowCreate: false,
+        extraRoots,
       })
         .then(() => {
           savedContent = content;

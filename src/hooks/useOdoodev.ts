@@ -15,6 +15,7 @@ import type {
   OpResult,
   PlatformInfo,
   PlaybookInfo,
+  StepCapability,
   RestoreArgs,
   RestoreResult,
   RuntimeInfo,
@@ -76,15 +77,15 @@ export function useOdoodev() {
       invokeCmd<OpResult>("venv_setup", { version, force }),
     venvRemove: (version: string) => invokeCmd<OpResult>("venv_remove", { version }),
     reposRun: (version: string, configOnly: boolean) =>
-      invokeCmd<OpResult>("repos_run", { version, config_only: configOnly }),
+      invokeCmd<OpResult>("repos_run", { version, configOnly }),
     reposPull: (version: string, noConfig: boolean) =>
-      invokeCmd<OpResult>("repos_pull", { version, no_config: noConfig }),
+      invokeCmd<OpResult>("repos_pull", { version, noConfig }),
     envCheck: (version: string) => invokeCmd<EnvCheckResult>("env_check", { version }),
     envDir: (version: string) => invokeCmd<string>("env_dir", { version }),
     envShow: (version: string) => invokeCmd<string>("env_show", { version }),
     envSetup: (version: string) => invokeCmd<OpResult>("env_setup", { version }),
     playbookList: () => invokeCmd<PlaybookInfo[]>("playbook_list"),
-    playbookValidSteps: () => invokeCmd<string[]>("playbook_valid_steps"),
+    playbookValidSteps: () => invokeCmd<StepCapability[]>("playbook_valid_steps"),
     playbookRun: (
       playbook: string | null,
       steps: string[],
@@ -92,15 +93,15 @@ export function useOdoodev() {
       vars: string[],
       dryRun: boolean,
     ) =>
-      invokeCmd<OpResult>("playbook_run", { playbook, steps, version, vars, dry_run: dryRun }),
+      invokeCmd<OpResult>("playbook_run", { playbook, steps, version, vars, dryRun }),
     initVersion: (version: string, skipRepos: boolean, skipDocker: boolean) =>
-      invokeCmd<OpResult>("init_version", { version, skip_repos: skipRepos, skip_docker: skipDocker }),
+      invokeCmd<OpResult>("init_version", { version, skipRepos, skipDocker }),
     setupConfig: (reset: boolean) =>
       invokeCmd<OpResult>("setup_config", { reset }),
     migrateList: () => invokeCmd<MigrationGroup[]>("migrate_list"),
     migrateStatus: () => invokeCmd<MigrationStatus>("migrate_status"),
     migrateCreate: (from: string, to: string, name: string | null, pgVersion: string | null) =>
-      invokeCmd<OpResult>("migrate_create", { from, to, name, pg_version: pgVersion }),
+      invokeCmd<OpResult>("migrate_create", { from, to, name, pgVersion }),
     migrateActivate: (name: string) => invokeCmd<OpResult>("migrate_activate", { name }),
     migrateDeactivate: () => invokeCmd<OpResult>("migrate_deactivate"),
     migrateRemove: (name: string) => invokeCmd<OpResult>("migrate_remove", { name }),

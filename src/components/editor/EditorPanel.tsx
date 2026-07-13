@@ -69,7 +69,7 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
 
   const openFileDirect = useCallback(
     (path: string, roots: string[]) => {
-      invokeCmd<FileContent>("fs_read_file", { path, extra_roots: roots })
+      invokeCmd<FileContent>("fs_read_file", { path, extraRoots: roots })
         .then((content) => {
           if (content.kind !== "text") {
             toastError(t("editor.loadFailed"), path);
@@ -137,7 +137,7 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
     setValidating(true);
     invokeCmd<SemanticValidation>("playbook_validate_semantic", {
       path: selectedPath,
-      extra_roots: extraRoots,
+      extraRoots,
     })
       .then(setSemantic)
       .catch(reportError(t("editor.validateFailed")))
@@ -149,8 +149,8 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
     invokeCmd<void>("fs_write_file", {
       path,
       content: PLAYBOOK_TEMPLATE,
-      allow_create: true,
-      extra_roots: extraRoots,
+      allowCreate: true,
+      extraRoots,
     })
       .then(async () => {
         toastSuccess(t("editor.playbookCreated"));

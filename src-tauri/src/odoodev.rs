@@ -48,21 +48,36 @@ pub fn augment_path(cmd: &mut Command) {
     cmd.env("PATH", format!("{extra_str}{sep}{current}"));
 }
 
-pub fn find_binary(name: &str) -> PathBuf {
+/// Locate a binary via PATH plus the well-known install dirs from
+/// EXTRA_PATHS. Packaged desktop apps start with a minimal PATH
+/// (macOS: /usr/bin:/bin:...), so PATH lookup alone misses binaries in
+/// /usr/local/bin (docker, container) or ~/.local/bin (odoodev, uv).
+pub fn find_binary_opt(name: &str) -> Option<PathBuf> {
     if let Ok(p) = which::which(name) {
-        return p;
+        return Some(p);
     }
     let home = home_dir();
-    let candidates = [
-        home.join(format!(".local/bin/{name}")),
-        home.join(format!(".cargo/bin/{name}")),
-    ];
-    for c in &candidates {
-        if c.exists() {
-            return c.clone();
+    let dirs: &[&str] = if cfg!(target_os = "windows") {
+        EXTRA_PATHS_WIN
+    } else {
+        EXTRA_PATHS_UNIX
+    };
+    for dir in dirs {
+        let base = if dir.starts_with('/') {
+            PathBuf::from(dir)
+        } else {
+            home.join(dir)
+        };
+        let candidate = base.join(name);
+        if candidate.exists() {
+            return Some(candidate);
         }
     }
-    PathBuf::from(name)
+    None
+}
+
+pub fn find_binary(name: &str) -> PathBuf {
+    find_binary_opt(name).unwrap_or_else(|| PathBuf::from(name))
 }
 
 pub fn find_odoodev() -> PathBuf {
@@ -135,6 +150,31 @@ pub async fn run_odoodev_text(args: &[&str]) -> Result<String, String> {
     }
 }
 
+/// Like run_odoodev_text, but tolerates non-zero exit codes: some odoodev
+/// commands (e.g. `doctor`) legitimately exit 1 while still printing their
+/// full report to stdout. Errors only when the process can't be spawned or
+/// produced no stdout at all.
+pub async fn run_odoodev_text_lenient(args: &[&str]) -> Result<String, String> {
+    let output = build_odoodev_command(args)
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute odoodev: {e}"))?;
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    if !stdout.trim().is_empty() {
+        return Ok(stdout);
+    }
+    if output.status.success() {
+        Ok(stdout)
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!(
+            "odoodev failed (exit {}): {}",
+            output.status.code().unwrap_or(-1),
+            stderr.trim()
+        ))
+    }
+}
+
 pub async fn run_odoodev_streaming(
     args: &[&str],
     window: &tauri::Window,
@@ -183,7 +223,18 @@ pub async fn run_odoodev_spawn(args: &[&str]) -> Result<Child, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::reject_flag_like;
+    use super::{find_binary_opt, reject_flag_like};
+
+    #[test]
+    fn find_binary_opt_none_for_unknown() {
+        assert!(find_binary_opt("definitely-not-a-real-binary-xyz").is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn find_binary_opt_finds_sh() {
+        assert!(find_binary_opt("sh").is_some());
+    }
 
     #[test]
     fn accepts_normal_values() {
