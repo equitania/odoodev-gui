@@ -28,21 +28,38 @@ build fail. Add the secrets first (steps 1–3), then enable the env block
   Do NOT paste the real identity string or Team ID into this file or any
   other committed file — they belong exclusively in GitHub secrets.)
 
-## Step 1 — Export the certificate as .p12
+## Step 1 — Export the certificate as .p12 (format matters!)
 
-1. Open **Keychain Access** → *login* keychain → category *My Certificates*.
-2. Expand the **Developer ID Application** entry
-   (it must contain the private key — the disclosure triangle shows it).
-3. Right-click the certificate → **Export** → format **.p12**.
-4. Choose a strong export password (needed as a secret below).
-5. Base64-encode the file for GitHub:
+`security import` on the CI runners accepts ONLY the classic 3DES/SHA1
+PKCS12 encoding. Both other formats fail with the misleading error
+`MAC verification failed during PKCS12 import (wrong password?)`:
+
+- Keychain Access exports (ancient RC2-40-CBC) → rejected
+- OpenSSL 3 default exports (modern PBES2/AES-256) → rejected
+- `openssl pkcs12 -export -legacy` (3DES/SHA1) → **works**
+
+1. Open **Keychain Access** → *login* keychain → *My Certificates* →
+   right-click the **Developer ID Application** entry (must contain the
+   private key) → **Export** → `.p12` with a temporary password.
+2. Re-encode it into the runner-compatible format and TEST the import
+   locally exactly like the runner does, before uploading:
 
    ```bash
-   base64 -i DeveloperID.p12 | pbcopy   # result lands in the clipboard
+   openssl pkcs12 -in DeveloperID.p12 -nodes -legacy -out /tmp/devid.pem
+   openssl pkcs12 -export -legacy -in /tmp/devid.pem -out DeveloperID-ci.p12
+   rm /tmp/devid.pem
+
+   # Local dry-run of the CI import (must print "1 identity imported"):
+   security create-keychain -p citest /tmp/ci-test.keychain
+   security import DeveloperID-ci.p12 -k /tmp/ci-test.keychain -P '<CI-PASSWORT>' -T /usr/bin/codesign
+   security delete-keychain /tmp/ci-test.keychain
    ```
 
-6. Delete the .p12 afterwards (`rm`) — never commit it, never leave it in
-   Downloads.
+   Use a plain alphanumeric CI password — special characters risk being
+   mangled on their way into the secret.
+3. Base64-encode for GitHub: `base64 -i DeveloperID-ci.p12 | pbcopy`
+4. Delete both .p12 files afterwards (`rm`) — never commit them, never
+   leave them in Downloads.
 
 ## Step 2 — Create notarization credentials
 
