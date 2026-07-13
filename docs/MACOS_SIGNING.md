@@ -61,17 +61,17 @@ see the tauri-action docs if we ever want to switch.
 
 ## Step 3 — Add GitHub secrets
 
-Repo: `github.com/eqms/odoodev-gui` → *Settings* → *Secrets and variables*
+Repo: `github.com/equitania/odoodev-gui` → *Settings* → *Secrets and variables*
 → *Actions* → **New repository secret**, or via CLI:
 
 ```bash
-gh secret set APPLE_CERTIFICATE          --repo eqms/odoodev-gui  # paste base64 from step 1
-gh secret set APPLE_CERTIFICATE_PASSWORD --repo eqms/odoodev-gui  # .p12 export password
-gh secret set APPLE_SIGNING_IDENTITY     --repo eqms/odoodev-gui \
+gh secret set APPLE_CERTIFICATE          --repo equitania/odoodev-gui  # paste base64 from step 1
+gh secret set APPLE_CERTIFICATE_PASSWORD --repo equitania/odoodev-gui  # .p12 export password
+gh secret set APPLE_SIGNING_IDENTITY     --repo equitania/odoodev-gui \
   --body "Developer ID Application: <Company Name> (<TEAM_ID>)"
-gh secret set APPLE_ID                   --repo eqms/odoodev-gui  # Apple-ID e-mail
-gh secret set APPLE_PASSWORD             --repo eqms/odoodev-gui  # app-specific password
-gh secret set APPLE_TEAM_ID              --repo eqms/odoodev-gui --body "<TEAM_ID>"
+gh secret set APPLE_ID                   --repo equitania/odoodev-gui  # Apple-ID e-mail
+gh secret set APPLE_PASSWORD             --repo equitania/odoodev-gui  # app-specific password
+gh secret set APPLE_TEAM_ID              --repo equitania/odoodev-gui --body "<TEAM_ID>"
 ```
 
 ## Step 4 — Enable signing in release.yml

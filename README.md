@@ -37,7 +37,7 @@ aktualisiert es via `uv tool`).
 ### Download & Installation
 
 Lade den aktuellen Installer für deine Plattform von der
-**[Releases-Seite](https://github.com/eqms/odoodev-gui/releases/latest)** herunter:
+**[Releases-Seite](https://github.com/equitania/odoodev-gui/releases/latest)** herunter:
 
 | Plattform | Datei | Installation |
 |-----------|-------|--------------|
@@ -136,7 +136,7 @@ parses its JSON / stdout output. No Python logic is duplicated. The GUI also man
 ### Download & Install
 
 Grab the latest installer for your platform from the
-**[Releases page](https://github.com/eqms/odoodev-gui/releases/latest)**:
+**[Releases page](https://github.com/equitania/odoodev-gui/releases/latest)**:
 
 | Platform | File | Install |
 |----------|------|---------|
