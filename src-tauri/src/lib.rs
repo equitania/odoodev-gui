@@ -11,6 +11,7 @@ mod server_manager;
 use commands::database;
 use commands::docker;
 use commands::doctor;
+use commands::editor;
 use commands::env;
 use commands::init_cmd;
 use commands::migrate;
@@ -88,7 +89,14 @@ pub fn run() {
             // playbook
             playbook::playbook_list,
             playbook::playbook_valid_steps,
+            playbook::playbook_inspect,
             playbook::playbook_run,
+            // editor (curated files)
+            editor::curated_files,
+            editor::fs_read_file,
+            editor::fs_write_file,
+            editor::validate_yaml,
+            editor::playbook_validate_semantic,
             // init / setup
             init_cmd::init_version,
             init_cmd::setup_config,

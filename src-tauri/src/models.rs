@@ -69,6 +69,27 @@ pub struct PlaybookInfo {
     pub vars: Option<serde_json::Value>,
 }
 
+// === run --steps --output json (odoodev >= 0.51) ===
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct StepCapability {
+    pub command: String,
+    pub mode: String, // "dev" | "server"
+}
+
+// === playbook_inspect: lenient YAML summary of a playbook file ===
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct PlaybookDetails {
+    pub description: String,
+    pub version: String,
+    pub on_error: String,
+    pub step_names: Vec<String>,
+    pub step_commands: Vec<String>,
+    pub targets: Vec<String>,
+    pub env_file: Option<String>,
+    pub has_rpc: bool,
+    pub vars: Vec<String>,
+}
+
 // === Docker status (Rust-native check) ===
 #[derive(Debug, Clone, Serialize)]
 pub struct DockerStatus {

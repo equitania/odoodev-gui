@@ -179,6 +179,55 @@ export interface PlaybookInfo {
   vars?: Record<string, unknown>;
 }
 
+export interface StepCapability {
+  command: string;
+  mode: "dev" | "server";
+}
+
+export interface PlaybookDetails {
+  description: string;
+  version: string;
+  on_error: string;
+  step_names: string[];
+  step_commands: string[];
+  targets: string[];
+  env_file: string | null;
+  has_rpc: boolean;
+  vars: string[];
+}
+
+// === Editor (curated files) ===
+export interface CuratedEntry {
+  path: string;
+  exists: boolean;
+  label: string;
+}
+
+export interface CuratedFiles {
+  config: CuratedEntry;
+  env_files: CuratedEntry[];
+  playbooks: PlaybookInfo[];
+  playbook_roots: string[];
+}
+
+export type FileContent =
+  | { kind: "text"; content: string }
+  | { kind: "binary"; size: number }
+  | { kind: "tooLarge"; size: number };
+
+export interface YamlError {
+  message: string;
+  line: number | null;
+  column: number | null;
+}
+
+export interface SemanticValidation {
+  valid: boolean;
+  message: string | null;
+}
+
+export type EditorLanguage = "yaml" | "ini" | "plaintext";
+
 export interface DashboardStatus {
   versions: VersionsResponse;
   active_versions: string[];
@@ -244,6 +293,6 @@ export interface ServerState {
   config: StartServerArgs | null;
 }
 
-export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "init" | "migrate" | "doctor" | "settings";
+export type ViewKey = "dashboard" | "server" | "database" | "docker" | "venv" | "repos" | "env" | "playbook" | "editor" | "init" | "migrate" | "doctor" | "settings";
 
 export type ContainerRuntime = "docker" | "apple" | "none";

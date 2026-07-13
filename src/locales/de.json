@@ -46,7 +46,8 @@
     "init": "Init",
     "migrate": "Migration",
     "doctor": "Doctor",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "editor": "Editor"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -231,7 +232,16 @@
     "playbookComplete": "Playbook abgeschlossen",
     "playbookFailed": "Playbook fehlgeschlagen",
     "ok": "ok",
-    "error": "Fehler"
+    "error": "Fehler",
+    "edit": "Im Editor bearbeiten",
+    "serverStepsHint": "Server-Mode-Steps (Backup/Restore etc.) benötigen ein gespeichertes Playbook mit targets:-Block — als Inline-Steps sind sie nicht verfügbar.",
+    "legacyStreamingHint": "Live-Fortschritt pro Step erfordert odoodev ≥ 0.51 — die installierte Version liefert alle Step-Ergebnisse erst am Ende des Playbooks.",
+    "details": {
+      "title": "Playbook-Details",
+      "targets": "Targets",
+      "serverModeWarning": "Dieses Playbook enthält Server-Mode-Steps (Container-/Datenbank-Operationen).",
+      "serverModeWarningTargets": "Dieses Playbook enthält Server-Mode-Steps für: {{targets}}."
+    }
   },
   "init": {
     "title": "Init Wizard",
@@ -355,5 +365,40 @@
     "stoppingPostgresql": "PostgreSQL für v{{version}} wird gestoppt...",
     "postgresqlStopped": "PostgreSQL für v{{version}} gestoppt",
     "postgresqlStopFailed": "PostgreSQL konnte nicht gestoppt werden"
+  },
+  "editor": {
+    "title": "Editor",
+    "description": "odoodev-Konfiguration, .env-Dateien pro Version und Playbooks bearbeiten.",
+    "sectionConfig": "Konfiguration",
+    "sectionEnvFiles": "Env-Dateien",
+    "sectionPlaybooks": "Playbooks",
+    "noPlaybooks": "Keine Playbooks gefunden",
+    "newPlaybook": "Neues Playbook",
+    "newPlaybookDescription": "Erstellt ein YAML-Playbook aus einer minimalen Vorlage.",
+    "newPlaybookName": "Name",
+    "newPlaybookDestination": "Zielverzeichnis",
+    "newPlaybookTemplate": "Vorlage",
+    "nameInvalidChars": "Der Name darf keine Pfadtrenner enthalten.",
+    "nameDuplicate": "Ein Playbook mit diesem Namen existiert bereits.",
+    "playbookCreated": "Playbook erstellt",
+    "createFailed": "Playbook konnte nicht erstellt werden",
+    "save": "Speichern",
+    "saved": "Datei gespeichert",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "validate": "Validieren",
+    "validating": "Validierung läuft (Dry-Run)...",
+    "validateFailed": "Validierung konnte nicht ausgeführt werden",
+    "validateSaveFirst": "Datei vor der Validierung speichern",
+    "valid": "Gültig",
+    "invalidYaml": "YAML-Syntaxfehler",
+    "line": "Zeile",
+    "semanticValid": "Playbook ist gültig (Dry-Run erfolgreich)",
+    "semanticInvalid": "Playbook-Validierung fehlgeschlagen",
+    "unsavedTitle": "Ungespeicherte Änderungen",
+    "unsavedMessage": "Die aktuelle Datei hat ungespeicherte Änderungen. Vor dem Wechsel speichern?",
+    "unsavedSave": "Speichern",
+    "unsavedDiscard": "Verwerfen",
+    "noFileSelected": "Links eine Datei auswählen, um sie zu bearbeiten.",
+    "loadFailed": "Datei konnte nicht geöffnet werden"
   }
 }

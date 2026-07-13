@@ -3,29 +3,67 @@ import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { logError } from "../../lib/errors";
 import { usePlaybookRun } from "../../hooks/usePlaybookRun";
+import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { StepList } from "./StepList";
 import { EventLog } from "./EventLog";
+import { PlaybookDetailsCard } from "./PlaybookDetailsCard";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
-import { Play, FileText, Loader2, FlaskConical, Plus, X } from "lucide-react";
-import type { PlaybookInfo, VersionInfo } from "../../types";
+import {
+  Play,
+  FileText,
+  Loader2,
+  FlaskConical,
+  Plus,
+  X,
+  Pencil,
+  Info,
+} from "lucide-react";
+import type {
+  PlaybookDetails,
+  PlaybookInfo,
+  StepCapability,
+  VersionInfo,
+  ViewKey,
+} from "../../types";
 
-export function PlaybookPanel() {
+/** True when an installed version string is older than the required "major.minor.patch". */
+function isOlderThan(installed: string | null, required: string): boolean {
+  if (!installed) return false; // unknown version: don't nag
+  const parse = (v: string) => v.split(".").map((n) => parseInt(n, 10) || 0);
+  const [a, b] = [parse(installed), parse(required)];
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0);
+  }
+  return false;
+}
+
+interface PlaybookPanelProps {
+  onNavigate?: (view: ViewKey, version?: string, editorPath?: string) => void;
+}
+
+export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
   const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
-  const [validSteps, setValidSteps] = useState<string[]>([]);
+  const [validSteps, setValidSteps] = useState<StepCapability[]>([]);
   const [playbooks, setPlaybooks] = useState<PlaybookInfo[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [selectedSteps, setSelectedSteps] = useState<string[]>([]);
   const [selectedPlaybook, setSelectedPlaybook] = useState<string | null>(null);
+  const [details, setDetails] = useState<PlaybookDetails | null>(null);
   const [vars, setVars] = useState<string[]>([]);
   const [varInput, setVarInput] = useState("");
   const [showResults, setShowResults] = useState(false);
 
+  const odoodevVersion = useAppStore((s) => s.odoodevVersion);
   const playbookRun = usePlaybookRun();
+
+  const devSteps = validSteps.filter((s) => s.mode === "dev").map((s) => s.command);
+  const hasServerCapabilities = validSteps.some((s) => s.mode === "server");
+  const legacyStreaming = isOlderThan(odoodevVersion, "0.51.0");
 
   useEffect(() => {
     invokeCmd<Record<string, VersionInfo>>("get_versions")
@@ -35,13 +73,26 @@ export function PlaybookPanel() {
         if (keys.length > 0) setSelectedVersion(keys[0]);
       })
       .catch(logError("PlaybookPanel: load"));
-    invokeCmd<string[]>("playbook_valid_steps")
+    invokeCmd<StepCapability[]>("playbook_valid_steps")
       .then(setValidSteps)
       .catch(logError("PlaybookPanel: load"));
     invokeCmd<PlaybookInfo[]>("playbook_list")
       .then(setPlaybooks)
       .catch(logError("PlaybookPanel: load"));
   }, []);
+
+  useEffect(() => {
+    if (!selectedPlaybook) {
+      setDetails(null);
+      return;
+    }
+    invokeCmd<PlaybookDetails>("playbook_inspect", { path: selectedPlaybook })
+      .then(setDetails)
+      .catch((e) => {
+        setDetails(null);
+        logError("PlaybookPanel: inspect")(e);
+      });
+  }, [selectedPlaybook]);
 
   const toggleStep = (step: string) => {
     setSelectedSteps((prev) =>
@@ -112,6 +163,19 @@ export function PlaybookPanel() {
                 >
                   <FileText className="h-3.5 w-3.5" />
                   {pb.name}
+                  {onNavigate && (
+                    <span
+                      role="button"
+                      title={t("playbook.edit")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate("editor", undefined, pb.path);
+                      }}
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -140,7 +204,7 @@ export function PlaybookPanel() {
           </div>
         </div>
 
-        {!selectedPlaybook && validSteps.length > 0 && (
+        {!selectedPlaybook && devSteps.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>{t("playbook.inlineSteps", { count: selectedSteps.length })}</Label>
@@ -155,10 +219,16 @@ export function PlaybookPanel() {
               )}
             </div>
             <StepList
-              steps={validSteps}
+              steps={devSteps}
               selected={selectedSteps}
               onToggle={toggleStep}
             />
+            {hasServerCapabilities && (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Info className="h-3 w-3 shrink-0" />
+                {t("playbook.serverStepsHint")}
+              </p>
+            )}
             {selectedSteps.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {selectedSteps.map((s) => (
@@ -172,19 +242,24 @@ export function PlaybookPanel() {
         )}
 
         {selectedPlaybook && (
-          <div className="flex items-center gap-2">
-            <Badge variant="default">
-              <FileText className="h-3 w-3" />
-              {selectedPlaybook.split("/").pop()}
-            </Badge>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setSelectedPlaybook(null)}
-            >
-              <X className="h-3.5 w-3.5" />
-              Clear
-            </Button>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="default">
+                <FileText className="h-3 w-3" />
+                {selectedPlaybook.split("/").pop()}
+              </Badge>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedPlaybook(null)}
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear
+              </Button>
+            </div>
+            {details && (
+              <PlaybookDetailsCard details={details} capabilities={validSteps} />
+            )}
           </div>
         )}
 
@@ -241,6 +316,13 @@ export function PlaybookPanel() {
             {t("playbook.dryRun")}
           </Button>
         </div>
+
+        {legacyStreaming && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Info className="h-3 w-3 shrink-0" />
+            {t("playbook.legacyStreamingHint")}
+          </p>
+        )}
 
         {showResults && (playbookRun.running || playbookRun.events.length > 0) && (
           <EventLog

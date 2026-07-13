@@ -1,6 +1,7 @@
 pub mod database;
 pub mod docker;
 pub mod doctor;
+pub mod editor;
 pub mod env;
 pub mod init_cmd;
 pub mod migrate;

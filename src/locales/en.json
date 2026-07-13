@@ -46,7 +46,8 @@
     "init": "Init",
     "migrate": "Migrate",
     "doctor": "Doctor",
-    "settings": "Settings"
+    "settings": "Settings",
+    "editor": "Editor"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -231,7 +232,16 @@
     "playbookComplete": "Playbook completed",
     "playbookFailed": "Playbook failed",
     "ok": "ok",
-    "error": "error"
+    "error": "error",
+    "edit": "Edit in editor",
+    "serverStepsHint": "Server-mode steps (backup/restore etc.) require a saved playbook with a targets: block — they are not available as inline steps.",
+    "legacyStreamingHint": "Live per-step progress requires odoodev ≥ 0.51 — your installed version delivers all step results when the playbook finishes.",
+    "details": {
+      "title": "Playbook Details",
+      "targets": "Targets",
+      "serverModeWarning": "This playbook contains server-mode steps (container/database operations).",
+      "serverModeWarningTargets": "This playbook contains server-mode steps targeting: {{targets}}."
+    }
   },
   "init": {
     "title": "Init Wizard",
@@ -355,5 +365,40 @@
     "stoppingPostgresql": "Stopping PostgreSQL for v{{version}}...",
     "postgresqlStopped": "PostgreSQL stopped for v{{version}}",
     "postgresqlStopFailed": "Failed to stop PostgreSQL"
+  },
+  "editor": {
+    "title": "Editor",
+    "description": "Edit odoodev configuration, per-version .env files and playbooks.",
+    "sectionConfig": "Configuration",
+    "sectionEnvFiles": "Env Files",
+    "sectionPlaybooks": "Playbooks",
+    "noPlaybooks": "No playbooks found",
+    "newPlaybook": "New Playbook",
+    "newPlaybookDescription": "Creates a YAML playbook from a minimal template.",
+    "newPlaybookName": "Name",
+    "newPlaybookDestination": "Destination",
+    "newPlaybookTemplate": "Template",
+    "nameInvalidChars": "The name must not contain path separators.",
+    "nameDuplicate": "A playbook with this name already exists.",
+    "playbookCreated": "Playbook created",
+    "createFailed": "Failed to create playbook",
+    "save": "Save",
+    "saved": "File saved",
+    "saveFailed": "Save failed",
+    "validate": "Validate",
+    "validating": "Validating (dry run)...",
+    "validateFailed": "Validation failed to run",
+    "validateSaveFirst": "Save the file before validating",
+    "valid": "Valid",
+    "invalidYaml": "YAML syntax error",
+    "line": "line",
+    "semanticValid": "Playbook is valid (dry run passed)",
+    "semanticInvalid": "Playbook validation failed",
+    "unsavedTitle": "Unsaved changes",
+    "unsavedMessage": "The current file has unsaved changes. Save them before switching?",
+    "unsavedSave": "Save",
+    "unsavedDiscard": "Discard",
+    "noFileSelected": "Select a file on the left to edit it.",
+    "loadFailed": "Failed to open file"
   }
 }

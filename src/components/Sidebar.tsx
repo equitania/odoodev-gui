@@ -1,5 +1,5 @@
 import { cn } from "../lib/utils";
-import { LayoutGrid, Rocket, Database, Container, Package, GitBranch, FileCog, Play, Wand2, ArrowRightLeft, Stethoscope, Settings } from "lucide-react";
+import { LayoutGrid, Rocket, Database, Container, Package, GitBranch, FileCog, Play, FileCode, Wand2, ArrowRightLeft, Stethoscope, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ViewKey } from "../types";
 
@@ -12,6 +12,7 @@ const NAV_ITEMS: { key: ViewKey; labelKey: string; icon: typeof LayoutGrid }[] =
   { key: "repos", labelKey: "sidebar.repos", icon: GitBranch },
   { key: "env", labelKey: "sidebar.env", icon: FileCog },
   { key: "playbook", labelKey: "sidebar.playbook", icon: Play },
+  { key: "editor", labelKey: "sidebar.editor", icon: FileCode },
   { key: "init", labelKey: "sidebar.init", icon: Wand2 },
   { key: "migrate", labelKey: "sidebar.migrate", icon: ArrowRightLeft },
   { key: "doctor", labelKey: "sidebar.doctor", icon: Stethoscope },
