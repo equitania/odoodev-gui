@@ -29,21 +29,33 @@ und wertet dessen JSON-/stdout-Ausgabe aus. Es wird keine Python-Logik duplizier
 GUI verwaltet zusätzlich `uv` (installiert es bei Bedarf) und `odoodev` (installiert /
 aktualisiert es via `uv tool`).
 
-> **Status:** v1.1.1 — feature-complete. Alle Panels für v16–v19 implementiert
+> **Status:** feature-complete. Alle Panels für v16–v19 implementiert
 > (Dashboard, Server, Datenbanken, Docker/Container, Venv, Repos, Env, Playbooks, Init,
 > Migrate, Doctor, Einstellungen), Apple-Container-Integration aktiv, DE/EN-i18n,
 > Cross-Platform-Builds (macOS/Windows/Linux) mit eingebautem Auto-Update.
 
 ### Download & Installation
 
-Lade den aktuellen Installer für deine Plattform von der
-**[Releases-Seite](https://github.com/equitania/odoodev-gui/releases/latest)** herunter:
+**Linux — empfohlener Weg (ein Befehl):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/equitania/odoodev-gui/main/install.sh | bash
+```
+
+Das Skript erkennt die Distribution automatisch: Auf Debian/Ubuntu wird das `.deb` via
+`apt-get` installiert (löst alle Abhängigkeiten wie `libwebkit2gtk-4.1-0` automatisch auf),
+auf allen anderen Distributionen wird die AppImage benutzerlokal nach `~/.local/bin`
+installiert (inkl. Desktop-Eintrag, kein root nötig). Erneutes Ausführen aktualisiert auf
+die neueste Version.
+
+**Manueller Download** — aktueller Installer für jede Plattform auf der
+**[Releases-Seite](https://github.com/equitania/odoodev-gui/releases/latest)**:
 
 | Plattform | Datei | Installation |
 |-----------|-------|--------------|
-| **macOS** (Apple Silicon) | `odoodev-gui_1.1.1_aarch64.dmg` | `.dmg` öffnen, **odoodev-gui** in **Programme** ziehen. Beim ersten Start Rechtsklick auf die App → **Öffnen** (der Build ist noch nicht notarisiert). |
-| **Windows** | `odoodev-gui_1.1.1_x64-setup.exe` | Installer ausführen. Beim ersten Start warnt ggf. SmartScreen — **Weitere Informationen → Trotzdem ausführen** (noch nicht code-signiert). |
-| **Linux** | `odoodev-gui_1.1.1_amd64.AppImage` · `odoodev-gui_1.1.1_amd64.deb` | AppImage ausführbar machen (`chmod +x`) und starten, oder das `.deb` unter Debian/Ubuntu installieren. |
+| **macOS** (Apple Silicon) | `odoodev-gui_<version>_aarch64.dmg` | `.dmg` öffnen, **odoodev-gui** in **Programme** ziehen. Beim ersten Start Rechtsklick auf die App → **Öffnen** (der Build ist noch nicht notarisiert). |
+| **Windows** | `odoodev-gui_<version>_x64-setup.exe` | Installer ausführen. Beim ersten Start warnt ggf. SmartScreen — **Weitere Informationen → Trotzdem ausführen** (noch nicht code-signiert). |
+| **Linux** | `odoodev-gui_<version>_amd64.AppImage` · `odoodev-gui_<version>_amd64.deb` | AppImage ausführbar machen (`chmod +x`) und starten, oder das `.deb` via `apt install ./odoodev-gui_<version>_amd64.deb` installieren (nicht `dpkg -i` — das löst keine Abhängigkeiten auf). |
 
 > Beim ersten Start installiert `odoodev-gui` seine eigenen Abhängigkeiten (`uv` und die
 > `odoodev`-CLI), falls sie fehlen.
@@ -128,21 +140,33 @@ The GUI is a **pure presentation layer**: it shells out to `odoodev` as a subpro
 parses its JSON / stdout output. No Python logic is duplicated. The GUI also manages `uv`
 (installs it if missing) and `odoodev` (installs / upgrades it via `uv tool`).
 
-> **Status:** v1.1.1 — feature-complete. All panels for v16–v19 implemented (Dashboard,
+> **Status:** feature-complete. All panels for v16–v19 implemented (Dashboard,
 > Server, Databases, Docker/Container, Venv, Repos, Env, Playbooks, Init, Migrate, Doctor,
 > Settings), Apple Container integration active, DE/EN i18n, cross-platform builds
 > (macOS/Windows/Linux) with built-in auto-update.
 
 ### Download & Install
 
-Grab the latest installer for your platform from the
+**Linux — recommended (one command):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/equitania/odoodev-gui/main/install.sh | bash
+```
+
+The script auto-detects your distribution: on Debian/Ubuntu it installs the `.deb` via
+`apt-get` (which resolves all runtime dependencies like `libwebkit2gtk-4.1-0`
+automatically); on all other distributions it installs the AppImage user-locally to
+`~/.local/bin` (with a desktop entry, no root required). Re-running the script updates
+to the latest release.
+
+**Manual download** — grab the latest installer for your platform from the
 **[Releases page](https://github.com/equitania/odoodev-gui/releases/latest)**:
 
 | Platform | File | Install |
 |----------|------|---------|
-| **macOS** (Apple Silicon) | `odoodev-gui_1.1.1_aarch64.dmg` | Open the `.dmg`, drag **odoodev-gui** into **Applications**. On first launch, right-click the app → **Open** (the build is not yet notarized). |
-| **Windows** | `odoodev-gui_1.1.1_x64-setup.exe` | Run the installer. On first launch, Windows SmartScreen may warn — click **More info → Run anyway** (the app is not yet code-signed). |
-| **Linux** | `odoodev-gui_1.1.1_amd64.AppImage` · `odoodev-gui_1.1.1_amd64.deb` | Make the AppImage executable (`chmod +x`) and run it, or install the `.deb` on Debian/Ubuntu. |
+| **macOS** (Apple Silicon) | `odoodev-gui_<version>_aarch64.dmg` | Open the `.dmg`, drag **odoodev-gui** into **Applications**. On first launch, right-click the app → **Open** (the build is not yet notarized). |
+| **Windows** | `odoodev-gui_<version>_x64-setup.exe` | Run the installer. On first launch, Windows SmartScreen may warn — click **More info → Run anyway** (the app is not yet code-signed). |
+| **Linux** | `odoodev-gui_<version>_amd64.AppImage` · `odoodev-gui_<version>_amd64.deb` | Make the AppImage executable (`chmod +x`) and run it, or install the `.deb` via `apt install ./odoodev-gui_<version>_amd64.deb` (not `dpkg -i` — it does not resolve dependencies). |
 
 > On first run, `odoodev-gui` installs its own dependencies (`uv` and the `odoodev` CLI)
 > if they are missing.
