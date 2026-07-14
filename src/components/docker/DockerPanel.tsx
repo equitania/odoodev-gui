@@ -34,6 +34,15 @@ export function DockerPanel() {
   const dockerLogs = useDockerLogs();
   const dockerBench = useDockerBench();
 
+  // The benchmark compares Docker vs Apple Container PostgreSQL — it only
+  // makes sense on macOS with the `container` binary installed ("apple" is
+  // only ever reported as available there).
+  const appleAvailable = runtimeInfo?.available.includes("apple") ?? false;
+
+  useEffect(() => {
+    if (mode === "bench" && !appleAvailable) setMode("overview");
+  }, [mode, appleAvailable]);
+
   useEffect(() => {
     invokeCmd<RuntimeInfo>("get_runtime_info")
       .then(setRuntimeInfo)
@@ -182,7 +191,7 @@ export function DockerPanel() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">{t("docker.title")}</h1>
           <div className="flex gap-1">
-            {(["overview", "logs", "bench"] as PanelMode[]).map((m) => (
+            {(["overview", "logs", ...(appleAvailable ? ["bench"] : [])] as PanelMode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
@@ -214,6 +223,7 @@ export function DockerPanel() {
                 onUp={() => handleUp(ver)}
                 onDown={() => handleDown(ver)}
                 onLogs={() => handleLogs(ver)}
+                benchAvailable={appleAvailable}
                 onBench={() => handleBench(ver)}
               />
             ))}

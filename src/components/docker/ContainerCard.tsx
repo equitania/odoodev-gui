@@ -15,6 +15,8 @@ interface ContainerCardProps {
   onUp: () => void;
   onDown: () => void;
   onLogs: () => void;
+  /** Benchmark is macOS + Apple Container only (Docker vs Apple comparison). */
+  benchAvailable: boolean;
   onBench: () => void;
 }
 
@@ -27,6 +29,7 @@ export function ContainerCard({
   onUp,
   onDown,
   onLogs,
+  benchAvailable,
   onBench,
 }: ContainerCardProps) {
   const running = dockerStatus?.running ?? false;
@@ -110,10 +113,12 @@ export function ContainerCard({
             <FileText className="h-3.5 w-3.5" />
             Logs
           </Button>
-          <Button size="sm" variant="ghost" onClick={onBench} disabled={runtime === "none"}>
-            <Gauge className="h-3.5 w-3.5" />
-            Bench
-          </Button>
+          {benchAvailable && (
+            <Button size="sm" variant="ghost" onClick={onBench} disabled={runtime === "none"}>
+              <Gauge className="h-3.5 w-3.5" />
+              Bench
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
