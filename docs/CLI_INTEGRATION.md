@@ -111,6 +111,49 @@ struct Ports {
 
 ---
 
+### 1b. `odoodev config paths [VERSION] --json` (CLI ≥ 0.53.0)
+
+**Purpose:** Per-version inventory of every editable config file for the
+Monaco editor (`curated_files`) and the jump-to-editor buttons.
+
+**CLI Command:**
+```bash
+odoodev config paths --json          # all versions
+odoodev config paths 18 --json       # single version
+```
+
+**Output Format (verified):**
+```json
+{
+  "18": {
+    "native_dir": "/Users/x/gitbase/v18/v18-dev/dev18_native",
+    "conf_dir": "/Users/x/gitbase/v18/v18-dev/conf",
+    "myconfs_dir": "/Users/x/gitbase/v18/myconfs",
+    "files": {
+      "env":             {"path": ".../dev18_native/.env", "exists": true},
+      "compose":         {"path": ".../dev18_native/docker-compose.yml", "exists": true},
+      "requirements":    {"path": ".../dev18_native/requirements.txt", "exists": true},
+      "repos_yaml":      {"path": ".../dev18_native/repos.yaml", "exists": true},
+      "postgresql_conf": {"path": ".../dev18_native/postgresql.conf", "exists": true},
+      "template_conf":   {"path": ".../conf/odoo18_template.conf", "exists": true},
+      "generated_conf":  {"path": ".../myconfs/odoo_260714.conf", "exists": true}
+    }
+  }
+}
+```
+
+`generated_conf` is `null` when no `odoo_YYMMDD.conf` was generated yet.
+`repos.yaml` `paths.template` / `paths.config_dir` overrides are already
+resolved by the CLI.
+
+**Fallback (older CLIs):** when the command fails (unknown subcommand),
+`curated_files()` falls back to `odoodev env dir <version>` per version and
+derives only the native-dir files (no template/generated conf). The response
+carries `paths_command_available: false` so the frontend shows an
+"update odoodev" hint.
+
+---
+
 ### 2. `odoodev venv check <VERSION> --json`
 
 **Purpose:** Check venv status and requirements freshness for a specific version.

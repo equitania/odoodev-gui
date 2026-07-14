@@ -609,8 +609,7 @@ mod tests {
     fn rejects_malformed_paths_payload() {
         assert!(groups_from_paths_value(&serde_json::json!([1, 2])).is_none());
         // Versions without native_dir are skipped, not fatal.
-        let groups =
-            groups_from_paths_value(&serde_json::json!({"18": {"files": {}}})).unwrap();
+        let groups = groups_from_paths_value(&serde_json::json!({"18": {"files": {}}})).unwrap();
         assert!(groups.is_empty());
     }
 

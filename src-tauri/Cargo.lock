@@ -2638,7 +2638,7 @@ dependencies = [
 
 [[package]]
 name = "odoodev-gui"
-version = "1.2.6"
+version = "1.3.0"
 dependencies = [
  "anyhow",
  "chrono",

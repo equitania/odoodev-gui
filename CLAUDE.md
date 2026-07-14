@@ -92,7 +92,7 @@ The GUI communicates with `odoodev` via these channels:
 
 | Method | Commands | Format |
 |--------|----------|--------|
-| JSON (serde) | `config versions --json`, `venv check --json`, `db list --json` | Single-line JSON |
+| JSON (serde) | `config versions --json`, `config paths --json` (≥ 0.53.0, mit `env dir`-Fallback), `venv check --json`, `db list --json` | Single-line JSON |
 | NDJSON stream | `run --output json` | One JSON object per line (Phase 2) |
 | stdout streaming | `start`, `db backup`, `db restore` | Line-by-line text |
 | Exit code | `stop`, `db drop`, `db copy`, `db rename` | 0 = success |

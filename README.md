@@ -82,10 +82,18 @@ Syntax-Highlighting, Buffer-Persistenz über Stop/Start.
 mit Dry-Run, Sanitize, Anonymize, Purge, Recompute), Drop (type-to-confirm), Copy, Rename,
 Bulk-Drop, Operation-Progress mit live stdout.
 
-**Weitere Panels** — Docker/Container (up/down/status/logs, Benchmark), Venv
-(setup/check/remove), Repos (clone/update/config-regenerate, streaming), Env
-(check/setup/show/dir), Playbook-Runner (NDJSON-Live-Fortschritt), Init-Wizard,
-Migrate-Panel (Migrationsgruppen verwalten), Doctor / Health-Check, Einstellungen.
+**Editor** — Monaco-basierter Editor für alle odoodev-verwalteten Dateien pro Version:
+`.env`, `docker-compose.yml`, `requirements.txt`, `repos.yaml`, `postgresql.conf`,
+Odoo-Config-Template und die zuletzt generierte `odoo_YYMMDD.conf` (mit
+Überschreib-Hinweis). Direktsprünge über Edit-Buttons im Env-Panel, das
+Config-Dropdown der Dashboard-Karten und den Compose-Button der Docker-Karten.
+Pfade liefert `odoodev config paths --json` (CLI ≥ 0.53.0, mit Fallback für ältere CLIs).
+
+**Weitere Panels** — Docker/Container (up/down/status/logs; Benchmark nur auf macOS mit
+Apple Container), Venv (setup/check/remove), Repos (clone/update/config-regenerate,
+streaming), Env (check/setup/show/edit/dir), Playbook-Runner (NDJSON-Live-Fortschritt),
+Init-Wizard, Migrate-Panel (Migrationsgruppen verwalten), Doctor / Health-Check,
+Einstellungen.
 
 **Plattform & Betrieb** — Apple-Container-Integration (Runtime-Erkennung aus odoodev-Config
 `container_runtime: apple`, `container ls --format json`, Docker wird nie angerührt wenn
@@ -193,10 +201,17 @@ buffer persistence across stop/start.
 dry run, sanitize, anonymize, purge, recompute), drop (type-to-confirm), copy, rename,
 bulk drop, operation progress with live stdout.
 
-**More panels** — Docker/Container (up/down/status/logs, benchmark), Venv
-(setup/check/remove), Repos (clone/update/config-regenerate, streaming), Env
-(check/setup/show/dir), Playbook Runner (NDJSON live progress), Init Wizard, Migrate panel
-(migration group management), Doctor / Health Check, Settings.
+**Editor** — Monaco-based editor for every odoodev-managed file per version: `.env`,
+`docker-compose.yml`, `requirements.txt`, `repos.yaml`, `postgresql.conf`, the Odoo
+config template and the latest generated `odoo_YYMMDD.conf` (with an overwrite hint).
+Jump in directly via Edit buttons on the Env panel, the Config dropdown on the
+Dashboard cards and the Compose button on the Docker cards. Paths come from
+`odoodev config paths --json` (CLI ≥ 0.53.0, with a fallback for older CLIs).
+
+**More panels** — Docker/Container (up/down/status/logs; benchmark only on macOS with
+Apple Container), Venv (setup/check/remove), Repos (clone/update/config-regenerate,
+streaming), Env (check/setup/show/edit/dir), Playbook Runner (NDJSON live progress),
+Init Wizard, Migrate panel (migration group management), Doctor / Health Check, Settings.
 
 **Platform & operation** — Apple Container integration (runtime detection from odoodev
 config `container_runtime: apple`, `container ls --format json`, Docker is never touched

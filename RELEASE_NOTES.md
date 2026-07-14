@@ -1,5 +1,78 @@
 # Release Notes
 
+## Version 1.3.0 (14.07.2026)
+
+### Added
+- **Per-version config-file editing:** the Editor view now lists every
+  odoodev-managed file per version — `.env`, `docker-compose.yml`,
+  `requirements.txt`, `repos.yaml`, `postgresql.conf`, the
+  `odoo{version}_template.conf` and the latest generated `odoo_YYMMDD.conf`
+  (with a hint that generated files are overwritten by the next
+  `odoodev repos` run). Paths come from the new `odoodev config paths --json`
+  (CLI ≥ 0.53.0); older CLIs get the previous reduced list plus an upgrade hint.
+- **Editor shortcuts everywhere:** Edit button on the Env cards, a Config
+  dropdown on each Dashboard version card, and a Compose edit button on the
+  Docker container cards (Docker runtime only) — all jump straight into the
+  Monaco editor.
+- **Linux one-line installer** (`install.sh`): curl-pipe-bash with apt/.deb
+  and AppImage fallback.
+
+### Fixed
+- **PostgreSQL benchmark hidden on Linux/Windows:** the Docker-vs-Apple
+  benchmark tab and buttons now only appear on macOS with Apple Container
+  installed.
+
+### Changed
+- macOS signing guide: the p12 must be 3DES/SHA1
+  (`openssl pkcs12 -export -legacy`) or `security import` fails on CI runners.
+
+## Version 1.2.6 (14.07.2026)
+
+### Fixed
+- `release.yml`: removed a duplicated `APPLE_*` env block (invalid YAML broke
+  the release workflow).
+
+## Version 1.2.5 (13.07.2026)
+
+### Added
+- Release pipeline: macOS code signing + notarization via `APPLE_*` secrets.
+
+## Version 1.2.4 (13.07.2026)
+
+### Added
+- Docs: macOS signing & notarization guide (Developer ID + GitHub secrets).
+
+### Changed
+- GitHub repository moved to `equitania/odoodev-gui` (release + updater URLs).
+- App icon: bundle icons regenerated from the new `public/icon.png` source.
+
+## Version 1.2.3 (13.07.2026)
+
+### Fixed
+- Database panel: the Start-Container button now waits for readiness and
+  refreshes the list.
+
+## Version 1.2.2 (13.07.2026)
+
+### Fixed
+- Opaque dialogs (missing Tailwind v4 `@theme` tokens) and PostgreSQL client
+  tools resolution in the packaged app.
+
+## Version 1.2.1 (13.07.2026)
+
+### Fixed
+- Packaged-app bugs found in the v1.2.0 end-to-end test (minimal PATH of
+  bundled macOS apps, camelCase invoke arguments).
+
+## Version 1.2.0 (12.07.2026)
+
+### Added
+- Playbook sync with odoodev 0.51 and a Monaco-based curated file editor
+  (global config, per-version `.env`, playbooks with YAML validation).
+
+### Changed
+- Bilingual DE/EN README with eyecatcher and dashboard screenshot.
+
 ## Version 1.1.1 (11.07.2026)
 
 First release with built-in cross-platform auto-update.
