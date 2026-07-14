@@ -10,9 +10,13 @@ import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Loader2, Terminal } from "lucide-react";
 import { POLL_INTERVALS } from "../../lib/constants";
-import type { EnvCheckResult, VersionInfo } from "../../types";
+import type { EnvCheckResult, VersionInfo, ViewKey } from "../../types";
 
-export function EnvPanel() {
+interface EnvPanelProps {
+  onNavigate: (view: ViewKey, version?: string, editorPath?: string) => void;
+}
+
+export function EnvPanel({ onNavigate }: EnvPanelProps) {
   const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [activeVersions, setActiveVersions] = useState<string[]>([]);
@@ -115,6 +119,10 @@ export function EnvPanel() {
               setupRunning={setupVersion === ver && envSetup.running}
               onSetup={() => handleSetup(ver)}
               onShow={() => handleShow(ver)}
+              onEdit={() => {
+                const dir = envDirs[ver];
+                if (dir) onNavigate("editor", ver, `${dir}/.env`);
+              }}
               onCheck={() => refreshVersion(ver)}
             />
           ))}

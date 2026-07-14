@@ -1,6 +1,12 @@
 //! Curated file editor backend: read/write access limited to odoodev-owned
-//! files (global config, per-version .env, playbook YAMLs). Not a general
-//! file browser by design — every path is checked against an allowlist.
+//! files (global config, per-version config files, playbook YAMLs). Not a
+//! general file browser by design — every path is checked against an allowlist.
+//!
+//! The allowlist uses directory roots (each version's native_dir, conf_dir and
+//! myconfs_dir, as reported by `odoodev config paths --json`). That admits any
+//! file under those odoodev-owned trees, not only the curated entries — an
+//! intentional trade-off: the dirs are user-controlled dev directories at the
+//! same trust level as `~/.config/odoodev`.
 
 use std::path::{Path, PathBuf};
 
@@ -31,14 +37,172 @@ pub struct CuratedEntry {
     pub label: String,
 }
 
+/// One editable config file of a version (role tags mirror
+/// `odoodev config paths --json`).
+#[derive(Debug, Clone, Serialize)]
+pub struct VersionFileEntry {
+    pub role: String,
+    pub path: String,
+    pub exists: bool,
+    pub label: String,
+    pub hint: Option<String>,
+}
+
+/// All editable config files of one Odoo version.
+#[derive(Debug, Clone, Serialize)]
+pub struct VersionFileGroup {
+    pub version: String,
+    pub native_dir: String,
+    /// None when the installed odoodev CLI lacks `config paths` (fallback mode).
+    pub conf_dir: Option<String>,
+    pub myconfs_dir: Option<String>,
+    pub entries: Vec<VersionFileEntry>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CuratedFiles {
     pub config: CuratedEntry,
-    pub env_files: Vec<CuratedEntry>,
+    pub version_groups: Vec<VersionFileGroup>,
     pub playbooks: Vec<PlaybookInfo>,
-    /// Directories where new playbooks may be created; also serve as
-    /// extra allowlist roots for fs_read_file / fs_write_file.
+    /// Directories where new playbooks may be created.
     pub playbook_roots: Vec<String>,
+    /// Union of playbook roots and version directories; the allowlist roots
+    /// the frontend passes to fs_read_file / fs_write_file.
+    pub extra_roots: Vec<String>,
+    /// False when the installed odoodev CLI lacks `config paths --json`
+    /// (reduced file list, template/generated confs unavailable).
+    pub paths_command_available: bool,
+}
+
+/// Fixed role order for display and fallback synthesis.
+const NATIVE_DIR_ROLES: &[&str] = &[
+    "env",
+    "compose",
+    "requirements",
+    "repos_yaml",
+    "postgresql_conf",
+];
+const ALL_ROLES: &[&str] = &[
+    "env",
+    "compose",
+    "requirements",
+    "repos_yaml",
+    "postgresql_conf",
+    "template_conf",
+    "generated_conf",
+];
+
+/// The file a role maps to inside a version's native dir (fallback mode).
+fn native_dir_filename(role: &str) -> &'static str {
+    match role {
+        "env" => ".env",
+        "compose" => "docker-compose.yml",
+        "requirements" => "requirements.txt",
+        "repos_yaml" => "repos.yaml",
+        "postgresql_conf" => "postgresql.conf",
+        _ => unreachable!("not a native-dir role: {role}"),
+    }
+}
+
+fn role_hint(role: &str) -> Option<String> {
+    match role {
+        "template_conf" => Some("Source template for the generated odoo.conf".to_string()),
+        "generated_conf" => {
+            Some("Generated file — overwritten by the next `odoodev repos` run".to_string())
+        }
+        _ => None,
+    }
+}
+
+fn entry_for_path(role: &str, path: &Path, exists: bool) -> VersionFileEntry {
+    let label = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| role.to_string());
+    VersionFileEntry {
+        role: role.to_string(),
+        path: path.to_string_lossy().to_string(),
+        exists,
+        label,
+        hint: role_hint(role),
+    }
+}
+
+/// Parse the `odoodev config paths --json` payload into version groups.
+/// Returns None when the payload has an unexpected shape.
+fn groups_from_paths_value(value: &serde_json::Value) -> Option<Vec<VersionFileGroup>> {
+    let obj = value.as_object()?;
+    let mut groups = Vec::new();
+    for (version, data) in obj {
+        let Some(native_dir) = data.get("native_dir").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        let files = data.get("files").and_then(|v| v.as_object());
+        let mut entries = Vec::new();
+        if let Some(files) = files {
+            for role in ALL_ROLES {
+                let Some(entry) = files.get(*role) else {
+                    continue;
+                };
+                // `generated_conf` is null when nothing was generated yet.
+                let Some(path) = entry.get("path").and_then(|v| v.as_str()) else {
+                    continue;
+                };
+                let exists = entry
+                    .get("exists")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                entries.push(entry_for_path(role, Path::new(path), exists));
+            }
+        }
+        groups.push(VersionFileGroup {
+            version: version.clone(),
+            native_dir: native_dir.to_string(),
+            conf_dir: data
+                .get("conf_dir")
+                .and_then(|v| v.as_str())
+                .map(str::to_string),
+            myconfs_dir: data
+                .get("myconfs_dir")
+                .and_then(|v| v.as_str())
+                .map(str::to_string),
+            entries,
+        });
+    }
+    groups.sort_by(|a, b| a.version.cmp(&b.version));
+    Some(groups)
+}
+
+/// Fallback for odoodev < 0.53.0 (no `config paths`): derive the native-dir
+/// files from `env dir`; template/generated confs are not discoverable.
+async fn groups_from_env_dir(versions: &[String]) -> Vec<VersionFileGroup> {
+    let mut groups = Vec::new();
+    for version in versions {
+        // `env dir` prints the version's native dir; skip versions it doesn't know.
+        let Ok(output) = odoodev::run_odoodev_text(&["env", "dir", version]).await else {
+            continue;
+        };
+        let native_dir = PathBuf::from(output.trim());
+        if native_dir.as_os_str().is_empty() {
+            continue;
+        }
+        let entries = NATIVE_DIR_ROLES
+            .iter()
+            .map(|role| {
+                let path = native_dir.join(native_dir_filename(role));
+                let exists = path.is_file();
+                entry_for_path(role, &path, exists)
+            })
+            .collect();
+        groups.push(VersionFileGroup {
+            version: version.clone(),
+            native_dir: native_dir.to_string_lossy().to_string(),
+            conf_dir: None,
+            myconfs_dir: None,
+            entries,
+        });
+    }
+    groups
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -126,41 +290,58 @@ pub async fn curated_files() -> Result<CuratedFiles, String> {
         versions = DEFAULT_VERSIONS.iter().map(|s| s.to_string()).collect();
     }
 
-    let mut env_files = Vec::new();
+    // Preferred: single CLI call that reports every editable file per version.
+    // Fallback for older odoodev: derive the native-dir files from `env dir`.
+    let (mut groups, paths_command_available) =
+        match odoodev::run_odoodev_json(&["config", "paths", "--json"]).await {
+            Ok(value) => match groups_from_paths_value(&value) {
+                Some(groups) => (groups, true),
+                None => (groups_from_env_dir(&versions).await, false),
+            },
+            Err(_) => (groups_from_env_dir(&versions).await, false),
+        };
+    // The CLI reports all registry versions; limit to the active ones.
+    groups.retain(|g| versions.contains(&g.version));
+
     let mut playbook_roots = Vec::new();
     if let Ok(cwd) = std::env::current_dir() {
         playbook_roots.push(cwd.join("playbooks").to_string_lossy().to_string());
     }
-    for version in &versions {
-        // `env dir` prints the version's native dir; skip versions it doesn't know.
-        let Ok(output) = odoodev::run_odoodev_text(&["env", "dir", version]).await else {
-            continue;
-        };
-        let native_dir = PathBuf::from(output.trim());
-        if native_dir.as_os_str().is_empty() {
-            continue;
-        }
-        let env_path = native_dir.join(".env");
-        env_files.push(CuratedEntry {
-            exists: env_path.is_file(),
-            path: env_path.to_string_lossy().to_string(),
-            label: format!("v{version} .env"),
-        });
+    for group in &groups {
         playbook_roots.push(
-            native_dir
+            Path::new(&group.native_dir)
                 .join("scripts/playbooks")
                 .to_string_lossy()
                 .to_string(),
         );
     }
 
+    // Allowlist roots: playbook dirs plus each version's directories. Parent
+    // dirs of template/generated confs are added separately because repos.yaml
+    // overrides may place them outside conf_dir/myconfs_dir.
+    let mut extra_roots: Vec<String> = playbook_roots.clone();
+    for group in &groups {
+        extra_roots.push(group.native_dir.clone());
+        extra_roots.extend(group.conf_dir.clone());
+        extra_roots.extend(group.myconfs_dir.clone());
+        for entry in &group.entries {
+            if let Some(parent) = Path::new(&entry.path).parent() {
+                extra_roots.push(parent.to_string_lossy().to_string());
+            }
+        }
+    }
+    extra_roots.sort();
+    extra_roots.dedup();
+
     let playbooks = super::playbook::playbook_list().await.unwrap_or_default();
 
     Ok(CuratedFiles {
         config: config_entry,
-        env_files,
+        version_groups: groups,
         playbooks,
         playbook_roots,
+        extra_roots,
+        paths_command_available,
     })
 }
 
@@ -362,6 +543,75 @@ mod tests {
             FileContent::Text { content } => assert_eq!(content, "hello: world\n"),
             other => panic!("expected text, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn allows_nested_file_under_directory_root() {
+        let root = temp_root("conf-dir");
+        let nested = root.join("sub");
+        std::fs::create_dir_all(&nested).unwrap();
+        let file = nested.join("odoo18_template.conf");
+        std::fs::write(&file, "[options]\n").unwrap();
+        assert!(is_allowed(&file, &[root.to_string_lossy().to_string()]));
+    }
+
+    #[test]
+    fn parses_config_paths_payload() {
+        let payload = serde_json::json!({
+            "18": {
+                "native_dir": "/base/v18/v18-dev/dev18_native",
+                "conf_dir": "/base/v18/v18-dev/conf",
+                "myconfs_dir": "/base/v18/myconfs",
+                "files": {
+                    "env": {"path": "/base/v18/v18-dev/dev18_native/.env", "exists": true},
+                    "compose": {"path": "/base/v18/v18-dev/dev18_native/docker-compose.yml", "exists": true},
+                    "requirements": {"path": "/base/v18/v18-dev/dev18_native/requirements.txt", "exists": false},
+                    "repos_yaml": {"path": "/base/v18/v18-dev/dev18_native/repos.yaml", "exists": true},
+                    "postgresql_conf": {"path": "/base/v18/v18-dev/dev18_native/postgresql.conf", "exists": true},
+                    "template_conf": {"path": "/base/v18/v18-dev/conf/odoo18_template.conf", "exists": true},
+                    "generated_conf": {"path": "/base/v18/myconfs/odoo_260714.conf", "exists": true}
+                }
+            },
+            "16": {
+                "native_dir": "/base/v16/v16-dev/dev16_native",
+                "conf_dir": "/base/v16/v16-dev/conf",
+                "myconfs_dir": "/base/v16/myconfs",
+                "files": {
+                    "env": {"path": "/base/v16/v16-dev/dev16_native/.env", "exists": false},
+                    "generated_conf": null
+                }
+            }
+        });
+        let groups = groups_from_paths_value(&payload).unwrap();
+        assert_eq!(groups.len(), 2);
+        // Sorted by version
+        assert_eq!(groups[0].version, "16");
+        assert_eq!(groups[1].version, "18");
+
+        let v18 = &groups[1];
+        assert_eq!(v18.conf_dir.as_deref(), Some("/base/v18/v18-dev/conf"));
+        assert_eq!(v18.entries.len(), 7);
+        // Fixed role order
+        let roles: Vec<&str> = v18.entries.iter().map(|e| e.role.as_str()).collect();
+        assert_eq!(roles, ALL_ROLES.to_vec());
+        let generated = v18.entries.last().unwrap();
+        assert_eq!(generated.label, "odoo_260714.conf");
+        assert!(generated.hint.is_some());
+
+        // Null generated_conf is skipped; missing roles are skipped.
+        let v16 = &groups[0];
+        assert_eq!(v16.entries.len(), 1);
+        assert_eq!(v16.entries[0].role, "env");
+        assert!(!v16.entries[0].exists);
+    }
+
+    #[test]
+    fn rejects_malformed_paths_payload() {
+        assert!(groups_from_paths_value(&serde_json::json!([1, 2])).is_none());
+        // Versions without native_dir are skipped, not fatal.
+        let groups =
+            groups_from_paths_value(&serde_json::json!({"18": {"files": {}}})).unwrap();
+        assert!(groups.is_empty());
     }
 
     #[test]

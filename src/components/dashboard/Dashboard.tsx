@@ -1,23 +1,32 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "../../store/appStore";
+import { invokeCmd } from "../../lib/tauri";
+import { logError } from "../../lib/errors";
 import { VersionCard } from "./VersionCard";
-import type { ViewKey } from "../../types";
+import type { CuratedFiles, ViewKey } from "../../types";
 
 export function Dashboard({
   onNavigate,
 }: {
-  onNavigate: (view: ViewKey, version: string) => void;
+  onNavigate: (view: ViewKey, version?: string, editorPath?: string) => void;
 }) {
   const versions = useAppStore((s) => s.versions);
   const activeVersions = useAppStore((s) => s.activeVersions);
   const dashboardLoading = useAppStore((s) => s.dashboardLoading);
   const fetchAllDashboard = useAppStore((s) => s.fetchAllDashboard);
+  const [curatedFiles, setCuratedFiles] = useState<CuratedFiles | null>(null);
 
   useEffect(() => {
     fetchAllDashboard();
     const id = setInterval(() => fetchAllDashboard(), 30_000);
     return () => clearInterval(id);
   }, [fetchAllDashboard]);
+
+  useEffect(() => {
+    invokeCmd<CuratedFiles>("curated_files")
+      .then(setCuratedFiles)
+      .catch(logError("Dashboard: curated_files"));
+  }, []);
 
   if (dashboardLoading && !versions) {
     return (
@@ -54,6 +63,7 @@ export function Dashboard({
             version={ver}
             info={versions[ver]}
             active={activeVersions.includes(ver)}
+            fileGroup={curatedFiles?.version_groups.find((g) => g.version === ver) ?? null}
             onNavigate={onNavigate}
           />
         ))}

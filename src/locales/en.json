@@ -368,9 +368,9 @@
   },
   "editor": {
     "title": "Editor",
-    "description": "Edit odoodev configuration, per-version .env files and playbooks.",
+    "description": "Edit odoodev configuration, per-version config files and playbooks.",
     "sectionConfig": "Configuration",
-    "sectionEnvFiles": "Env Files",
+    "sectionVersionFiles": "v{{version}} Files",
     "sectionPlaybooks": "Playbooks",
     "noPlaybooks": "No playbooks found",
     "newPlaybook": "New Playbook",
@@ -399,6 +399,7 @@
     "unsavedSave": "Save",
     "unsavedDiscard": "Discard",
     "noFileSelected": "Select a file on the left to edit it.",
-    "loadFailed": "Failed to open file"
+    "loadFailed": "Failed to open file",
+    "cliUpdateHint": "The installed odoodev CLI does not support 'config paths' yet — showing a reduced file list. Update odoodev (Settings) to edit template and generated odoo.conf files."
   }
 }

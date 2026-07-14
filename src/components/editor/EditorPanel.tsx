@@ -22,6 +22,7 @@ function languageFor(path: string): EditorLanguage {
   const name = path.split("/").pop() ?? "";
   if (name === ".env" || name.endsWith(".env")) return "ini";
   if (name.endsWith(".yaml") || name.endsWith(".yml")) return "yaml";
+  if (name.endsWith(".conf")) return "ini";
   return "plaintext";
 }
 
@@ -46,11 +47,7 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const consumedInitialRef = useRef(false);
 
-  const extraRoots = useMemo(
-    () =>
-      files ? [...files.playbook_roots, ...files.env_files.map((e) => e.path)] : [],
-    [files],
-  );
+  const extraRoots = useMemo(() => files?.extra_roots ?? [], [files]);
 
   const refreshFiles = useCallback(async (): Promise<CuratedFiles | null> => {
     try {
@@ -102,10 +99,7 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
   useEffect(() => {
     if (!initialFilePath || !files || consumedInitialRef.current) return;
     consumedInitialRef.current = true;
-    openFileDirect(initialFilePath, [
-      ...files.playbook_roots,
-      ...files.env_files.map((e) => e.path),
-    ]);
+    openFileDirect(initialFilePath, files.extra_roots);
   }, [initialFilePath, files, openFileDirect]);
 
   const language: EditorLanguage = selectedPath ? languageFor(selectedPath) : "plaintext";
@@ -155,12 +149,7 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
       .then(async () => {
         toastSuccess(t("editor.playbookCreated"));
         const refreshed = await refreshFiles();
-        openFileDirect(
-          path,
-          refreshed
-            ? [...refreshed.playbook_roots, ...refreshed.env_files.map((e) => e.path)]
-            : extraRoots,
-        );
+        openFileDirect(path, refreshed ? refreshed.extra_roots : extraRoots);
       })
       .catch(reportError(t("editor.createFailed")));
   };
@@ -172,6 +161,11 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
       <div className="space-y-1 border-b border-border p-4">
         <h1 className="text-2xl font-semibold">{t("editor.title")}</h1>
         <p className="text-sm text-muted-foreground">{t("editor.description")}</p>
+        {files && !files.paths_command_available && (
+          <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+            {t("editor.cliUpdateHint")}
+          </p>
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1">

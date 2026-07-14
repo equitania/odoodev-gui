@@ -8,6 +8,7 @@ import {
   Loader2,
   FileCog,
   Eye,
+  Pencil,
   RefreshCw,
   FolderOpen,
 } from "lucide-react";
@@ -23,6 +24,7 @@ interface EnvCardProps {
   setupRunning: boolean;
   onSetup: () => void;
   onShow: () => void;
+  onEdit: () => void;
   onCheck: () => void;
 }
 
@@ -35,6 +37,7 @@ export function EnvCard({
   setupRunning,
   onSetup,
   onShow,
+  onEdit,
   onCheck,
 }: EnvCardProps) {
   const exists = checkResult?.exists ?? false;
@@ -124,6 +127,15 @@ export function EnvCard({
           >
             <Eye className="h-3.5 w-3.5" />
             Show
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onEdit}
+            disabled={busy || setupRunning || !exists || !envDir}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
           </Button>
           <Button
             size="sm"

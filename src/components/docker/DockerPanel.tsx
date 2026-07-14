@@ -14,17 +14,24 @@ import { Tabs } from "../ui/tabs";
 import { POLL_INTERVALS } from "../../lib/constants";
 import type {
   ContainerInfo,
+  CuratedFiles,
   DockerStatus,
   RuntimeInfo,
   VersionInfo,
+  ViewKey,
 } from "../../types";
 
 type PanelMode = "overview" | "logs" | "bench";
 
-export function DockerPanel() {
+interface DockerPanelProps {
+  onNavigate: (view: ViewKey, version?: string, editorPath?: string) => void;
+}
+
+export function DockerPanel({ onNavigate }: DockerPanelProps) {
   const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [runtimeInfo, setRuntimeInfo] = useState<RuntimeInfo | null>(null);
+  const [curatedFiles, setCuratedFiles] = useState<CuratedFiles | null>(null);
   const [containers, setContainers] = useState<ContainerInfo[]>([]);
   const [dockerStatuses, setDockerStatuses] = useState<Record<string, DockerStatus>>({});
   const [busyVersion, setBusyVersion] = useState<string | null>(null);
@@ -54,7 +61,19 @@ export function DockerPanel() {
         if (keys.length > 0) setActiveVersion(keys[0]);
       })
       .catch(logError("DockerPanel: get_versions"));
+    invokeCmd<CuratedFiles>("curated_files")
+      .then(setCuratedFiles)
+      .catch(logError("DockerPanel: curated_files"));
   }, []);
+
+  const composePathFor = useCallback(
+    (version: string): string | null => {
+      const group = curatedFiles?.version_groups.find((g) => g.version === version);
+      const entry = group?.entries.find((e) => e.role === "compose");
+      return entry?.exists ? entry.path : null;
+    },
+    [curatedFiles],
+  );
 
   usePolling(
     () => {
@@ -225,6 +244,8 @@ export function DockerPanel() {
                 onLogs={() => handleLogs(ver)}
                 benchAvailable={appleAvailable}
                 onBench={() => handleBench(ver)}
+                composePath={composePathFor(ver)}
+                onEditCompose={(path) => onNavigate("editor", ver, path)}
               />
             ))}
           </div>

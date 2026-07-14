@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { RuntimeDot } from "./RuntimeBanner";
-import { ArrowUp, ArrowDown, FileText, Gauge, Loader2 } from "lucide-react";
+import { ArrowUp, ArrowDown, FileCog, FileText, Gauge, Loader2 } from "lucide-react";
 import { VERSION_COLORS, VERSION_BG } from "../../lib/constants";
 import type { ContainerInfo, DockerStatus, VersionInfo } from "../../types";
 
@@ -18,6 +18,9 @@ interface ContainerCardProps {
   /** Benchmark is macOS + Apple Container only (Docker vs Apple comparison). */
   benchAvailable: boolean;
   onBench: () => void;
+  /** docker-compose.yml path (null when unknown/missing). */
+  composePath: string | null;
+  onEditCompose: (path: string) => void;
 }
 
 export function ContainerCard({
@@ -31,6 +34,8 @@ export function ContainerCard({
   onLogs,
   benchAvailable,
   onBench,
+  composePath,
+  onEditCompose,
 }: ContainerCardProps) {
   const running = dockerStatus?.running ?? false;
   const runtime = dockerStatus?.runtime ?? "none";
@@ -117,6 +122,17 @@ export function ContainerCard({
             <Button size="sm" variant="ghost" onClick={onBench} disabled={runtime === "none"}>
               <Gauge className="h-3.5 w-3.5" />
               Bench
+            </Button>
+          )}
+          {runtime === "docker" && composePath && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onEditCompose(composePath)}
+              title={composePath}
+            >
+              <FileCog className="h-3.5 w-3.5" />
+              Compose
             </Button>
           )}
         </div>

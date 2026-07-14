@@ -65,10 +65,10 @@ export default function App() {
           {activeView === "database" && (
             <DatabasePanel preselectVersion={preselectVersion} />
           )}
-          {activeView === "docker" && <DockerPanel />}
+          {activeView === "docker" && <DockerPanel onNavigate={handleNavigate} />}
           {activeView === "venv" && <VenvPanel />}
           {activeView === "repos" && <ReposPanel />}
-          {activeView === "env" && <EnvPanel />}
+          {activeView === "env" && <EnvPanel onNavigate={handleNavigate} />}
           {activeView === "playbook" && <PlaybookPanel onNavigate={handleNavigate} />}
           {activeView === "editor" && (
             <Suspense

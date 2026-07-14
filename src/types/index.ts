@@ -203,11 +203,41 @@ export interface CuratedEntry {
   label: string;
 }
 
+export type VersionFileRole =
+  | "env"
+  | "compose"
+  | "requirements"
+  | "repos_yaml"
+  | "postgresql_conf"
+  | "template_conf"
+  | "generated_conf";
+
+export interface VersionFileEntry {
+  role: VersionFileRole;
+  path: string;
+  exists: boolean;
+  label: string;
+  hint: string | null;
+}
+
+export interface VersionFileGroup {
+  version: string;
+  native_dir: string;
+  /** null when the installed odoodev CLI lacks `config paths` (fallback mode) */
+  conf_dir: string | null;
+  myconfs_dir: string | null;
+  entries: VersionFileEntry[];
+}
+
 export interface CuratedFiles {
   config: CuratedEntry;
-  env_files: CuratedEntry[];
+  version_groups: VersionFileGroup[];
   playbooks: PlaybookInfo[];
   playbook_roots: string[];
+  /** Allowlist roots for fs_read_file / fs_write_file */
+  extra_roots: string[];
+  /** false → installed odoodev lacks `config paths --json` (reduced list) */
+  paths_command_available: boolean;
 }
 
 export type FileContent =

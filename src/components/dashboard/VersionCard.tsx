@@ -6,24 +6,43 @@ import { usePolling } from "../../hooks/usePolling";
 import { invokeCmd } from "../../lib/tauri";
 import { VERSION_COLORS, VERSION_BG, POLL_INTERVALS } from "../../lib/constants";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
-import type { DockerStatus, ServerStatus, VenvStatus, VersionInfo, ViewKey } from "../../types";
-import { Rocket, Database as DbIcon, ArrowUp, ArrowDown, Loader2, HardDrive } from "lucide-react";
+import type {
+  DockerStatus,
+  ServerStatus,
+  VenvStatus,
+  VersionFileGroup,
+  VersionInfo,
+  ViewKey,
+} from "../../types";
+import {
+  Rocket,
+  Database as DbIcon,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  FileCog,
+  Loader2,
+  HardDrive,
+} from "lucide-react";
 
 export function VersionCard({
   version,
   info,
   active,
+  fileGroup,
   onNavigate,
 }: {
   version: string;
   info: VersionInfo;
   active: boolean;
-  onNavigate: (view: ViewKey, version: string) => void;
+  fileGroup: VersionFileGroup | null;
+  onNavigate: (view: ViewKey, version?: string, editorPath?: string) => void;
 }) {
   const [venvStatus, setVenvStatus] = useState<VenvStatus | null>(null);
   const [dockerStatus, setDockerStatus] = useState<DockerStatus | null>(null);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [dockerBusy, setDockerBusy] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
 
   usePolling(
     () => {
@@ -58,6 +77,11 @@ export function VersionCard({
   const odooRunning = serverStatus?.running ?? false;
   const dockerRunning = dockerStatus?.running ?? false;
   const dockerRuntime = dockerStatus?.runtime ?? "none";
+
+  // Jump-to-editor entries: only existing files; compose only under Docker.
+  const editableEntries = (fileGroup?.entries ?? []).filter(
+    (e) => e.exists && (e.role !== "compose" || dockerRuntime === "docker"),
+  );
 
   const dockerBadge = dockerRunning
     ? { status: "running" as const, label: dockerRuntime === "apple" ? "Container running" : "Docker running" }
@@ -174,6 +198,39 @@ export function VersionCard({
               {dockerRuntime === "apple" ? "Start PG" : "PG Up"}
             </Button>
           )}
+          <div className="relative">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setFilesOpen((o) => !o)}
+              disabled={editableEntries.length === 0}
+              title="Edit config files"
+            >
+              <FileCog className="h-3.5 w-3.5" />
+              Config
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+            {filesOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setFilesOpen(false)} />
+                <div className="absolute right-0 z-20 mt-1 w-60 rounded-md border bg-background p-1 shadow-lg">
+                  {editableEntries.map((entry) => (
+                    <button
+                      key={entry.path}
+                      title={entry.hint ? `${entry.path}\n${entry.hint}` : entry.path}
+                      onClick={() => {
+                        setFilesOpen(false);
+                        onNavigate("editor", version, entry.path);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      <span className="truncate">{entry.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
