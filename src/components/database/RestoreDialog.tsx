@@ -59,7 +59,9 @@ export function RestoreDialog({
     version,
     name: dbName,
     backup_file: backupFile,
-    drop: dropExisting || undefined,
+    // Always send an explicit boolean: the CLI defaults to --drop (overwrite),
+    // so omitting the field would silently drop the target database.
+    drop: dropExisting,
     deactivate_cron: (sanitize && deactivateCron) || undefined,
     neutralize: (sanitize && neutralize) || undefined,
     anonymize: (sanitize && anonymize) || undefined,

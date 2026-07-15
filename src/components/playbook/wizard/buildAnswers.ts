@@ -36,7 +36,7 @@ export function buildAnswers(
   if (playbookType === "dev") {
     answers.dev_steps = Array.isArray(values["dev_steps"]) ? values["dev_steps"] : [];
   } else {
-    buildServerAnswers(answers, values, problems);
+    buildServerAnswers(answers, values, problems, schema.schema_version);
   }
 
   // The CLI rejects generate:true without a path. Without secrets that combo
@@ -67,6 +67,7 @@ function buildServerAnswers(
   answers: Record<string, unknown>,
   values: WizardValues,
   problems: string[],
+  schemaVersion: number,
 ): void {
   // targets: dict keyed by name (NOT a list — see playbook_builder.py)
   const targetItems = (Array.isArray(values["server_targets"])
@@ -116,16 +117,22 @@ function buildServerAnswers(
       compression_level: num(values["recipe.backup.compression_level"], 5),
       only_sql: bool(values["recipe.backup.only_sql"], false),
     };
-    // Derived pattern mirrors handle_server_backup's output naming:
-    // {db}_{data_container}_dockerbackup_{ts}.tar.zst
-    const src = targets[sourceTarget] ?? {};
-    const dataContainer = str(src["odoo_container"]) || str(src["db_container"]);
-    backupSource = {
-      mode: "newest_in_dir",
-      dir: backupDir,
-      pattern: `${str(src["db_name"])}_${dataContainer}_dockerbackup_*.tar.zst`,
-      select_by: "mtime",
-    };
+    if (schemaVersion >= 3) {
+      // schema v3 (odoodev >= 0.57): the runner hands the backup step's exact
+      // file to the restore — no pattern guessing.
+      backupSource = { mode: "from_backup_step" };
+    } else {
+      // Older CLIs: derived pattern mirrors handle_server_backup's naming:
+      // {db}_{data_container}_dockerbackup_{ts}.tar.zst
+      const src = targets[sourceTarget] ?? {};
+      const dataContainer = str(src["odoo_container"]) || str(src["db_container"]);
+      backupSource = {
+        mode: "newest_in_dir",
+        dir: backupDir,
+        pattern: `${str(src["db_name"])}_${dataContainer}_dockerbackup_*.tar.zst`,
+        select_by: "mtime",
+      };
+    }
   } else if (sourceMode === "existing_file") {
     backupSource = {
       mode: "file",
@@ -176,7 +183,21 @@ function buildServerAnswers(
   }
 
   recipe.start_after_restore = bool(values["recipe.start_after_restore"], true);
-  recipe.neutralize = { enabled: bool(values["recipe.neutralize.enabled"], true) };
+
+  const sanitizeFlags = Array.isArray(values["recipe.restore.sanitize_flags"])
+    ? (values["recipe.restore.sanitize_flags"] as string[])
+    : [];
+  if (schemaVersion >= 3) {
+    // v3: ONE decision — picking the "neutralize" sanitize flag also adds the
+    // server.neutralize step, but only when the server is started afterwards
+    // (mirrors _wizard_restore; without start the step cannot run).
+    if (sanitizeFlags.includes("neutralize") && bool(values["recipe.start_after_restore"], true)) {
+      recipe.neutralize = { enabled: true };
+    }
+  } else {
+    // v2 schema still has its own recipe.neutralize.enabled confirm field.
+    recipe.neutralize = { enabled: bool(values["recipe.neutralize.enabled"], true) };
+  }
 
   if (bool(values["recipe.update_all.enabled"], false)) {
     recipe.update_all = {

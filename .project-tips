@@ -1,4 +1,4 @@
-# odoodev-gui v1.4.0 | tauri (react + rust)
+# odoodev-gui v1.4.1 | tauri (react + rust)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ▸ Install:  pnpm install
 ▸ Dev:      pnpm tauri dev

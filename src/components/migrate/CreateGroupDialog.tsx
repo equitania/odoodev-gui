@@ -49,7 +49,7 @@ export function CreateGroupDialog({
       from: fromVer,
       to: toVer,
       name: groupName || null,
-      pg_version: pgVersion || null,
+      pgVersion: pgVersion || null,
     });
     if (ok) {
       setGroupName("");

@@ -306,7 +306,9 @@
     "sharedDbPort": "Geteilter DB-Port",
     "sharedFilestore": "Filestore",
     "deactivate": "Deaktivieren",
-    "activate": "Aktivieren"
+    "activate": "Aktivieren",
+    "experimental": "Experimentell",
+    "experimentalHint": "Dieses Panel liest migrate list/status aus der Text-Ausgabe des CLI — die Anzeige kann bei CLI-Formatänderungen brechen. Ergebnisse bei kritischen Migrationen im Terminal verifizieren."
   },
   "doctor": {
     "title": "Health Check",
@@ -410,11 +412,18 @@
     "cliUpdateHint": "Die installierte odoodev-CLI kennt 'config paths' noch nicht — reduzierte Dateiliste. odoodev aktualisieren (Einstellungen), um Template- und generierte odoo.conf-Dateien zu bearbeiten."
   },
   "playbookWizard": {
+    "choice": {
+      "on_error_continue": "Mit dem nächsten Schritt weitermachen (continue)",
+      "on_error_inherit": "Standard des Playbooks verwenden (inherit)",
+      "on_error_stop": "Playbook anhalten (stop)",
+      "select_filename_ts": "Neueste nach Zeitstempel im Dateinamen (filename_timestamp)",
+      "select_mtime": "Neueste Datei nach Änderungszeit (mtime)"
+    },
     "common": {
       "description": "Beschreibung:",
       "name": "Playbook-Name:",
       "name_invalid": "Der Name darf nicht leer sein.",
-      "on_error": "Standard-Fehlerverhalten (on_error):",
+      "on_error": "Was soll bei einem Fehler passieren?",
       "var_key": "Variablenname (leer = fertig):",
       "var_value": "Wert für '{name}':",
       "vars": "Eigene Variablen ({{ vars.x }})",
@@ -435,6 +444,11 @@
         "question": "Welche Schritte soll das Playbook ausführen?"
       }
     },
+    "lang": {
+      "persist": "Als Standardsprache für odoodev speichern?",
+      "question": "Sprache / Language?",
+      "saved": "Sprache gespeichert in {path}."
+    },
     "output": {
       "overwrite": "{path} existiert bereits — überschreiben?",
       "path": "Ausgabedatei:"
@@ -454,6 +468,7 @@
     "server": {
       "dest": {
         "header": "Ziel — das Container-Paar, IN das restored wird",
+        "name": "Ziel-Name (Bezeichner im Playbook):",
         "self_mirror_confirm": "Wirklich auf das Quellsystem zurückspielen?",
         "self_mirror_warning": "Das Ziel nutzt denselben Datenbank-Container wie die Quelle ('{name}') — der Restore würde das gerade gesicherte System überschreiben!"
       },
@@ -464,12 +479,12 @@
         "args": "Step-Argumente",
         "command": "Step-Command:",
         "name": "Step-Name (optional):",
-        "on_error": "on_error für diesen Schritt:"
+        "on_error": "Wenn dieser Schritt fehlschlägt:"
       },
+      "intro": "Ein Mirror kopiert ein Odoo-System auf ein anderes: QUELLE -> ZIEL.\nDer Assistent fragt drei Dinge: 1) Woher kommen die Daten?\n2) Wohin sollen sie? 3) Was soll dabei passieren?",
       "recipe": {
         "backup_dir": "Backup-Verzeichnis auf dem Server:",
         "compression_level": "zstd-Kompressionslevel (1-22):",
-        "neutralize": "Instanz neutralisieren (server.neutralize)",
         "only_sql": "Nur SQL sichern (Filestore überspringen)?",
         "question": "Welche optionalen Schritte soll der Mirror enthalten? (Restore ist immer dabei)",
         "rebuild": "Ziel-Odoo-Container neu aufbauen (server.rebuild)",
@@ -483,14 +498,22 @@
         "start_after": "Ziel-Odoo nach dem Restore starten (container.start)",
         "stop_before": "Ziel-Odoo vor dem Restore stoppen (container.stop)",
         "update_all": "Alle Module aktualisieren (server.update-all)",
-        "update_all_on_error": "on_error für das Modul-Update:",
+        "update_all_on_error": "Wenn das Modul-Update fehlschlägt:",
         "update_all_restart": "Container nach dem Modul-Update neu starten?"
       },
       "restore": {
         "drop": "Bestehende Datenbank vorher löschen?",
+        "flag": {
+          "anonymize": "anonymize — Personendaten durch Fake-Daten ersetzen",
+          "deactivate_cron": "deactivate_cron — Cronjobs & Mailversand deaktivieren",
+          "neutralize": "neutralize — Odoo neutralisieren (Zahlungen, IAP, Webhooks, Bank-Sync aus)",
+          "purge_transactions": "purge_transactions — Bewegungsdaten löschen (Aufträge, Buchungen, Lager)",
+          "wipe": "wipe — Nachrichten & Anhänge löschen"
+        },
+        "neutralize_needs_start": "neutralize braucht den laufenden Odoo-Container — ohne 'nach dem Restore starten' läuft nur der psql-Teil; der odoo-bin-neutralize-Schritt entfällt.",
         "purge_master_data": "Zusätzlich ALLE Stammdaten löschen (destruktiver Template-Reset)?",
         "purge_warning": "purge_master_data löscht Partner, CRM/HR-Inhalte und Anhänge — nur für Template-Datenbanken!",
-        "sanitize": "Sanitize-Schritte nach dem Restore:",
+        "sanitize": "Was soll mit der wiederhergestellten Datenbank passieren?",
         "select_by": "Neueste Datei bestimmen nach:",
         "source_dir": "Backup-Verzeichnis:",
         "source_path": "Pfad zur Backup-Datei:",
@@ -515,12 +538,12 @@
         "values": "Werte als JSON-Objekt:"
       },
       "source": {
-        "adjust_pattern": "Abgeleitetes Verzeichnis/Muster anpassen?",
-        "derived_pattern": "Abgeleitete Restore-Quelle: neueste '{pattern}' in {dir}",
+        "auto_handoff": "Der Restore verwendet automatisch die in diesem Lauf erzeugte Backup-Datei — nichts zu konfigurieren.",
         "file": "Bestehende Backup-Datei verwenden",
-        "fresh": "Frisches Backup von einem laufenden Container-Paar erstellen (server.backup)",
+        "fresh": "Frisches Backup vom laufenden Quellsystem erstellen",
         "header": "Quelle — das Container-Paar, VON dem gesichert wird",
-        "newest": "Neuestes Backup nach Muster verwenden",
+        "name": "Quell-Name (Bezeichner im Playbook):",
+        "newest": "Neueste Backup-Datei aus einem Verzeichnis nehmen",
         "question": "Was ist die QUELLE des Mirrors?"
       },
       "sql": {
@@ -529,7 +552,7 @@
         "done": "Fertig mit Statements",
         "menu": "SQL-Statement hinzufügen:",
         "none_added": "Keine Statements hinzugefügt — SQL-Schritt wird übersprungen.",
-        "on_error": "on_error für den SQL-Schritt:",
+        "on_error": "Wenn der SQL-Schritt fehlschlägt:",
         "preset_enterprise": "Enterprise-Code setzen (Preset)",
         "preset_eq_cloud": "eq_cloud-Connector-Parameter leeren (Preset)",
         "preset_website": "Website-Domain tauschen (Preset)",
@@ -547,6 +570,19 @@
         "odoo_container": "Name des Odoo-Containers (leer = keiner):",
         "owner": "Datenbank-Owner/-Benutzer:"
       }
+    },
+    "step": {
+      "basics": "Grundlagen",
+      "dest": "Ziel",
+      "dest_sub": "Wohin sollen die Daten?",
+      "flow": "Ablauf-Optionen",
+      "flow_sub": "Was soll dabei passieren?",
+      "prefix": "Schritt {step}/{total} — {title}",
+      "secrets": "Variablen & Zugangsdaten",
+      "source": "Quelle",
+      "source_sub": "Woher kommen die Daten?",
+      "steps": "Schritte",
+      "summary": "Zusammenfassung"
     },
     "summary": {
       "cancelled": "Playbook-Erstellung abgebrochen.",

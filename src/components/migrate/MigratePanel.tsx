@@ -19,7 +19,15 @@ export function MigratePanel() {
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{t("migrate.title")}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold">{t("migrate.title")}</h1>
+            <span
+              title={t("migrate.experimentalHint")}
+              className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+            >
+              {t("migrate.experimental")}
+            </span>
+          </div>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={refresh} disabled={busy}>
               <RefreshCw className="h-3.5 w-3.5" />

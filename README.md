@@ -84,7 +84,7 @@ Syntax-Highlighting, Buffer-Persistenz über Stop/Start, klickbare Server-URL im
 Tab-Header.
 
 **Datenbanken** — DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Schritt-Wizard
-mit Dry-Run, Sanitize, Anonymize, Purge, Recompute), Drop (type-to-confirm), Copy, Rename,
+mit Dry-Run, Sanitize, Anonymize, Purge, Recompute), Drop (type-to-confirm), Duplizieren (inkl. Filestore), Umbenennen,
 Bulk-Drop, Operation-Progress mit live stdout.
 
 **Editor** — Monaco-basierter Editor für alle odoodev-verwalteten Dateien pro Version:
@@ -100,7 +100,7 @@ streaming), Env (check/setup/show/edit/dir), Playbook-Runner (NDJSON-Live-Fortsc
 mit **Playbook-Assistent** (schema-getriebener Stepper-Wizard aus
 `odoodev playbook schema --json`: Dev- und Server-Playbooks, Targets, SQL-Presets,
 maskierte Secrets, automatische Validierung), Init-Wizard, Migrate-Panel
-(Migrationsgruppen verwalten), Doctor / Health-Check, Einstellungen.
+(experimentell; Migrationsgruppen verwalten), Doctor / Health-Check, Einstellungen.
 
 **Plattform & Betrieb** — Apple-Container-Integration (Runtime-Erkennung aus odoodev-Config
 `container_runtime: apple`, `container ls --format json`, Docker wird nie angerührt wenn
@@ -209,7 +209,7 @@ level of their origin line), search, auto-scroll, copy, syntax highlighting,
 buffer persistence across stop/start, clickable server URL in the tab header.
 
 **Databases** — DB list, backup (SQL/ZIP/tar.zst with level), restore (3-step wizard with
-dry run, sanitize, anonymize, purge, recompute), drop (type-to-confirm), copy, rename,
+dry run, sanitize, anonymize, purge, recompute), drop (type-to-confirm), duplicate (incl. filestore), rename,
 bulk drop, operation progress with live stdout.
 
 **Editor** — Monaco-based editor for every odoodev-managed file per version: `.env`,
@@ -224,8 +224,8 @@ Apple Container), Venv (setup/check/remove), Repos (clone/update/config-regenera
 streaming), Env (check/setup/show/edit/dir), Playbook Runner (NDJSON live progress)
 with a **Playbook Assistant** (schema-driven stepper wizard rendered from
 `odoodev playbook schema --json`: dev and server playbooks, targets, SQL presets,
-masked secrets, automatic validation), Init Wizard, Migrate panel (migration group
-management), Doctor / Health Check, Settings.
+masked secrets, automatic validation), Init Wizard, Migrate panel (experimental;
+migration group management), Doctor / Health Check, Settings.
 
 **Platform & operation** — Apple Container integration (runtime detection from odoodev
 config `container_runtime: apple`, `container ls --format json`, Docker is never touched

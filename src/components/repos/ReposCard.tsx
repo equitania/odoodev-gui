@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { GitBranch, GitPullRequest, Loader2, Settings2, FolderOpen } from "lucide-react";
+import { GitBranch, GitPullRequest, Loader2, Pencil, Settings2, FolderOpen } from "lucide-react";
 import { VERSION_COLORS, VERSION_BG } from "../../lib/constants";
 import type { VersionInfo } from "../../types";
 
@@ -13,6 +13,9 @@ interface ReposCardProps {
   onRepos: () => void;
   onPull: () => void;
   onConfigOnly: () => void;
+  /** Absolute path of this version's repos.yaml (null when missing). */
+  reposYamlPath: string | null;
+  onEditReposYaml?: (path: string) => void;
 }
 
 export function ReposCard({
@@ -23,6 +26,8 @@ export function ReposCard({
   onRepos,
   onPull,
   onConfigOnly,
+  reposYamlPath,
+  onEditReposYaml,
 }: ReposCardProps) {
   return (
     <Card className={`hover:shadow-md ${!active ? "opacity-50" : ""}`}>
@@ -33,10 +38,23 @@ export function ReposCard({
           >
             <span className="text-xl font-bold">v{version}</span>
           </div>
-          <Badge variant="outline">
-            <GitBranch className="h-3 w-3" />
-            repos.yaml
-          </Badge>
+          {reposYamlPath && onEditReposYaml ? (
+            <button
+              onClick={() => onEditReposYaml(reposYamlPath)}
+              title={`Edit ${reposYamlPath}`}
+              className="cursor-pointer"
+            >
+              <Badge variant="outline" className="hover:border-primary/60 hover:text-foreground">
+                <Pencil className="h-3 w-3" />
+                repos.yaml
+              </Badge>
+            </button>
+          ) : (
+            <Badge variant="outline">
+              <GitBranch className="h-3 w-3" />
+              repos.yaml
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">

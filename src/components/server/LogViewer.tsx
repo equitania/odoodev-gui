@@ -4,6 +4,8 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { LogLine } from "./LogLine";
+import { copyToClipboard } from "../../lib/clipboard";
+import { toastSuccess, toastError } from "../../store/toastStore";
 import type { LogLevel, OdooLogEntry } from "../../types";
 import { Trash2, Copy, ChevronDown } from "lucide-react";
 
@@ -66,17 +68,26 @@ export function LogViewer({
     }
   }, [autoScroll]);
 
-  const copyVisible = () => {
-    const text = filtered.map((e) => e.raw).join("\n");
-    navigator.clipboard.writeText(text);
+  const copyVisible = async () => {
+    const lines = filtered.map((e) => e.raw);
+    try {
+      await copyToClipboard(lines.join("\n"));
+      toastSuccess(`${lines.length} log line(s) copied`);
+    } catch (e) {
+      toastError("Copy failed", String(e));
+    }
   };
 
-  const copyErrors = () => {
-    const text = entries
+  const copyErrors = async () => {
+    const lines = entries
       .filter((e) => e.level === "ERROR" || e.level === "CRITICAL")
-      .map((e) => e.raw)
-      .join("\n");
-    navigator.clipboard.writeText(text);
+      .map((e) => e.raw);
+    try {
+      await copyToClipboard(lines.join("\n"));
+      toastSuccess(`${lines.length} error line(s) copied`);
+    } catch (e) {
+      toastError("Copy failed", String(e));
+    }
   };
 
   const errorCount = entries.filter((e) => e.level === "ERROR" || e.level === "CRITICAL").length;

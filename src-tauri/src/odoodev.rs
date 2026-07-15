@@ -147,10 +147,16 @@ pub async fn run_odoodev_text(args: &[&str]) -> Result<String, String> {
         Ok(stdout)
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
+        // Some CLI abort reasons are printed via print_info (stdout), not
+        // stderr — fall back so the user sees WHY the command failed.
+        let detail = if stderr.trim().is_empty() {
+            stdout.trim().to_string()
+        } else {
+            stderr.trim().to_string()
+        };
         Err(format!(
-            "odoodev failed (exit {}): {}",
+            "odoodev failed (exit {}): {detail}",
             output.status.code().unwrap_or(-1),
-            stderr.trim()
         ))
     }
 }
@@ -178,6 +184,30 @@ pub async fn run_odoodev_text_lenient(args: &[&str]) -> Result<String, String> {
             stderr.trim()
         ))
     }
+}
+
+/// Lenient variant that returns stdout AND stderr combined. The CLI's
+/// print_error writes to stderr — parsers that must see `[ERROR]` lines
+/// (e.g. doctor's hard-check failures) need both streams.
+pub async fn run_odoodev_text_lenient_combined(args: &[&str]) -> Result<String, String> {
+    let output = build_odoodev_command(args)
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute odoodev: {e}"))?;
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = if stderr.trim().is_empty() {
+        stdout.to_string()
+    } else {
+        format!("{stdout}\n{stderr}")
+    };
+    if combined.trim().is_empty() && !output.status.success() {
+        return Err(format!(
+            "odoodev failed (exit {}) with no output",
+            output.status.code().unwrap_or(-1),
+        ));
+    }
+    Ok(combined)
 }
 
 pub async fn run_odoodev_streaming(

@@ -10,7 +10,8 @@ export interface CreateGroupArgs {
   from: string;
   to: string;
   name: string | null;
-  pg_version: string | null;
+  /** Tauri v2 camelCases command params — `pg_version` would silently arrive as None. */
+  pgVersion: string | null;
 }
 
 type ActionResult = { success: boolean; error: string | null };

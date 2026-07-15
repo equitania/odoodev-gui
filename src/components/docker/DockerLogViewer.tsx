@@ -1,6 +1,8 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "../ui/button";
+import { copyToClipboard } from "../../lib/clipboard";
+import { toastSuccess, toastError } from "../../store/toastStore";
 import { Trash2, Copy, Loader2, Circle } from "lucide-react";
 
 export function DockerLogViewer({
@@ -39,8 +41,13 @@ export function DockerLogViewer({
     if (atBottom && !autoScroll) setAutoScroll(true);
   }, [autoScroll]);
 
-  const copyAll = () => {
-    navigator.clipboard.writeText(lines.join("\n"));
+  const copyAll = async () => {
+    try {
+      await copyToClipboard(lines.join("\n"));
+      toastSuccess(`${lines.length} log line(s) copied`);
+    } catch (e) {
+      toastError("Copy failed", String(e));
+    }
   };
 
   return (

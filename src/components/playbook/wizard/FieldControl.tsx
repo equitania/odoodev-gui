@@ -8,7 +8,7 @@ import { Checkbox } from "../../ui/checkbox";
 import { Button } from "../../ui/button";
 import { Badge } from "../../ui/badge";
 import { Eye, EyeOff, Plus, X } from "lucide-react";
-import { resolveLabel } from "./labels";
+import { resolveLabel, resolveChoiceLabel } from "./labels";
 import type { WizardField, WizardSchema } from "../../../types/playbookSchema";
 
 export type MapRow = { key: string; value: string };
@@ -110,7 +110,7 @@ export function FieldControl({
               <option value="">{t("playbookWizard.gui.selectPlaceholder")}</option>
               {choices.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {resolveChoiceLabel(field.label_key, field.key, c)}
                 </option>
               ))}
             </Select>
@@ -135,9 +135,23 @@ export function FieldControl({
             <div key={group} className="space-y-1">
               {group && <p className="text-xs font-medium text-muted-foreground">{group}</p>}
               <div className="grid grid-cols-2 gap-1">
-                {choices.map((c) => (
-                  <Checkbox key={c} checked={selected.includes(c)} onChange={() => toggle(c)} label={<span className="font-mono text-xs">{c}</span>} />
-                ))}
+                {choices.map((c) => {
+                  const choiceLabel = resolveChoiceLabel(field.label_key, field.key, c);
+                  return (
+                    <Checkbox
+                      key={c}
+                      checked={selected.includes(c)}
+                      onChange={() => toggle(c)}
+                      label={
+                        choiceLabel === c ? (
+                          <span className="font-mono text-xs">{c}</span>
+                        ) : (
+                          <span className="text-xs">{choiceLabel}</span>
+                        )
+                      }
+                    />
+                  );
+                })}
               </div>
             </div>
           ))}

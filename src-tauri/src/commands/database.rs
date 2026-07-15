@@ -164,8 +164,12 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
         "-z".into(),
         args.backup_file.clone(),
     ];
-    if args.drop.unwrap_or(false) {
-        cli.push("--drop".into());
+    // The CLI's --drop/--no-drop pair defaults to --drop (overwrite!), so an
+    // unchecked GUI checkbox must be forwarded explicitly as --no-drop.
+    match args.drop {
+        Some(true) => cli.push("--drop".into()),
+        Some(false) => cli.push("--no-drop".into()),
+        None => {}
     }
     if args.deactivate_cron.unwrap_or(false) {
         cli.push("--deactivate-cron".into());
@@ -275,7 +279,7 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
 pub async fn drop_db(
     version: String,
     name: String,
-    #[allow(unused_variables)] terminate_connections: Option<bool>,
+    terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
     for (f, v) in [("version", &version), ("name", &name)] {
         if let Err(e) = odoodev::reject_flag_like(f, v) {
@@ -285,7 +289,10 @@ pub async fn drop_db(
             });
         }
     }
-    let args = vec!["db", "drop", &version, "-n", &name, "-y"];
+    let mut args = vec!["db", "drop", &version, "-n", &name, "-y"];
+    if terminate_connections.unwrap_or(false) {
+        args.push("--terminate-connections");
+    }
     match odoodev::run_odoodev_text(&args).await {
         Ok(_) => Ok(OpResult {
             success: true,
@@ -303,7 +310,7 @@ pub async fn copy_db(
     version: String,
     src: String,
     dst: String,
-    #[allow(unused_variables)] terminate_connections: Option<bool>,
+    terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
     for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
         if let Err(e) = odoodev::reject_flag_like(f, v) {
@@ -313,7 +320,11 @@ pub async fn copy_db(
             });
         }
     }
-    let args = vec!["db", "copy", &version, "-s", &src, "-d", &dst, "-y"];
+    // `db copy` duplicates the database AND its filestore (CLI-side).
+    let mut args = vec!["db", "copy", &version, "-s", &src, "-d", &dst, "-y"];
+    if terminate_connections.unwrap_or(false) {
+        args.push("--terminate-connections");
+    }
     match odoodev::run_odoodev_text(&args).await {
         Ok(_) => Ok(OpResult {
             success: true,
@@ -331,7 +342,7 @@ pub async fn rename_db(
     version: String,
     src: String,
     dst: String,
-    #[allow(unused_variables)] terminate_connections: Option<bool>,
+    terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
     for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
         if let Err(e) = odoodev::reject_flag_like(f, v) {
@@ -341,7 +352,11 @@ pub async fn rename_db(
             });
         }
     }
-    let args = vec!["db", "rename", &version, "-s", &src, "-d", &dst, "-y"];
+    // `db rename` also moves the filestore (CLI-side).
+    let mut args = vec!["db", "rename", &version, "-s", &src, "-d", &dst, "-y"];
+    if terminate_connections.unwrap_or(false) {
+        args.push("--terminate-connections");
+    }
     match odoodev::run_odoodev_text(&args).await {
         Ok(_) => Ok(OpResult {
             success: true,

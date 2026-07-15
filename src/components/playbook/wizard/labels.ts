@@ -23,3 +23,35 @@ export function humanize(segment: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .trim();
 }
+
+/** Plain-language labels for select/checkbox choices (odoodev >= 0.56).
+ *  The CLI catalog has per-choice keys in a few known shapes; unknown
+ *  choices render as their raw value. */
+export function resolveChoiceLabel(
+  fieldLabelKey: string | undefined,
+  fieldKey: string,
+  choice: string,
+): string {
+  const candidates: string[] = [];
+  if (fieldLabelKey) {
+    // e.g. sanitize flags: playbook.server.restore.sanitize → …restore.flag.<choice>
+    const parent = fieldLabelKey.split(".").slice(0, -1).join(".");
+    candidates.push(`${parent}.flag.${choice}`);
+  }
+  if (fieldKey === "playbook_type") candidates.push(`playbook.type.${choice}`);
+  if (fieldKey === "source.mode") {
+    const modeKey = { fresh_backup: "fresh", existing_file: "file", newest_in_dir: "newest" }[choice];
+    if (modeKey) candidates.push(`playbook.server.source.${modeKey}`);
+  }
+  if (fieldKey.endsWith("on_error")) candidates.push(`playbook.choice.on_error_${choice}`);
+  if (fieldKey.endsWith("select_by")) {
+    candidates.push(
+      `playbook.choice.select_${choice === "filename_timestamp" ? "filename_ts" : choice}`,
+    );
+  }
+  for (const key of candidates) {
+    const guiKey = key.replace(/^playbook\./, "playbookWizard.");
+    if (i18n.exists(guiKey)) return i18n.t(guiKey);
+  }
+  return choice;
+}

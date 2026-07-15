@@ -11,6 +11,7 @@ import type { DbListResponse, OpResult, VersionsResponse } from "../../types";
 import { BackupDialog } from "./BackupDialog";
 import { RestoreDialog } from "./RestoreDialog";
 import { DropConfirmDialog } from "./DropConfirmDialog";
+import { NameInputDialog } from "./NameInputDialog";
 import { OperationProgress } from "./OperationProgress";
 import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -32,6 +33,8 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [backupTarget, setBackupTarget] = useState<string | null>(null);
   const [showRestore, setShowRestore] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [duplicateTarget, setDuplicateTarget] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [progressTitle, setProgressTitle] = useState("");
   const [progressEvent, setProgressEvent] = useState("");
   const [showProgress, setShowProgress] = useState(false);
@@ -133,37 +136,30 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     }
   };
 
-  const handleCopy = async (name: string) => {
-    const dst = prompt(`Copy '${name}' to new name:`);
-    if (!dst) return;
+  // `db copy` duplicates database + filestore; `db rename` moves both.
+  const handleDuplicate = async (name: string, dst: string) => {
+    setDuplicateTarget(null);
     setDbAction(name, true);
-    const tid = toastLoading(`Copying '${name}' → '${dst}'...`);
-    setProgressTitle(`Copy: ${name} → ${dst}`);
-    setProgressEvent("copy-progress");
-    setShowProgress(true);
+    const tid = toastLoading(`Duplicating '${name}' → '${dst}'...`);
     try {
       const result = await invokeCmd<OpResult>("copy_db", { version: selectedVersion, src: name, dst, terminateConnections: true });
       if (result.success) {
-        toastUpdate(tid, "success", `Copied '${name}' → '${dst}'`);
+        toastUpdate(tid, "success", `Duplicated '${name}' → '${dst}' (incl. filestore)`);
       } else {
-        toastUpdate(tid, "error", `Copy failed`, result.error ?? "");
+        toastUpdate(tid, "error", `Duplicate failed`, result.error ?? "");
       }
       await fetchDatabases();
     } catch (e) {
-      toastUpdate(tid, "error", `Copy failed`, String(e));
+      toastUpdate(tid, "error", `Duplicate failed`, String(e));
     } finally {
       setDbAction(name, false);
     }
   };
 
-  const handleRename = async (name: string) => {
-    const dst = prompt(`Rename '${name}' to new name:`);
-    if (!dst) return;
+  const handleRename = async (name: string, dst: string) => {
+    setRenameTarget(null);
     setDbAction(name, true);
     const tid = toastLoading(`Renaming '${name}' → '${dst}'...`);
-    setProgressTitle(`Rename: ${name} → ${dst}`);
-    setProgressEvent("rename-progress");
-    setShowProgress(true);
     try {
       const result = await invokeCmd<OpResult>("rename_db", { version: selectedVersion, src: name, dst, terminateConnections: true });
       if (result.success) {
@@ -323,8 +319,8 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleCopy(db)}
-                            title="Copy"
+                            onClick={() => setDuplicateTarget(db)}
+                            title="Duplicate (incl. filestore)"
                             disabled={isBusy}
                             className="h-7 w-7 p-0 hover:bg-green-500/10 hover:text-green-500"
                           >
@@ -333,7 +329,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleRename(db)}
+                            onClick={() => setRenameTarget(db)}
                             title="Rename"
                             disabled={isBusy}
                             className="h-7 w-7 p-0 hover:bg-yellow-500/10 hover:text-yellow-500"
@@ -390,6 +386,32 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           onClose={() => setDropTarget(null)}
           dbName={dropTarget}
           onConfirm={() => handleDrop(dropTarget)}
+        />
+      )}
+
+      {duplicateTarget && (
+        <NameInputDialog
+          open={!!duplicateTarget}
+          onClose={() => setDuplicateTarget(null)}
+          title={`Duplicate database '${duplicateTarget}'`}
+          description="Creates a full copy of the database including its filestore."
+          sourceName={duplicateTarget}
+          existingNames={dbList}
+          confirmLabel="Duplicate"
+          onConfirm={(dst) => handleDuplicate(duplicateTarget, dst)}
+        />
+      )}
+
+      {renameTarget && (
+        <NameInputDialog
+          open={!!renameTarget}
+          onClose={() => setRenameTarget(null)}
+          title={`Rename database '${renameTarget}'`}
+          description="Renames the database and moves its filestore."
+          sourceName={renameTarget}
+          existingNames={dbList}
+          confirmLabel="Rename"
+          onConfirm={(dst) => handleRename(renameTarget, dst)}
         />
       )}
 

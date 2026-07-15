@@ -1,5 +1,45 @@
 # Release Notes
 
+## Version 1.4.1 (15.07.2026)
+
+### Added
+- **odoodev 0.57 adaptation (wizard schema v3):** a fresh source backup now
+  generates `backup_source.mode: from_backup_step` (the runner hands the
+  exact backup file to the restore — no pattern guessing); the neutralize
+  step is derived from the sanitize flags (one decision, like the CLI
+  wizard). Older CLIs (schema v2) keep the previous behavior via a version
+  switch. All 160 CLI field labels re-synced (DE/EN) and select/checkbox
+  choices now show the CLI's plain-language descriptions.
+- **Clipboard feedback:** copy buttons (server log viewer, docker log
+  viewer) now show a brief success toast with the copied line count.
+- **repos.yaml quick edit:** the repos.yaml badge on each Repositories card
+  is now clickable and jumps straight into the Monaco editor.
+
+### Fixed
+- **Database Duplicate & Rename did nothing:** both used `window.prompt()`,
+  which does not exist in Tauri WebViews. They now open a proper modal with
+  name validation; "Copy" was renamed to "Duplicate" (the CLI duplicates the
+  filestore along with the database; rename moves it).
+- **Copy to clipboard did nothing:** `navigator.clipboard` is unreliable in
+  Tauri WebViews — replaced with the official clipboard-manager plugin
+  (write-only permission).
+- **Restore could silently overwrite the target database:** the CLI defaults
+  to `--drop`; an unchecked "Drop existing database first" checkbox now
+  explicitly sends `--no-drop`.
+- **Doctor panel missed hard failures:** the CLI prints `[ERROR]` lines to
+  stderr, which the GUI never read — missing Docker/uv could show as "ok".
+  Both streams are parsed now.
+- **Migrate "Create Group" ignored the PostgreSQL version** (Tauri camelCase
+  argument mismatch).
+- **`--terminate-connections` was never forwarded** for drop/duplicate/
+  rename, so they failed whenever a dev server was connected — and the CLI's
+  abort reason (stdout) was missing from the error toast.
+
+### Changed
+- **Migrate panel marked as experimental** (badge + tooltip): it scrapes the
+  CLI's text output (`migrate list/status` have no `--json` yet) and can
+  break silently on CLI format changes.
+
 ## Version 1.4.0 (15.07.2026)
 
 ### Added

@@ -6,12 +6,17 @@ import { useReposProgress } from "../../hooks/useReposProgress";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { ReposCard } from "./ReposCard";
 import { ReposProgress } from "./ReposProgress";
-import type { VersionInfo } from "../../types";
+import type { CuratedFiles, VersionInfo, ViewKey } from "../../types";
 
-export function ReposPanel() {
+export function ReposPanel({
+  onNavigate,
+}: {
+  onNavigate?: (view: ViewKey, version?: string, editorPath?: string) => void;
+}) {
   const { t } = useTranslation();
   const [versions, setVersions] = useState<Record<string, VersionInfo> | null>(null);
   const [activeVersions, setActiveVersions] = useState<string[]>([]);
+  const [curatedFiles, setCuratedFiles] = useState<CuratedFiles | null>(null);
   const [busyVersion, setBusyVersion] = useState<string | null>(null);
   const [progressVersion, setProgressVersion] = useState<string | null>(null);
   const [progressCommand, setProgressCommand] = useState<string>("");
@@ -25,7 +30,16 @@ export function ReposPanel() {
     invokeCmd<string[]>("get_active_versions")
       .then(setActiveVersions)
       .catch(logError("ReposPanel: load"));
+    invokeCmd<CuratedFiles>("curated_files")
+      .then(setCuratedFiles)
+      .catch(logError("ReposPanel: curated_files"));
   }, []);
+
+  const reposYamlPathFor = (version: string): string | null => {
+    const group = curatedFiles?.version_groups.find((g) => g.version === version);
+    const entry = group?.entries.find((e) => e.role === "repos_yaml");
+    return entry?.exists ? entry.path : null;
+  };
 
   const execute = async (
     version: string,
@@ -83,6 +97,10 @@ export function ReposPanel() {
               onRepos={() => execute(ver, "repos")}
               onPull={() => execute(ver, "pull")}
               onConfigOnly={() => execute(ver, "repos", true)}
+              reposYamlPath={reposYamlPathFor(ver)}
+              onEditReposYaml={
+                onNavigate ? (path) => onNavigate("editor", ver, path) : undefined
+              }
             />
           ))}
         </div>

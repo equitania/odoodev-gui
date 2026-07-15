@@ -79,8 +79,9 @@ pub async fn doctor_run(version: Option<String>) -> Result<DoctorResult, String>
     };
 
     // doctor exits non-zero when a hard check fails but still prints the full
-    // report — read stdout regardless of exit code.
-    let text = odoodev::run_odoodev_text_lenient(&args).await?;
+    // report. Hard-check failures go through print_error → stderr, so BOTH
+    // streams must be parsed or missing prerequisites never surface.
+    let text = odoodev::run_odoodev_text_lenient_combined(&args).await?;
     let mut checks = Vec::new();
     let mut raw_output = String::new();
 
