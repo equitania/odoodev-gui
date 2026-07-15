@@ -73,6 +73,7 @@ pub fn run() {
             docker::docker_status,
             docker::list_containers,
             docker::get_runtime_info,
+            docker::runtime_system_start,
             docker::docker_logs,
             docker::docker_bench,
             // venv
@@ -91,6 +92,9 @@ pub fn run() {
             playbook::playbook_valid_steps,
             playbook::playbook_inspect,
             playbook::playbook_run,
+            playbook::playbook_schema,
+            playbook::playbook_create,
+            playbook::playbook_validate,
             // editor (curated files)
             editor::curated_files,
             editor::fs_read_file,

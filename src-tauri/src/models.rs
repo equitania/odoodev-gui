@@ -119,6 +119,9 @@ pub struct RuntimeInfo {
     pub runtime: String,
     pub configured: Option<String>,
     pub available: Vec<String>,
+    /// Whether the runtime's backend service answers (Docker daemon /
+    /// Apple Container apiserver). None when no runtime is available.
+    pub daemon_running: Option<bool>,
 }
 
 // === Server status ===

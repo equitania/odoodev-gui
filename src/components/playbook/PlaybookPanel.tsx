@@ -8,6 +8,7 @@ import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { StepList } from "./StepList";
 import { EventLog } from "./EventLog";
 import { PlaybookDetailsCard } from "./PlaybookDetailsCard";
+import { PlaybookWizard } from "./wizard/PlaybookWizard";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -21,8 +22,10 @@ import {
   X,
   Pencil,
   Info,
+  Sparkles,
 } from "lucide-react";
 import type {
+  CuratedFiles,
   PlaybookDetails,
   PlaybookInfo,
   StepCapability,
@@ -57,6 +60,8 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
   const [vars, setVars] = useState<string[]>([]);
   const [varInput, setVarInput] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [playbookRoots, setPlaybookRoots] = useState<string[]>([]);
 
   const odoodevVersion = useAppStore((s) => s.odoodevVersion);
   const playbookRun = usePlaybookRun();
@@ -79,7 +84,18 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
     invokeCmd<PlaybookInfo[]>("playbook_list")
       .then(setPlaybooks)
       .catch(logError("PlaybookPanel: load"));
+    invokeCmd<CuratedFiles>("curated_files")
+      .then((f) => setPlaybookRoots(f.playbook_roots))
+      .catch(logError("PlaybookPanel: load"));
   }, []);
+
+  const handleWizardCreated = (path: string) => {
+    invokeCmd<PlaybookInfo[]>("playbook_list")
+      .then(setPlaybooks)
+      .catch(logError("PlaybookPanel: refresh"));
+    setSelectedPlaybook(path);
+    setSelectedSteps([]);
+  };
 
   useEffect(() => {
     if (!selectedPlaybook) {
@@ -137,11 +153,27 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-3 border-b border-border p-4">
-        <h1 className="text-2xl font-semibold">{t("playbook.title")}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">{t("playbook.title")}</h1>
+          <Button size="sm" variant="outline" onClick={() => setWizardOpen(true)}>
+            <Sparkles className="h-3.5 w-3.5" />
+            {t("playbookWizard.gui.title")}
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           {t("playbook.description")}
         </p>
       </div>
+
+      <PlaybookWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        playbookRoots={playbookRoots}
+        onOpenInEditor={
+          onNavigate ? (path) => onNavigate("editor", undefined, path) : undefined
+        }
+        onCreated={handleWizardCreated}
+      />
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {playbooks.length > 0 && (

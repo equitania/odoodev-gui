@@ -120,6 +120,84 @@ pub fn playbook_inspect(path: String) -> Result<PlaybookDetails, String> {
     })
 }
 
+/// Wizard field schema from the CLI — the GUI form-rendering contract.
+/// Deliberately passed through untyped: the schema is versioned and evolves
+/// on the CLI side; the GUI must render whatever the installed CLI reports.
+#[tauri::command]
+pub async fn playbook_schema() -> Result<serde_json::Value, String> {
+    odoodev::run_odoodev_json(&["playbook", "schema", "--json"]).await
+}
+
+#[tauri::command]
+pub async fn playbook_validate(path: String) -> Result<serde_json::Value, String> {
+    odoodev::reject_flag_like("path", &path)?;
+    odoodev::run_odoodev_json(&["playbook", "validate", &path, "--json"]).await
+}
+
+/// RAII guard for the temporary answers JSON file. Answers may contain
+/// inline secrets, so the file is 0600 on Unix and removed on every exit
+/// path (error, panic unwind, success).
+struct TempAnswersFile(std::path::PathBuf);
+
+impl TempAnswersFile {
+    fn create(answers: &serde_json::Value) -> Result<Self, String> {
+        let path = std::env::temp_dir().join(format!(
+            "odoodev-gui-playbook-answers-{}-{}.json",
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0),
+        ));
+        let body = serde_json::to_string(answers).map_err(|e| format!("serialize answers: {e}"))?;
+        std::fs::write(&path, body).map_err(|e| format!("write answers file: {e}"))?;
+        let guard = Self(path);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&guard.0, std::fs::Permissions::from_mode(0o600))
+                .map_err(|e| format!("restrict answers file permissions: {e}"))?;
+        }
+        // Windows: the file inherits the per-user temp-dir ACL; there is no
+        // direct 0600 equivalent, so removal-after-use is the protection.
+        Ok(guard)
+    }
+}
+
+impl Drop for TempAnswersFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
+/// Generate a playbook YAML (plus optional secrets env_file) from wizard
+/// answers via `playbook create --non-interactive`. The CLI has no JSON
+/// output for this command, so success is exit 0; the resulting path is the
+/// explicit `-o` value rather than anything scraped from stdout.
+#[tauri::command]
+pub async fn playbook_create(
+    answers: serde_json::Value,
+    output_path: String,
+    force: bool,
+) -> Result<String, String> {
+    odoodev::reject_flag_like("output_path", &output_path)?;
+    let tmp = TempAnswersFile::create(&answers)?;
+    let tmp_path = tmp.0.to_string_lossy().to_string();
+
+    let mut args = vec![
+        "playbook",
+        "create",
+        "--answers",
+        &tmp_path,
+        "--non-interactive",
+        "-o",
+        &output_path,
+    ];
+    if force {
+        args.push("--force");
+    }
+
+    odoodev::run_odoodev_text(&args).await?;
+    Ok(output_path)
+}
+
 #[tauri::command]
 pub async fn playbook_run(
     playbook: Option<String>,
@@ -280,6 +358,26 @@ steps:
         assert!(details.vars.is_empty());
 
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn temp_answers_file_is_private_and_removed() {
+        let answers = serde_json::json!({"playbook_type": "dev", "name": "t"});
+        let path;
+        {
+            let tmp = TempAnswersFile::create(&answers).unwrap();
+            path = tmp.0.clone();
+            assert!(path.exists());
+            let content = std::fs::read_to_string(&path).unwrap();
+            assert!(content.contains("\"playbook_type\":\"dev\""));
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+                assert_eq!(mode & 0o777, 0o600);
+            }
+        }
+        assert!(!path.exists(), "answers file must be removed on drop");
     }
 
     #[test]

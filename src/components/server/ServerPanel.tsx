@@ -5,6 +5,9 @@ import { LogViewer } from "./LogViewer";
 import { useAppStore } from "../../store/appStore";
 import { useLogStream } from "../../hooks/useLogStream";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
+import { invokeCmd } from "../../lib/tauri";
+import { reportError } from "../../lib/errors";
+import { ExternalLink } from "lucide-react";
 import type { StartServerArgs } from "../../types";
 
 export function ServerPanel({ preselectVersion }: { preselectVersion: string | null }) {
@@ -103,10 +106,29 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
 
   const currentServer = activeVersion ? servers[activeVersion] : null;
   const isRunning = currentServer?.status?.running ?? false;
+  const odooUrl = isRunning
+    ? `http://localhost:${currentServer?.status?.port ?? versions?.[activeVersion]?.ports.odoo}`
+    : null;
 
   return (
     <div className="flex h-full flex-col">
-      <Tabs tabs={tabs} onChange={setActiveTab} />
+      <div className="flex items-center justify-between border-b border-border pr-3">
+        <Tabs tabs={tabs} onChange={setActiveTab} className="border-b-0" />
+        {odooUrl && (
+          <button
+            onClick={() =>
+              invokeCmd("open_external", { url: odooUrl }).catch(
+                reportError("Could not open Odoo in browser"),
+              )
+            }
+            title="Open Odoo in browser"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            {odooUrl}
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        )}
+      </div>
       {activeVersion && (
         <div className="flex flex-1 overflow-hidden">
           <div className="w-96 shrink-0 overflow-auto border-r border-border p-3">

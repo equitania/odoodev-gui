@@ -33,8 +33,8 @@ export function LogViewer({
   }, []);
 
   const filtered = entries.filter((e) => {
-    if (e.level === "RAW") return true;
-    if (!enabledLevels.has(e.level)) return false;
+    if (e.is_separator) return true;
+    if (!enabledLevels.has(e.effective_level)) return false;
     if (searchTerm && !e.raw.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     return true;
   });

@@ -165,7 +165,14 @@
     "container": "Container",
     "cpus": "CPUs",
     "ram": "RAM",
-    "started": "Gestartet"
+    "started": "Gestartet",
+    "serviceDown": "Dienst läuft nicht",
+    "serviceDownApple": "Der Apple-Container-Dienst (apiserver) läuft nicht.",
+    "serviceDownDocker": "Der Docker-Daemon läuft nicht.",
+    "startService": "Dienst starten",
+    "serviceStarting": "Starte Container-Dienst...",
+    "serviceStarted": "Container-Dienst gestartet",
+    "serviceStartFailed": "Container-Dienst konnte nicht gestartet werden"
   },
   "venv": {
     "title": "Virtuelle Umgebungen",
@@ -401,5 +408,225 @@
     "noFileSelected": "Links eine Datei auswählen, um sie zu bearbeiten.",
     "loadFailed": "Datei konnte nicht geöffnet werden",
     "cliUpdateHint": "Die installierte odoodev-CLI kennt 'config paths' noch nicht — reduzierte Dateiliste. odoodev aktualisieren (Einstellungen), um Template- und generierte odoo.conf-Dateien zu bearbeiten."
+  },
+  "playbookWizard": {
+    "common": {
+      "description": "Beschreibung:",
+      "name": "Playbook-Name:",
+      "name_invalid": "Der Name darf nicht leer sein.",
+      "on_error": "Standard-Fehlerverhalten (on_error):",
+      "var_key": "Variablenname (leer = fertig):",
+      "var_value": "Wert für '{name}':",
+      "vars": "Eigene Variablen ({{ vars.x }})",
+      "vars_add": "Eigene Variable hinzufügen?",
+      "version": "Odoo-Version:"
+    },
+    "create": {
+      "answers_invalid": "Die Answers-Datei ist ungültig:",
+      "answers_required": "--non-interactive erfordert --answers DATEI",
+      "env_exists": "env_file existiert bereits unter {path} — --force zum Überschreiben angeben oder env_file.generate auf false setzen",
+      "output_exists": "{path} existiert bereits — --force zum Überschreiben angeben"
+    },
+    "dev": {
+      "arg_prompt": "{command} — {arg}:",
+      "args_header": "Argumente für '{command}'",
+      "steps": {
+        "none": "Keine Schritte gewählt — Standard wird verwendet ({defaults}).",
+        "question": "Welche Schritte soll das Playbook ausführen?"
+      }
+    },
+    "output": {
+      "overwrite": "{path} existiert bereits — überschreiben?",
+      "path": "Ausgabedatei:"
+    },
+    "secrets": {
+      "add_more": "Weitere Secret-Variable hinzufügen?",
+      "detected": "Diese Umgebungsvariablen werden im Playbook referenziert:",
+      "exists_merge": "{path} existiert bereits — neue Keys hineinmergen (Bestand bleibt)?",
+      "generate": "Secrets-Datei (.env) für dieses Playbook erzeugen?",
+      "key_name": "Variablenname (leer = fertig):",
+      "none": "Keine Secret-Werte eingegeben — es wird keine env-Datei geschrieben.",
+      "path": "Pfad der Secrets-Datei:",
+      "skipped": "Keine Secrets-Datei geschrieben — {path} manuell anlegen (chmod 600), bevor das Playbook per Cron läuft.",
+      "value_for": "Wert für {name} (leer = später eintragen):",
+      "written": "Secrets geschrieben nach {path} (Rechte 600)."
+    },
+    "server": {
+      "dest": {
+        "header": "Ziel — das Container-Paar, IN das restored wird",
+        "self_mirror_confirm": "Wirklich auf das Quellsystem zurückspielen?",
+        "self_mirror_warning": "Das Ziel nutzt denselben Datenbank-Container wie die Quelle ('{name}') — der Restore würde das gerade gesicherte System überschreiben!"
+      },
+      "extra_step": {
+        "add": "Weiteren eigenen Schritt hinzufügen?",
+        "arg_key": "Argumentname (leer = fertig):",
+        "arg_value": "Wert für '{name}':",
+        "args": "Step-Argumente",
+        "command": "Step-Command:",
+        "name": "Step-Name (optional):",
+        "on_error": "on_error für diesen Schritt:"
+      },
+      "recipe": {
+        "backup_dir": "Backup-Verzeichnis auf dem Server:",
+        "compression_level": "zstd-Kompressionslevel (1-22):",
+        "neutralize": "Instanz neutralisieren (server.neutralize)",
+        "only_sql": "Nur SQL sichern (Filestore überspringen)?",
+        "question": "Welche optionalen Schritte soll der Mirror enthalten? (Restore ist immer dabei)",
+        "rebuild": "Ziel-Odoo-Container neu aufbauen (server.rebuild)",
+        "rebuild_config": "Pfad zu docker2update.yaml:",
+        "rebuild_hint": "Der Release-Access-Code liegt in release.txt im Build-Ordner; der Container muss als aktiver Eintrag in docker2update.yaml existieren.",
+        "rebuild_script": "Pfad zu update_docker_odoo.py:",
+        "rebuild_target": "Rebuild-Target:",
+        "rebuild_timeout": "Rebuild-Timeout in Sekunden:",
+        "rpc_call": "RPC-Aufruf nach dem Restore (rpc.execute)",
+        "sql": "Eigenes SQL nach dem Restore ausführen (sql.execute)",
+        "start_after": "Ziel-Odoo nach dem Restore starten (container.start)",
+        "stop_before": "Ziel-Odoo vor dem Restore stoppen (container.stop)",
+        "update_all": "Alle Module aktualisieren (server.update-all)",
+        "update_all_on_error": "on_error für das Modul-Update:",
+        "update_all_restart": "Container nach dem Modul-Update neu starten?"
+      },
+      "restore": {
+        "drop": "Bestehende Datenbank vorher löschen?",
+        "purge_master_data": "Zusätzlich ALLE Stammdaten löschen (destruktiver Template-Reset)?",
+        "purge_warning": "purge_master_data löscht Partner, CRM/HR-Inhalte und Anhänge — nur für Template-Datenbanken!",
+        "sanitize": "Sanitize-Schritte nach dem Restore:",
+        "select_by": "Neueste Datei bestimmen nach:",
+        "source_dir": "Backup-Verzeichnis:",
+        "source_path": "Pfad zur Backup-Datei:",
+        "source_pattern": "Dateinamen-Muster:",
+        "template": "CREATE-DATABASE-Template:"
+      },
+      "rpc": {
+        "args": "Positionale Args als JSON-Liste (z. B. [\"key\", \"value\"], leer = keine):",
+        "configure": "RPC-Verbindungsblock (rpc:) konfigurieren?",
+        "db": "RPC-Datenbank:",
+        "domain": "Domain als JSON-Liste (z. B. [[\"is_company\", \"=\", true]]):",
+        "hint": "Zugangsdaten kommen aus ODOO_USER/ODOO_PASSWORD in der env_file.",
+        "host": "Odoo-Host/-URL ({{ env.ODOO_URL }} für Secrets verwenden):",
+        "invalid_json": "Ungültiges JSON: {error}",
+        "kwargs": "Keyword-Args als JSON-Objekt (leer = keine):",
+        "method": "Methodenname:",
+        "mode": "Form des RPC-Aufrufs:",
+        "mode_domain_method": "domain + method",
+        "mode_domain_values": "domain + values (suchen, dann schreiben)",
+        "mode_method": "method + args",
+        "model": "Odoo-Modell (z. B. ir.config_parameter):",
+        "values": "Werte als JSON-Objekt:"
+      },
+      "source": {
+        "adjust_pattern": "Abgeleitetes Verzeichnis/Muster anpassen?",
+        "derived_pattern": "Abgeleitete Restore-Quelle: neueste '{pattern}' in {dir}",
+        "file": "Bestehende Backup-Datei verwenden",
+        "fresh": "Frisches Backup von einem laufenden Container-Paar erstellen (server.backup)",
+        "header": "Quelle — das Container-Paar, VON dem gesichert wird",
+        "newest": "Neuestes Backup nach Muster verwenden",
+        "question": "Was ist die QUELLE des Mirrors?"
+      },
+      "sql": {
+        "custom": "Eigenes SQL-Statement",
+        "custom_input": "SQL-Statement:",
+        "done": "Fertig mit Statements",
+        "menu": "SQL-Statement hinzufügen:",
+        "none_added": "Keine Statements hinzugefügt — SQL-Schritt wird übersprungen.",
+        "on_error": "on_error für den SQL-Schritt:",
+        "preset_enterprise": "Enterprise-Code setzen (Preset)",
+        "preset_eq_cloud": "eq_cloud-Connector-Parameter leeren (Preset)",
+        "preset_website": "Website-Domain tauschen (Preset)",
+        "statements": "SQL-Statements",
+        "website_domain": "Neue Website-Domain:"
+      },
+      "target": {
+        "add_more": "Weiteres Target hinzufügen?",
+        "data_dir": "Host-Datenverzeichnis (leer = per docker inspect ermitteln):",
+        "db_container": "Name des PostgreSQL-Containers:",
+        "db_name": "Datenbankname:",
+        "duplicate": "Target '{name}' existiert bereits.",
+        "name": "Target-Name:",
+        "need_one": "Mindestens ein Target ist erforderlich.",
+        "odoo_container": "Name des Odoo-Containers (leer = keiner):",
+        "owner": "Datenbank-Owner/-Benutzer:"
+      }
+    },
+    "summary": {
+      "cancelled": "Playbook-Erstellung abgebrochen.",
+      "confirm": "Playbook schreiben?",
+      "destination": "Ziel",
+      "env_file": "Secrets-Datei",
+      "header": "Playbook-Zusammenfassung",
+      "hint_cron": "Cron-Beispiel: 0 2 * * * odoodev run {path} >> /var/log/odoodev-mirror.log 2>&1 (absolute Pfade!)",
+      "hint_dryrun": "Probelauf: odoodev run {path} --dry-run",
+      "hint_validate": "Prüfen: odoodev playbook validate {path}",
+      "name": "Name",
+      "output": "Ausgabepfad",
+      "source": "Quelle",
+      "source_file": "Datei: {path}",
+      "source_fresh": "{target} (frisches Backup)",
+      "source_newest": "neueste in {dir}",
+      "steps": "Schritte",
+      "targets": "Targets",
+      "type": "Typ",
+      "version": "Version",
+      "written": "Playbook geschrieben nach {path}"
+    },
+    "type": {
+      "dev": "Dev-Mode (lokale Odoo-Entwicklungsumgebung)",
+      "question": "Welche Art Playbook möchtest du erstellen?",
+      "server": "Server-Mode (Kundenserver mit Docker-Containern)"
+    },
+    "validate": {
+      "failed": "Playbook ungültig: {error}",
+      "ok": "Playbook ist gültig: {steps} Schritt(e), Version {version}"
+    },
+    "wizard": {
+      "header": "odoodev Playbook-Assistent",
+      "subtitle": "Fragen beantworten — heraus kommt eine lauffähige Playbook-YAML."
+    },
+    "gui": {
+      "title": "Playbook-Assistent",
+      "subtitle": "Fragen beantworten — heraus kommt ein lauffähiges Playbook-YAML.",
+      "back": "Zurück",
+      "next": "Weiter",
+      "createButton": "Playbook erstellen",
+      "creating": "Erstelle...",
+      "created": "Playbook erstellt",
+      "createFailed": "Playbook-Erstellung fehlgeschlagen",
+      "validating": "Validiere...",
+      "valid": "Playbook ist gültig ({{steps}} Schritte)",
+      "invalid": "Validierung fehlgeschlagen",
+      "openInEditor": "Im Editor öffnen",
+      "runNow": "Jetzt ausführen",
+      "summary": "Zusammenfassung",
+      "outputPath": "Ausgabepfad",
+      "overwriteExisting": "Bestehende Dateien überschreiben (--force)",
+      "loadFailed": "Wizard-Schema konnte nicht geladen werden (odoodev >= 0.55 erforderlich)",
+      "sourceTarget": "Quell-Target (Backup von)",
+      "destinationTarget": "Ziel-Target (Restore nach)",
+      "derivedPattern": "Das Backup-Dateimuster wird automatisch aus dem Quell-Target abgeleitet.",
+      "addItem": "Eintrag hinzufügen",
+      "removeItem": "Entfernen",
+      "noTargets": "Zuerst mindestens ein Target definieren",
+      "keyPlaceholder": "KEY",
+      "valuePlaceholder": "Wert",
+      "sqlPreset": "Preset einfügen",
+      "sqlCustomPlaceholder": "SQL-Statement...",
+      "jsonInvalid": "Ungültiges JSON",
+      "requiredHint": "erforderlich",
+      "selectPlaceholder": "— wählen —",
+      "section": {
+        "playbook_type": "Typ",
+        "common": "Name & Version",
+        "server_targets": "Targets",
+        "server_source": "Quelle",
+        "server_recipe": "Rezept",
+        "server_extra_steps": "Zusatzschritte",
+        "server_rpc": "RPC-Verbindung",
+        "vars": "Variablen",
+        "dev_steps": "Dev-Schritte",
+        "secrets": "Secrets",
+        "output": "Ausgabe",
+        "summary": "Zusammenfassung"
+      }
+    }
   }
 }

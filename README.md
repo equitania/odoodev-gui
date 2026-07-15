@@ -71,12 +71,17 @@ authentische Builds installiert, kein manuelles Neu-Herunterladen für neue Rele
 
 **Dashboard** — 4 Version-Cards (v16–v19) mit Status-Badges (Docker/Container, Venv,
 Python, Odoo), Polling, Docker Up/Down inline, Quick-Actions (Server starten, Datenbanken).
+Bei laufendem Server ist die URL `http://localhost:<port>` klickbar (öffnet den Browser);
+läuft der Container-Backend-Dienst nicht, erscheint ein Banner mit Ein-Klick-Start
+(`container system start` / `systemctl start docker` / Docker Desktop — kein Autostart).
 
 **Server** — alle 4 Versionen als Tabs, ServerConfig (5 Modi: Normal/Dev/Shell/Test/
 Prepare, Datenbank-Dropdown, Modul-Update/Install, Advanced: Host, Sprache,
 Clean-Sessions, Config, Default-Credentials, Extra-Args), LogViewer mit Virtual
-Scrolling, Level-Filter (DEBUG/INFO/WARNING/ERROR/CRITICAL), Suche, Auto-Scroll, Copy,
-Syntax-Highlighting, Buffer-Persistenz über Stop/Start.
+Scrolling, Level-Filter (DEBUG/INFO/WARNING/ERROR/CRITICAL — Tracebacks und
+Folgezeilen erben das Level ihrer Ursprungszeile), Suche, Auto-Scroll, Copy,
+Syntax-Highlighting, Buffer-Persistenz über Stop/Start, klickbare Server-URL im
+Tab-Header.
 
 **Datenbanken** — DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Schritt-Wizard
 mit Dry-Run, Sanitize, Anonymize, Purge, Recompute), Drop (type-to-confirm), Copy, Rename,
@@ -91,9 +96,11 @@ Pfade liefert `odoodev config paths --json` (CLI ≥ 0.53.0, mit Fallback für �
 
 **Weitere Panels** — Docker/Container (up/down/status/logs; Benchmark nur auf macOS mit
 Apple Container), Venv (setup/check/remove), Repos (clone/update/config-regenerate,
-streaming), Env (check/setup/show/edit/dir), Playbook-Runner (NDJSON-Live-Fortschritt),
-Init-Wizard, Migrate-Panel (Migrationsgruppen verwalten), Doctor / Health-Check,
-Einstellungen.
+streaming), Env (check/setup/show/edit/dir), Playbook-Runner (NDJSON-Live-Fortschritt)
+mit **Playbook-Assistent** (schema-getriebener Stepper-Wizard aus
+`odoodev playbook schema --json`: Dev- und Server-Playbooks, Targets, SQL-Presets,
+maskierte Secrets, automatische Validierung), Init-Wizard, Migrate-Panel
+(Migrationsgruppen verwalten), Doctor / Health-Check, Einstellungen.
 
 **Plattform & Betrieb** — Apple-Container-Integration (Runtime-Erkennung aus odoodev-Config
 `container_runtime: apple`, `container ls --format json`, Docker wird nie angerührt wenn
@@ -190,12 +197,16 @@ manual re-downloading for new releases.
 
 **Dashboard** — 4 version cards (v16–v19) with status badges (Docker/Container, Venv,
 Python, Odoo), polling, inline Docker Up/Down, quick actions (Start Server, Databases).
+While a server runs, the URL `http://localhost:<port>` is clickable (opens the browser);
+when the container backend service is down, a banner offers a one-click start
+(`container system start` / `systemctl start docker` / Docker Desktop — no auto-start).
 
 **Server** — all 4 versions as tabs, ServerConfig (5 modes: Normal/Dev/Shell/Test/Prepare,
 database dropdown, module update/install, advanced: host, language, clean-sessions, config,
 default credentials, extra args), LogViewer with virtual scrolling, level filter
-(DEBUG/INFO/WARNING/ERROR/CRITICAL), search, auto-scroll, copy, syntax highlighting,
-buffer persistence across stop/start.
+(DEBUG/INFO/WARNING/ERROR/CRITICAL — tracebacks and continuation lines inherit the
+level of their origin line), search, auto-scroll, copy, syntax highlighting,
+buffer persistence across stop/start, clickable server URL in the tab header.
 
 **Databases** — DB list, backup (SQL/ZIP/tar.zst with level), restore (3-step wizard with
 dry run, sanitize, anonymize, purge, recompute), drop (type-to-confirm), copy, rename,
@@ -210,8 +221,11 @@ Dashboard cards and the Compose button on the Docker cards. Paths come from
 
 **More panels** — Docker/Container (up/down/status/logs; benchmark only on macOS with
 Apple Container), Venv (setup/check/remove), Repos (clone/update/config-regenerate,
-streaming), Env (check/setup/show/edit/dir), Playbook Runner (NDJSON live progress),
-Init Wizard, Migrate panel (migration group management), Doctor / Health Check, Settings.
+streaming), Env (check/setup/show/edit/dir), Playbook Runner (NDJSON live progress)
+with a **Playbook Assistant** (schema-driven stepper wizard rendered from
+`odoodev playbook schema --json`: dev and server playbooks, targets, SQL presets,
+masked secrets, automatic validation), Init Wizard, Migrate panel (migration group
+management), Doctor / Health Check, Settings.
 
 **Platform & operation** — Apple Container integration (runtime detection from odoodev
 config `container_runtime: apple`, `container ls --format json`, Docker is never touched

@@ -120,11 +120,41 @@ pub async fn get_runtime_info() -> Result<RuntimeInfo, String> {
     if cfg!(target_os = "macos") && which::which("container").is_ok() {
         available.push("apple".to_string());
     }
+    let daemon_running = docker_check::check_daemon_running(&runtime).await;
     Ok(RuntimeInfo {
         runtime,
         configured,
         available,
+        daemon_running,
     })
+}
+
+/// Start the container runtime's backend service (Apple Container apiserver
+/// via `container system start`, Docker via systemctl / Docker Desktop).
+/// Polls briefly so the caller usually sees the daemon already up.
+#[tauri::command]
+pub async fn runtime_system_start(runtime: String) -> Result<OpResult, String> {
+    let message = docker_check::start_daemon(&runtime).await;
+    match message {
+        Ok(_) => {
+            // Give the service a moment; Apple's apiserver answers in ~1-2s.
+            // Docker Desktop can take much longer — the UI polling catches up.
+            for _ in 0..10 {
+                if docker_check::check_daemon_running(&runtime).await == Some(true) {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            }
+            Ok(OpResult {
+                success: true,
+                error: None,
+            })
+        }
+        Err(e) => Ok(OpResult {
+            success: false,
+            error: Some(e),
+        }),
+    }
 }
 
 #[tauri::command]

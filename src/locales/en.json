@@ -165,7 +165,14 @@
     "container": "Container",
     "cpus": "CPUs",
     "ram": "RAM",
-    "started": "Started"
+    "started": "Started",
+    "serviceDown": "Service not running",
+    "serviceDownApple": "The Apple Container service (apiserver) is not running.",
+    "serviceDownDocker": "The Docker daemon is not running.",
+    "startService": "Start service",
+    "serviceStarting": "Starting container service...",
+    "serviceStarted": "Container service started",
+    "serviceStartFailed": "Could not start container service"
   },
   "venv": {
     "title": "Virtual Environments",
@@ -401,5 +408,225 @@
     "noFileSelected": "Select a file on the left to edit it.",
     "loadFailed": "Failed to open file",
     "cliUpdateHint": "The installed odoodev CLI does not support 'config paths' yet — showing a reduced file list. Update odoodev (Settings) to edit template and generated odoo.conf files."
+  },
+  "playbookWizard": {
+    "common": {
+      "description": "Description:",
+      "name": "Playbook name:",
+      "name_invalid": "Name must not be empty.",
+      "on_error": "Default error behavior (on_error):",
+      "var_key": "Variable name (empty = done):",
+      "var_value": "Value for '{name}':",
+      "vars": "Custom variables ({{ vars.x }})",
+      "vars_add": "Add a custom variable?",
+      "version": "Odoo version:"
+    },
+    "create": {
+      "answers_invalid": "Answers file is invalid:",
+      "answers_required": "--non-interactive requires --answers FILE",
+      "env_exists": "env_file already exists at {path} — pass --force to overwrite or set env_file.generate to false",
+      "output_exists": "{path} already exists — pass --force to overwrite"
+    },
+    "dev": {
+      "arg_prompt": "{command} — {arg}:",
+      "args_header": "Arguments for '{command}'",
+      "steps": {
+        "none": "No steps selected — using defaults ({defaults}).",
+        "question": "Which steps should the playbook run?"
+      }
+    },
+    "output": {
+      "overwrite": "{path} already exists — overwrite?",
+      "path": "Output file:"
+    },
+    "secrets": {
+      "add_more": "Add another secret variable?",
+      "detected": "These environment variables are referenced in your playbook:",
+      "exists_merge": "{path} already exists — merge new keys into it (existing values kept)?",
+      "generate": "Generate a secrets .env file for this playbook?",
+      "key_name": "Variable name (empty = done):",
+      "none": "No secret values entered — no env file written.",
+      "path": "Secrets file path:",
+      "skipped": "No secrets file written — create {path} manually (chmod 600) before running from cron.",
+      "value_for": "Value for {name} (empty = fill in later):",
+      "written": "Secrets written to {path} (permissions 600)."
+    },
+    "server": {
+      "dest": {
+        "header": "Destination — the container pair the backup is restored INTO",
+        "self_mirror_confirm": "Really restore back onto the source system?",
+        "self_mirror_warning": "Destination uses the SAME database container as the source ('{name}') — the restore would overwrite the system you just backed up!"
+      },
+      "extra_step": {
+        "add": "Add another custom step?",
+        "arg_key": "Arg name (empty = done):",
+        "arg_value": "Value for '{name}':",
+        "args": "Step args",
+        "command": "Step command:",
+        "name": "Step name (optional):",
+        "on_error": "on_error for this step:"
+      },
+      "recipe": {
+        "backup_dir": "Backup directory on the server:",
+        "compression_level": "zstd compression level (1-22):",
+        "neutralize": "Neutralize the instance (server.neutralize)",
+        "only_sql": "SQL-only backup (skip filestore)?",
+        "question": "Which optional steps should the mirror include? (restore is always part of it)",
+        "rebuild": "Rebuild the destination Odoo container (server.rebuild)",
+        "rebuild_config": "Path to docker2update.yaml:",
+        "rebuild_hint": "The release access code lives in release.txt inside the build folder; the container must be an active entry in docker2update.yaml.",
+        "rebuild_script": "Path to update_docker_odoo.py:",
+        "rebuild_target": "Rebuild target:",
+        "rebuild_timeout": "Rebuild timeout in seconds:",
+        "rpc_call": "Post-restore RPC call (rpc.execute)",
+        "sql": "Run custom SQL after restore (sql.execute)",
+        "start_after": "Start destination Odoo after restore (container.start)",
+        "stop_before": "Stop destination Odoo before restore (container.stop)",
+        "update_all": "Update all modules (server.update-all)",
+        "update_all_on_error": "on_error for the module update:",
+        "update_all_restart": "Restart the container after the module update?"
+      },
+      "restore": {
+        "drop": "Drop the existing database first?",
+        "purge_master_data": "Also purge ALL master data (destructive template reset)?",
+        "purge_warning": "purge_master_data deletes partners, CRM/HR content and attachments — only for template databases!",
+        "sanitize": "Sanitize steps after restore:",
+        "select_by": "Select newest by:",
+        "source_dir": "Backup directory:",
+        "source_path": "Backup file path:",
+        "source_pattern": "Filename pattern:",
+        "template": "CREATE DATABASE template:"
+      },
+      "rpc": {
+        "args": "Positional args as JSON list (e.g. [\"key\", \"value\"], empty = none):",
+        "configure": "Configure the RPC connection block (rpc:)?",
+        "db": "RPC database:",
+        "domain": "Domain as JSON list (e.g. [[\"is_company\", \"=\", true]]):",
+        "hint": "Credentials come from ODOO_USER/ODOO_PASSWORD in the env_file.",
+        "host": "Odoo host/URL (use {{ env.ODOO_URL }} for secrets):",
+        "invalid_json": "Invalid JSON: {error}",
+        "kwargs": "Keyword args as JSON object (empty = none):",
+        "method": "Method name:",
+        "mode": "RPC call form:",
+        "mode_domain_method": "domain + method",
+        "mode_domain_values": "domain + values (search, then write)",
+        "mode_method": "method + args",
+        "model": "Odoo model (e.g. ir.config_parameter):",
+        "values": "Values as JSON object:"
+      },
+      "source": {
+        "adjust_pattern": "Adjust the derived directory/pattern?",
+        "derived_pattern": "Derived restore source: newest '{pattern}' in {dir}",
+        "file": "Use an existing backup file",
+        "fresh": "Create a fresh backup from a running container pair (server.backup)",
+        "header": "Source — the container pair the backup is taken FROM",
+        "newest": "Use the newest backup matching a pattern",
+        "question": "What is the SOURCE of the mirror?"
+      },
+      "sql": {
+        "custom": "Custom SQL statement",
+        "custom_input": "SQL statement:",
+        "done": "Done adding statements",
+        "menu": "Add SQL statement:",
+        "none_added": "No statements added — skipping the SQL step.",
+        "on_error": "on_error for the SQL step:",
+        "preset_enterprise": "Set enterprise code (preset)",
+        "preset_eq_cloud": "Clear eq_cloud connector params (preset)",
+        "preset_website": "Swap website domain (preset)",
+        "statements": "SQL statements",
+        "website_domain": "New website domain:"
+      },
+      "target": {
+        "add_more": "Add another target?",
+        "data_dir": "Host data dir (empty = resolve via docker inspect):",
+        "db_container": "PostgreSQL container name:",
+        "db_name": "Database name:",
+        "duplicate": "Target '{name}' already exists.",
+        "name": "Target name:",
+        "need_one": "At least one target is required.",
+        "odoo_container": "Odoo container name (empty = none):",
+        "owner": "Database owner/user:"
+      }
+    },
+    "summary": {
+      "cancelled": "Playbook creation cancelled.",
+      "confirm": "Write this playbook?",
+      "destination": "Destination",
+      "env_file": "Secrets file",
+      "header": "Playbook summary",
+      "hint_cron": "Cron example: 0 2 * * * odoodev run {path} >> /var/log/odoodev-mirror.log 2>&1 (absolute paths!)",
+      "hint_dryrun": "Dry-run: odoodev run {path} --dry-run",
+      "hint_validate": "Validate: odoodev playbook validate {path}",
+      "name": "Name",
+      "output": "Output path",
+      "source": "Source",
+      "source_file": "file: {path}",
+      "source_fresh": "{target} (fresh backup)",
+      "source_newest": "newest in {dir}",
+      "steps": "Steps",
+      "targets": "Targets",
+      "type": "Type",
+      "version": "Version",
+      "written": "Playbook written to {path}"
+    },
+    "type": {
+      "dev": "Dev-mode (local Odoo development environment)",
+      "question": "Which kind of playbook do you want to create?",
+      "server": "Server-mode (customer server with Docker containers)"
+    },
+    "validate": {
+      "failed": "Playbook invalid: {error}",
+      "ok": "Playbook is valid: {steps} step(s), version {version}"
+    },
+    "wizard": {
+      "header": "odoodev playbook assistant",
+      "subtitle": "Answer the questions — a runnable playbook YAML comes out."
+    },
+    "gui": {
+      "title": "Playbook Assistant",
+      "subtitle": "Answer the questions — a runnable playbook YAML comes out.",
+      "back": "Back",
+      "next": "Next",
+      "createButton": "Create playbook",
+      "creating": "Creating...",
+      "created": "Playbook created",
+      "createFailed": "Playbook creation failed",
+      "validating": "Validating...",
+      "valid": "Playbook is valid ({{steps}} steps)",
+      "invalid": "Validation failed",
+      "openInEditor": "Open in editor",
+      "runNow": "Run now",
+      "summary": "Summary",
+      "outputPath": "Output path",
+      "overwriteExisting": "Overwrite existing files (--force)",
+      "loadFailed": "Could not load the wizard schema (odoodev >= 0.55 required)",
+      "sourceTarget": "Source target (backup from)",
+      "destinationTarget": "Destination target (restore to)",
+      "derivedPattern": "Backup file pattern is derived from the source target automatically.",
+      "addItem": "Add entry",
+      "removeItem": "Remove",
+      "noTargets": "Define at least one target first",
+      "keyPlaceholder": "KEY",
+      "valuePlaceholder": "value",
+      "sqlPreset": "Insert preset",
+      "sqlCustomPlaceholder": "SQL statement...",
+      "jsonInvalid": "Invalid JSON",
+      "requiredHint": "required",
+      "selectPlaceholder": "— select —",
+      "section": {
+        "playbook_type": "Type",
+        "common": "Name & Version",
+        "server_targets": "Targets",
+        "server_source": "Source",
+        "server_recipe": "Recipe",
+        "server_extra_steps": "Extra steps",
+        "server_rpc": "RPC connection",
+        "vars": "Variables",
+        "dev_steps": "Dev steps",
+        "secrets": "Secrets",
+        "output": "Output",
+        "summary": "Summary"
+      }
+    }
   }
 }

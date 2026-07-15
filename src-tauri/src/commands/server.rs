@@ -155,8 +155,14 @@ pub async fn start_server(
     tokio::spawn(async move {
         let reader = BufReader::new(stdout);
         let mut lines = reader.lines();
+        // Continuation lines (tracebacks etc.) stay on the same stream as
+        // their origin log line, so per-stream state is sufficient.
+        let mut last_level = log_parser::LogLevel::Info;
         while let Ok(Some(line)) = lines.next_line().await {
-            let entry = log_parser::parse_line(&line);
+            let entry = log_parser::parse_line_with_level(&line, last_level);
+            if entry.level != log_parser::LogLevel::Raw {
+                last_level = entry.level;
+            }
             let _ = win_out.emit(&format!("odoodev-log:{version}"), &entry);
         }
     });
@@ -166,8 +172,12 @@ pub async fn start_server(
     tokio::spawn(async move {
         let reader = BufReader::new(stderr);
         let mut lines = reader.lines();
+        let mut last_level = log_parser::LogLevel::Info;
         while let Ok(Some(line)) = lines.next_line().await {
-            let entry = log_parser::parse_line(&line);
+            let entry = log_parser::parse_line_with_level(&line, last_level);
+            if entry.level != log_parser::LogLevel::Raw {
+                last_level = entry.level;
+            }
             let _ = win_err.emit(&format!("odoodev-log:{version_err}"), &entry);
         }
     });

@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { StatusBadge } from "./StatusBadge";
 import { usePolling } from "../../hooks/usePolling";
 import { invokeCmd } from "../../lib/tauri";
+import { reportError } from "../../lib/errors";
 import { VERSION_COLORS, VERSION_BG, POLL_INTERVALS } from "../../lib/constants";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type {
@@ -20,6 +21,7 @@ import {
   ArrowUp,
   ArrowDown,
   ChevronDown,
+  ExternalLink,
   FileCog,
   Loader2,
   HardDrive,
@@ -108,6 +110,10 @@ export function VersionCard({
     ? { status: "running" as const, label: `Odoo :${info.ports.odoo}` }
     : { status: "stopped" as const, label: "Odoo stopped" };
 
+  const odooUrl = odooRunning
+    ? `http://localhost:${serverStatus?.port ?? info.ports.odoo}`
+    : null;
+
   const handleDockerUp = async () => {
     setDockerBusy(true);
     const tid = toastLoading(`Starting PostgreSQL for v${version}...`);
@@ -162,6 +168,20 @@ export function VersionCard({
 
         <div className="text-xs text-muted-foreground">
           <div>DB: {info.ports.db} | Odoo: {info.ports.odoo} | Mailpit: {info.ports.mailpit}</div>
+          {odooUrl && (
+            <button
+              onClick={() =>
+                invokeCmd("open_external", { url: odooUrl }).catch(
+                  reportError("Could not open Odoo in browser"),
+                )
+              }
+              title="Open Odoo in browser"
+              className="inline-flex items-center gap-1 text-primary hover:underline"
+            >
+              {odooUrl}
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          )}
           <div className="truncate" title={info.base}>{info.base}</div>
           <div>PostgreSQL {info.postgres}</div>
         </div>

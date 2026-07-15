@@ -37,6 +37,10 @@ export interface OdooLogEntry {
   timestamp: string;
   pid: string;
   level: LogLevel;
+  /** Filter level: RAW continuation lines inherit the preceding parsed level. */
+  effective_level: LogLevel;
+  /** True only for GUI-synthesized separator markers (always visible). */
+  is_separator?: boolean;
   database: string;
   logger: string;
   message: string;
@@ -66,6 +70,8 @@ export interface RuntimeInfo {
   runtime: ContainerRuntime;
   configured: string | null;
   available: string[];
+  /** Backend service state (Docker daemon / Apple apiserver); null = no runtime. */
+  daemon_running: boolean | null;
 }
 
 export interface ServerStatus {

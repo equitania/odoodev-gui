@@ -29,6 +29,8 @@ export function useLogStream(version: string) {
           timestamp: "",
           pid: "",
           level: "RAW",
+          effective_level: "RAW",
+          is_separator: true,
           database: "",
           logger: "",
           message: `--- Server stopped ---`,

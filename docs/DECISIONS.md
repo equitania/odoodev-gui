@@ -386,3 +386,4 @@
 | D15 | CLI-wrapper | Pure presentation, no logic | All via subprocess + JSON |
 | D16 | Restore flags | Individual, not --sanitize | Fine-grained flag mapping |
 | D17 | Linux installer | curl-pipe-bash: apt for Debian/Ubuntu, AppImage otherwise | Root-free AppImage path, dpkg/marker version tracking, re-run = update |
+| D18 | Container service start | One-click button, NO auto-start on app launch | RuntimeServiceBanner (Dashboard + Docker panel); `container system start` / `systemctl start docker` / Docker Desktop launch |

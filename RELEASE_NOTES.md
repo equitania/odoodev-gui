@@ -1,5 +1,33 @@
 # Release Notes
 
+## Version 1.4.0 (15.07.2026)
+
+### Added
+- **Playbook Assistant (schema-driven wizard):** a stepper dialog in the
+  Playbooks view renders its form live from `odoodev playbook schema --json`
+  (CLI ≥ 0.55) — all 12 field types, conditional visibility, repeatable
+  targets/extra-steps sections, SQL presets and masked secrets. Answers are
+  passed through a 0600 temp file to `playbook create --non-interactive`,
+  the result is auto-validated, then opened in the editor or preselected for
+  running. CLI field labels ship bundled (DE/EN) with a humanized fallback
+  for fields from newer CLIs.
+- **Clickable server URL:** while an Odoo server is running, the Dashboard
+  version card and the Server tab header show `http://localhost:<port>` —
+  one click opens the system browser (live port preferred over config port).
+- **Container service start:** when the runtime backend is down, an amber
+  banner on the Dashboard and Docker panel offers a one-click start —
+  `container system start` (Apple Container), `systemctl start docker`
+  (Linux) or launching Docker Desktop (macOS). No auto-start on app launch
+  by design (decision D18).
+
+### Fixed
+- **Log level filter during live runs:** RAW continuation lines (tracebacks,
+  wrapped output) bypassed both the level checkboxes and the search box.
+  They now inherit the level of the preceding parsed line (tracked per
+  stdout/stderr stream in Rust), so hiding ERROR also hides its traceback;
+  the "Server stopped" separator carries an explicit flag and stays always
+  visible.
+
 ## Version 1.3.0 (14.07.2026)
 
 ### Added

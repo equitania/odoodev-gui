@@ -7,6 +7,7 @@ import { useDockerLogs } from "../../hooks/useDockerLogs";
 import { useDockerBench } from "../../hooks/useDockerBench";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { RuntimeBanner } from "./RuntimeBanner";
+import { RuntimeServiceBanner } from "./RuntimeServiceBanner";
 import { ContainerCard } from "./ContainerCard";
 import { DockerLogViewer } from "./DockerLogViewer";
 import { BenchPanel } from "./BenchPanel";
@@ -226,6 +227,7 @@ export function DockerPanel({ onNavigate }: DockerPanelProps) {
           </div>
         </div>
         <RuntimeBanner info={runtimeInfo} />
+        <RuntimeServiceBanner />
       </div>
 
       {mode === "overview" && (

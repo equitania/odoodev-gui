@@ -55,6 +55,107 @@ pub async fn detect_runtime() -> String {
     "none".to_string()
 }
 
+/// Whether the runtime's backend service is reachable.
+/// docker: `docker info` succeeds only when the daemon answers.
+/// apple: `container system status` reports the launchd apiserver state.
+pub async fn check_daemon_running(runtime: &str) -> Option<bool> {
+    match runtime {
+        "docker" => {
+            let docker_path = odoodev::find_binary_opt("docker")?;
+            let mut cmd = Command::new(docker_path);
+            cmd.args(["info", "--format", "{{.ServerVersion}}"]);
+            odoodev::augment_path(&mut cmd);
+            match cmd.output().await {
+                Ok(out) => Some(out.status.success()),
+                Err(_) => Some(false),
+            }
+        }
+        "apple" => {
+            let container_path = odoodev::find_binary_opt("container")?;
+            let mut cmd = Command::new(container_path);
+            cmd.args(["system", "status"]);
+            odoodev::augment_path(&mut cmd);
+            match cmd.output().await {
+                Ok(out) => {
+                    if !out.status.success() {
+                        return Some(false);
+                    }
+                    // FIELD/VALUE table; the "status" row says running/stopped.
+                    let stdout = String::from_utf8_lossy(&out.stdout);
+                    let running = stdout.lines().any(|l| {
+                        let mut cols = l.split_whitespace();
+                        cols.next() == Some("status") && cols.next() == Some("running")
+                    });
+                    Some(running)
+                }
+                Err(_) => Some(false),
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Start the runtime's backend service. Returns Ok(message) on success.
+/// apple: `container system start` (idempotent launchd agent).
+/// docker: Linux `systemctl start docker`; macOS `open -a Docker`
+/// (Docker Desktop). Windows has no reliable CLI path — the user must
+/// start Docker Desktop manually.
+pub async fn start_daemon(runtime: &str) -> Result<String, String> {
+    match runtime {
+        "apple" => {
+            let container_path = odoodev::find_binary_opt("container")
+                .ok_or_else(|| "'container' binary not found".to_string())?;
+            let mut cmd = Command::new(container_path);
+            cmd.args(["system", "start"]);
+            odoodev::augment_path(&mut cmd);
+            let out = cmd
+                .output()
+                .await
+                .map_err(|e| format!("container system start: {e}"))?;
+            if out.status.success() {
+                Ok("Apple Container apiserver started".to_string())
+            } else {
+                Err(format!(
+                    "container system start failed: {}",
+                    String::from_utf8_lossy(&out.stderr).trim()
+                ))
+            }
+        }
+        "docker" if cfg!(target_os = "linux") => {
+            let out = Command::new("systemctl")
+                .args(["start", "docker"])
+                .output()
+                .await
+                .map_err(|e| format!("systemctl start docker: {e}"))?;
+            if out.status.success() {
+                Ok("Docker service started".to_string())
+            } else {
+                Err(format!(
+                    "systemctl start docker failed: {} — try 'sudo systemctl start docker' in a terminal",
+                    String::from_utf8_lossy(&out.stderr).trim()
+                ))
+            }
+        }
+        "docker" if cfg!(target_os = "macos") => {
+            let out = Command::new("open")
+                .args(["-a", "Docker"])
+                .output()
+                .await
+                .map_err(|e| format!("open -a Docker: {e}"))?;
+            if out.status.success() {
+                Ok("Docker Desktop is starting (this can take a while)".to_string())
+            } else {
+                Err(format!(
+                    "Could not launch Docker Desktop: {}",
+                    String::from_utf8_lossy(&out.stderr).trim()
+                ))
+            }
+        }
+        "docker" => Err("Please start Docker Desktop manually on this platform".to_string()),
+        other => Err(format!("Unknown runtime: {other}")),
+    }
+}
+
 /// Query `docker ps --format` for a container publishing the given DB port.
 async fn docker_container_for_port(db_port: u16) -> String {
     let Some(docker_path) = odoodev::find_binary_opt("docker") else {

@@ -3,6 +3,7 @@ import { useAppStore } from "../../store/appStore";
 import { invokeCmd } from "../../lib/tauri";
 import { logError } from "../../lib/errors";
 import { VersionCard } from "./VersionCard";
+import { RuntimeServiceBanner } from "../docker/RuntimeServiceBanner";
 import type { CuratedFiles, ViewKey } from "../../types";
 
 export function Dashboard({
@@ -56,6 +57,9 @@ export function Dashboard({
   return (
     <div className="p-6">
       <h1 className="mb-4 text-2xl font-semibold">Dashboard</h1>
+      <div className="mb-4 empty:hidden">
+        <RuntimeServiceBanner />
+      </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {sortedKeys.map((ver) => (
           <VersionCard
