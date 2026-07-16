@@ -104,8 +104,12 @@ pub async fn backup_db(args: BackupArgs, window: tauri::Window) -> Result<Backup
 }
 
 fn parse_backup_summary(line: &str) -> (Option<String>, Option<String>) {
-    // "[OK] Backup saved: ~/Downloads/v18_exam_250710.zip (45.2 MB)"
-    if let Some(idx) = line.find("Backup saved:") {
+    // CLI prints "[OK] Backup created: ~/Downloads/v18_exam_250710.zip (45.2 MB)"
+    // (older builds said "Backup saved:").
+    if let Some(idx) = line
+        .find("Backup created:")
+        .or_else(|| line.find("Backup saved:"))
+    {
         let rest = &line[idx..];
         if let Some(colon) = rest.find(':') {
             let after = rest[colon + 1..].trim();
@@ -366,5 +370,29 @@ pub async fn rename_db(
             success: false,
             error: Some(e),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_backup_summary;
+
+    #[test]
+    fn parses_created_marker_with_size() {
+        let (path, size) =
+            parse_backup_summary("[OK] Backup created: /Users/x/Downloads/v18_exam.zip (45.2 MB)");
+        assert_eq!(path.as_deref(), Some("/Users/x/Downloads/v18_exam.zip"));
+        assert_eq!(size.as_deref(), Some("45.2 MB"));
+    }
+
+    #[test]
+    fn parses_legacy_saved_marker() {
+        let (path, _) = parse_backup_summary("[OK] Backup saved: /tmp/a.zip (1 MB)");
+        assert_eq!(path.as_deref(), Some("/tmp/a.zip"));
+    }
+
+    #[test]
+    fn unrelated_line_yields_none() {
+        assert_eq!(parse_backup_summary("Restoring database..."), (None, None));
     }
 }

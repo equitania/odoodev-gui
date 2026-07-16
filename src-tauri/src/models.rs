@@ -7,7 +7,21 @@ pub struct VersionInfo {
     pub python: String,
     pub postgres: String,
     pub ports: Ports,
+    /// Runtime ports resolved from the version's .env (CLI >= 0.58.0).
+    /// Multi-user hosts give every user an own port prefix — container
+    /// matching and URLs must use these, not the registry defaults.
+    #[serde(default)]
+    pub effective_ports: Option<Ports>,
     pub base: String,
+}
+
+impl VersionInfo {
+    pub fn db_port(&self) -> u16 {
+        self.effective_ports
+            .as_ref()
+            .map(|p| p.db)
+            .unwrap_or(self.ports.db)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

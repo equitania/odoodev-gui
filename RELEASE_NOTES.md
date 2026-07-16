@@ -1,5 +1,53 @@
 # Release Notes
 
+## Version 1.5.0 (16.07.2026)
+
+User-feedback release: every issue reported from the first multi-user
+terminal-server deployment is addressed.
+
+### Added
+- **Native file/folder picker:** the restore dialog's backup file and the
+  backup dialog's output directory now have a Browse button (native OS
+  dialog). Default location is `~/Downloads` (the CLI's own backup default);
+  the last used directory is remembered.
+- **Per-user runtime ports (multi-user hosts):** the GUI now consumes
+  `effective_ports` from `odoodev config versions --json` (CLI >= 0.58.0) —
+  the registry defaults overridden by each user's `.env`
+  (`DB_PORT`/`ODOO_PORT`/...). Container detection, port displays and server
+  URLs follow the user's real port prefix (user 2 -> 28069/28432, ...);
+  older CLIs fall back to the previous behavior.
+- **Restore option explanations:** every post-processing option (sanitize,
+  neutralize, anonymize, wipe, purge master data, purge transactions,
+  anonymize users, recompute, uninstall modules) now shows a short plain-
+  language description of what it actually does — fully translated (DE/EN;
+  the dialog previously had no i18n at all).
+
+### Fixed
+- **DB operations never signaled completion:** the backup/restore progress
+  dialog spun forever and its Close button stayed disabled — the resolved
+  operation result was discarded. The dialog now shows a green/red icon,
+  the result message, an enabled OK button, and the database list refreshes
+  automatically when the operation finishes.
+- **Dead progress dialog on Drop:** dropping a database opened an empty
+  progress window listening for an event that no backend code ever emits —
+  removed; the toast is the feedback.
+- **Stale database selection when switching version tabs:** the Server
+  view kept the previously selected database when changing versions and
+  would start Odoo with a `-d` that only exists on the other version's
+  PostgreSQL. The selection is now validated against the freshly loaded
+  list on every version switch.
+- **Database panel hid the diagnostic:** connection errors replaced the
+  CLI's message (which names the exact host:port probed) with a generic
+  text; the original message is now shown, and the empty state names the
+  port it queried.
+- **Backup result path/size were never parsed** (the parser expected
+  "Backup saved:", the CLI prints "Backup created:").
+
+### Changed
+- Version badge colors now fall back to a cycled palette for unknown
+  versions, so a future v20 registry entry renders styled without a GUI
+  release.
+
 ## Version 1.4.1 (15.07.2026)
 
 ### Added

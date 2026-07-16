@@ -14,7 +14,7 @@ import {
   Terminal,
   CircleCheckBig,
 } from "lucide-react";
-import { VERSION_COLORS, VERSION_BG } from "../../lib/constants";
+import { versionColor, versionBg } from "../../lib/constants";
 import type { VersionInfo } from "../../types";
 
 type Mode = "init" | "setup";
@@ -117,7 +117,7 @@ export function InitPanel() {
                         onClick={() => setSelectedVersion(ver)}
                         className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-bold transition-all ${
                           selectedVersion === ver
-                            ? `border-primary ${VERSION_COLORS[ver] ?? ""} ${VERSION_BG[ver] ?? ""}`
+                            ? `border-primary ${versionColor(ver)} ${versionBg(ver)}`
                             : "border-border text-muted-foreground hover:bg-accent"
                         }`}
                       >

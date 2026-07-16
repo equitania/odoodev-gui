@@ -12,7 +12,7 @@ import { ContainerCard } from "./ContainerCard";
 import { DockerLogViewer } from "./DockerLogViewer";
 import { BenchPanel } from "./BenchPanel";
 import { Tabs } from "../ui/tabs";
-import { POLL_INTERVALS } from "../../lib/constants";
+import { POLL_INTERVALS, effectivePorts } from "../../lib/constants";
 import type {
   ContainerInfo,
   CuratedFiles,
@@ -120,7 +120,8 @@ export function DockerPanel({ onNavigate }: DockerPanelProps) {
   const findContainer = useCallback(
     (version: string): ContainerInfo | null => {
       if (!versions) return null;
-      const dbPort = versions[version]?.ports.db;
+      const info = versions[version];
+      const dbPort = info ? effectivePorts(info).db : undefined;
       if (!dbPort) return null;
       return containers.find((c) => c.host_port === dbPort) ?? null;
     },

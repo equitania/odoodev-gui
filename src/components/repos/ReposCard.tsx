@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { GitBranch, GitPullRequest, Loader2, Pencil, Settings2, FolderOpen } from "lucide-react";
-import { VERSION_COLORS, VERSION_BG } from "../../lib/constants";
+import { versionColor, versionBg } from "../../lib/constants";
 import type { VersionInfo } from "../../types";
 
 interface ReposCardProps {
@@ -34,7 +34,7 @@ export function ReposCard({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div
-            className={`flex items-center gap-2 rounded-md border px-3 py-1 ${VERSION_COLORS[version] ?? ""} ${VERSION_BG[version] ?? ""}`}
+            className={`flex items-center gap-2 rounded-md border px-3 py-1 ${versionColor(version)} ${versionBg(version)}`}
           >
             <span className="text-xl font-bold">v{version}</span>
           </div>

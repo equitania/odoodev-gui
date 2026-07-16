@@ -4,27 +4,31 @@ import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { CircleCheckBig, CircleX, Loader2 } from "lucide-react";
 
+/** Streams CLI output lines for a long-running DB operation. Completion is
+ *  controlled by the parent: the resolved invoke promise is the done signal. */
 export function OperationProgress({
   open,
   onClose,
   title,
   eventName,
+  done,
+  success,
+  finalMessage,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   eventName: string;
+  done: boolean;
+  success: boolean | null;
+  finalMessage?: string;
 }) {
   const [lines, setLines] = useState<string[]>([]);
-  const [done, setDone] = useState(false);
-  const [success, setSuccess] = useState<boolean | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) {
       setLines([]);
-      setDone(false);
-      setSuccess(null);
       return;
     }
     let unlisten: UnlistenFn | null = null;
@@ -42,7 +46,7 @@ export function OperationProgress({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [lines]);
+  }, [lines, done]);
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-2xl">
@@ -59,9 +63,14 @@ export function OperationProgress({
       <div ref={scrollRef} className="h-64 overflow-auto rounded-md border border-border bg-muted/50 p-2">
         <pre className="whitespace-pre-wrap break-all font-mono text-xs">{lines.join("\n") || "Waiting..."}</pre>
       </div>
+      {done && finalMessage && (
+        <p className={`text-sm ${success ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+          {finalMessage}
+        </p>
+      )}
       <DialogFooter>
-        <Button onClick={onClose} disabled={!done && success === null}>
-          Close
+        <Button onClick={onClose} disabled={!done}>
+          OK
         </Button>
       </DialogFooter>
     </Dialog>

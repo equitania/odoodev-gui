@@ -7,6 +7,7 @@ import { useLogStream } from "../../hooks/useLogStream";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import { invokeCmd } from "../../lib/tauri";
 import { reportError } from "../../lib/errors";
+import { effectivePorts } from "../../lib/constants";
 import { ExternalLink } from "lucide-react";
 import type { StartServerArgs } from "../../types";
 
@@ -106,8 +107,9 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
 
   const currentServer = activeVersion ? servers[activeVersion] : null;
   const isRunning = currentServer?.status?.running ?? false;
+  const activeInfo = versions?.[activeVersion];
   const odooUrl = isRunning
-    ? `http://localhost:${currentServer?.status?.port ?? versions?.[activeVersion]?.ports.odoo}`
+    ? `http://localhost:${currentServer?.status?.port ?? (activeInfo ? effectivePorts(activeInfo).odoo : "")}`
     : null;
 
   return (

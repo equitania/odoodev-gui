@@ -1,28 +1,45 @@
 import { useState } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select } from "../ui/select";
-import type { BackupArgs } from "../../types";
+import type { BackupArgs, BackupResult } from "../../types";
 import { invokeCmd } from "../../lib/tauri";
+import { defaultBackupDir, rememberBackupDir } from "../../lib/backupDir";
+import { FolderOpen } from "lucide-react";
 
 export function BackupDialog({
-  open,
+  open: isOpen,
   onClose,
   version,
   dbName,
   onProgress,
+  onFinished,
 }: {
   open: boolean;
   onClose: () => void;
   version: string;
   dbName: string;
   onProgress: (title: string, eventName: string) => void;
+  onFinished: (success: boolean, message?: string) => void;
 }) {
   const [format, setFormat] = useState("zip");
   const [level, setLevel] = useState(5);
   const [outputDir, setOutputDir] = useState("");
+
+  const browseOutputDir = async () => {
+    const picked = await open({
+      directory: true,
+      defaultPath: outputDir || (await defaultBackupDir()),
+      title: "Select backup output directory",
+    });
+    if (typeof picked === "string") {
+      setOutputDir(picked);
+      rememberBackupDir(picked);
+    }
+  };
 
   const handleBackup = async () => {
     const args: BackupArgs = {
@@ -35,14 +52,18 @@ export function BackupDialog({
     onClose();
     onProgress(`Backup: ${dbName}`, "backup-progress");
     try {
-      await invokeCmd("backup_db", { args });
+      const result = await invokeCmd<BackupResult>("backup_db", { args });
+      const detail = result.path
+        ? `${result.path}${result.size ? ` (${result.size})` : ""}`
+        : undefined;
+      onFinished(result.success, result.success ? detail : result.error ?? undefined);
     } catch (e) {
-      console.error(e);
+      onFinished(false, String(e));
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={isOpen} onClose={onClose}>
       <DialogHeader>
         <DialogTitle>Backup Database</DialogTitle>
         <DialogDescription>Creating a backup of <code className="rounded bg-muted px-1">{dbName}</code> (v{version})</DialogDescription>
@@ -71,11 +92,18 @@ export function BackupDialog({
         )}
         <div className="space-y-2">
           <Label>Output directory (default: ~/Downloads)</Label>
-          <Input
-            value={outputDir}
-            onChange={(e) => setOutputDir(e.target.value)}
-            placeholder="~/Downloads"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={outputDir}
+              onChange={(e) => setOutputDir(e.target.value)}
+              placeholder="~/Downloads"
+              className="flex-1"
+            />
+            <Button variant="outline" size="sm" onClick={browseOutputDir} className="h-9">
+              <FolderOpen className="h-3.5 w-3.5" />
+              Browse
+            </Button>
+          </div>
         </div>
       </div>
       <DialogFooter>

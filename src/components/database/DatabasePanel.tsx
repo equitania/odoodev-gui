@@ -15,6 +15,7 @@ import { NameInputDialog } from "./NameInputDialog";
 import { OperationProgress } from "./OperationProgress";
 import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { effectivePorts } from "../../lib/constants";
 
 export function DatabasePanel({ preselectVersion }: { preselectVersion: string | null }) {
   const { t } = useTranslation();
@@ -38,6 +39,9 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [progressTitle, setProgressTitle] = useState("");
   const [progressEvent, setProgressEvent] = useState("");
   const [showProgress, setShowProgress] = useState(false);
+  const [progressDone, setProgressDone] = useState(false);
+  const [progressSuccess, setProgressSuccess] = useState<boolean | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     invokeCmd<VersionsResponse>("get_versions")
@@ -65,12 +69,9 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
       setDbList(resp.databases);
     } catch (e) {
       setDbList([]);
-      const msg = String(e);
-      if (msg.includes("not accessible") || msg.includes("connection") || msg.includes("Connection")) {
-        setError("PostgreSQL is not running. Start the container first.");
-      } else {
-        setError(msg);
-      }
+      // Keep the CLI's own message — it names the exact host:port it probed,
+      // which is the key diagnostic on multi-user hosts with port prefixes.
+      setError(String(e));
     } finally {
       setLoading(false);
     }
@@ -114,13 +115,11 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     toastUpdate(tid, "error", "PostgreSQL did not become ready", "Check the container logs");
   };
 
+  // Drop does not stream any output — the toast is the whole feedback.
   const handleDrop = async (name: string) => {
     setDbAction(name, true);
     const tid = toastLoading(`Dropping database '${name}'...`);
     setDropTarget(null);
-    setProgressTitle(`Drop: ${name}`);
-    setProgressEvent("drop-progress");
-    setShowProgress(true);
     try {
       const result = await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
       if (result.success) {
@@ -178,9 +177,22 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const handleProgress = (title: string, eventName: string) => {
     setProgressTitle(title);
     setProgressEvent(eventName);
+    setProgressDone(false);
+    setProgressSuccess(null);
+    setProgressMessage(undefined);
     setShowProgress(true);
   };
 
+  /** The dialogs report the resolved invoke promise here — that IS the
+   *  completion signal for the progress dialog. */
+  const handleProgressFinished = async (success: boolean, message?: string) => {
+    setProgressDone(true);
+    setProgressSuccess(success);
+    setProgressMessage(message);
+    await fetchDatabases();
+  };
+
+  const selectedInfo = versions?.[selectedVersion] ?? null;
   const sorted = [...dbList].sort((a, b) => sortAsc ? a.localeCompare(b) : b.localeCompare(a));
   const filtered = sorted.filter((d) => d.toLowerCase().includes(search.toLowerCase()));
 
@@ -232,7 +244,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-destructive">PostgreSQL not accessible: {error}</span>
+              <span className="text-sm text-destructive">{error}</span>
               <Button size="sm" variant="outline" onClick={handleStartPostgres}>
                 Start {runtime === "apple" ? "Container" : "Docker"}
               </Button>
@@ -245,7 +257,11 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">No databases found</span>
+              <span className="text-sm text-muted-foreground">
+                No databases found on port {selectedInfo ? effectivePorts(selectedInfo).db : "?"}.
+                A deviating DB_PORT in the version's .env or an active migration group can
+                redirect this port.
+              </span>
               <Button size="sm" variant="outline" onClick={handleStartPostgres}>
                 Start PostgreSQL
               </Button>
@@ -356,7 +372,8 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           </div>
 
           <div className="text-xs text-muted-foreground">
-            {dbList.length} database(s) on port {versions?.[selectedVersion]?.ports.db ?? "?"}
+            {dbList.length} database(s) on port{" "}
+            {selectedInfo ? effectivePorts(selectedInfo).db : "?"}
           </div>
         </>
       )}
@@ -368,6 +385,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           version={selectedVersion}
           dbName={backupTarget}
           onProgress={handleProgress}
+          onFinished={handleProgressFinished}
         />
       )}
 
@@ -377,6 +395,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           onClose={() => setShowRestore(false)}
           version={selectedVersion}
           onProgress={handleProgress}
+          onFinished={handleProgressFinished}
         />
       )}
 
@@ -420,6 +439,9 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
         onClose={() => setShowProgress(false)}
         title={progressTitle}
         eventName={progressEvent}
+        done={progressDone}
+        success={progressSuccess}
+        finalMessage={progressMessage}
       />
     </div>
   );

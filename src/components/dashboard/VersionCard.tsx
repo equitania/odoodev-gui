@@ -5,7 +5,7 @@ import { StatusBadge } from "./StatusBadge";
 import { usePolling } from "../../hooks/usePolling";
 import { invokeCmd } from "../../lib/tauri";
 import { reportError } from "../../lib/errors";
-import { VERSION_COLORS, VERSION_BG, POLL_INTERVALS } from "../../lib/constants";
+import { versionColor, versionBg, effectivePorts, POLL_INTERVALS } from "../../lib/constants";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type {
   DockerStatus,
@@ -79,6 +79,7 @@ export function VersionCard({
   const odooRunning = serverStatus?.running ?? false;
   const dockerRunning = dockerStatus?.running ?? false;
   const dockerRuntime = dockerStatus?.runtime ?? "none";
+  const ports = effectivePorts(info);
 
   // Jump-to-editor entries: only existing files; compose only under Docker.
   const editableEntries = (fileGroup?.entries ?? []).filter(
@@ -107,11 +108,11 @@ export function VersionCard({
     : { status: "neutral" as const, label: "Python —" };
 
   const odooBadge = odooRunning
-    ? { status: "running" as const, label: `Odoo :${info.ports.odoo}` }
+    ? { status: "running" as const, label: `Odoo :${ports.odoo}` }
     : { status: "stopped" as const, label: "Odoo stopped" };
 
   const odooUrl = odooRunning
-    ? `http://localhost:${serverStatus?.port ?? info.ports.odoo}`
+    ? `http://localhost:${serverStatus?.port ?? ports.odoo}`
     : null;
 
   const handleDockerUp = async () => {
@@ -152,7 +153,7 @@ export function VersionCard({
     <Card className={`transition-opacity ${active ? "" : "opacity-50"} hover:shadow-md`}>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className={`flex items-center gap-2 rounded-md border px-3 py-1 ${VERSION_COLORS[version] ?? ""} ${VERSION_BG[version] ?? ""}`}>
+          <div className={`flex items-center gap-2 rounded-md border px-3 py-1 ${versionColor(version)} ${versionBg(version)}`}>
             <span className="text-xl font-bold">v{version}</span>
           </div>
           {!active && <span className="text-xs text-muted-foreground">Not in active versions</span>}
@@ -167,7 +168,7 @@ export function VersionCard({
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <div>DB: {info.ports.db} | Odoo: {info.ports.odoo} | Mailpit: {info.ports.mailpit}</div>
+          <div>DB: {ports.db} | Odoo: {ports.odoo} | Mailpit: {ports.mailpit}</div>
           {odooUrl && (
             <button
               onClick={() =>

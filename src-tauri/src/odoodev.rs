@@ -161,31 +161,6 @@ pub async fn run_odoodev_text(args: &[&str]) -> Result<String, String> {
     }
 }
 
-/// Like run_odoodev_text, but tolerates non-zero exit codes: some odoodev
-/// commands (e.g. `doctor`) legitimately exit 1 while still printing their
-/// full report to stdout. Errors only when the process can't be spawned or
-/// produced no stdout at all.
-pub async fn run_odoodev_text_lenient(args: &[&str]) -> Result<String, String> {
-    let output = build_odoodev_command(args)
-        .output()
-        .await
-        .map_err(|e| format!("Failed to execute odoodev: {e}"))?;
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    if !stdout.trim().is_empty() {
-        return Ok(stdout);
-    }
-    if output.status.success() {
-        Ok(stdout)
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!(
-            "odoodev failed (exit {}): {}",
-            output.status.code().unwrap_or(-1),
-            stderr.trim()
-        ))
-    }
-}
-
 /// Lenient variant that returns stdout AND stderr combined. The CLI's
 /// print_error writes to stderr — parsers that must see `[ERROR]` lines
 /// (e.g. doctor's hard-check failures) need both streams.

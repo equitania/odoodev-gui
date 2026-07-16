@@ -32,7 +32,10 @@
     "busy": "Arbeite...",
     "noResults": "Noch keine Ergebnisse.",
     "waitingForOutput": "Warte auf Ausgabe...",
-    "noRuntime": "Keine Runtime"
+    "noRuntime": "Keine Runtime",
+    "back": "Zurück",
+    "next": "Weiter",
+    "browse": "Durchsuchen"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -142,7 +145,26 @@
     "skipConfirmation": "Bestätigung überspringen (GUI ist die Bestätigung)",
     "dryRun": "Dry Run",
     "openFolder": "Ordner öffnen",
-    "goToServer": "Zum Server"
+    "goToServer": "Zum Server",
+    "restoreTitle": "Datenbank wiederherstellen",
+    "restoreDescription": "Backup in eine neue oder bestehende Datenbank einspielen (v{{version}})",
+    "backupFile": "Backup-Datei",
+    "supportedFormats": "Unterstützt: .zip .7z .tar .tar.zst .gz .sql",
+    "dryRunPassed": "Dry Run erfolgreich — bereit zum Wiederherstellen",
+    "dryRunFailed": "Dry Run fehlgeschlagen",
+    "restoreHelp": {
+      "drop": "Löscht eine bestehende Datenbank gleichen Namens vorab — ohne Häkchen bricht die Wiederherstellung ab, wenn der Name schon existiert.",
+      "sanitize": "Aktiviert alle fünf Bereinigungsschritte unten auf einmal — inklusive Stammdaten-Bereinigung!",
+      "deactivateCron": "Deaktiviert Cron-Jobs und ausgehende Mailserver nach dem Restore — die Kopie verschickt so nie echte E-Mails.",
+      "neutralize": "Führt Odoos natives Neutralize aus (Mail, Zahlungsanbieter, Bank-Sync aus). Benötigt ein lauffähiges venv dieser Version.",
+      "anonymize": "Ersetzt personenbezogene Daten durch Faker-Werte (DSGVO-konforme Testdaten).",
+      "wipe": "Leert Nachrichten- und Anhang-Inhalte (mail_message, ir_attachment).",
+      "purgeMasterData": "Template-DB-Reset: löscht Kunden/Lieferanten, CRM/HR-Daten, Nachrichten und Anhänge; behält Produkte, Preislisten, Benutzer, Firmen und Konfiguration.",
+      "purgeTransactions": "Löscht alle Bewegungsdaten (Lager, Verkauf, Einkauf, Buchhaltung, MRP, POS) und setzt Bestände auf null. Nicht Teil von Sanitize.",
+      "anonymizeUsers": "Anonymisiert Benutzer-Logins und setzt das untenstehende Dev-Passwort auf allen Benutzern.",
+      "recompute": "Berechnet gespeicherte berechnete Felder neu, damit Übersichten die anonymisierten Daten zeigen. Läuft nur zusammen mit Anonymize (bei Anonymize automatisch aktiv).",
+      "uninstallModules": "Kommagetrennte technische Modulnamen, die vor den Bereinigungsschritten deinstalliert werden."
+    }
   },
   "docker": {
     "title": "Docker / Container",

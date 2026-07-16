@@ -55,10 +55,14 @@ export function ServerConfig({
     invokeCmd<DbListResponse>("get_databases", { version })
       .then((resp) => {
         setDatabases(resp.databases);
+        // Each version has its own PostgreSQL (own port) — a selection kept
+        // from another version tab would send a wrong -d to the CLI.
+        setDatabase((cur) => (resp.databases.includes(cur) ? cur : ""));
         setDbError(null);
       })
       .catch((e) => {
         setDatabases([]);
+        setDatabase("");
         setDbError(String(e));
       });
   }, [version]);
@@ -119,7 +123,10 @@ export function ServerConfig({
                 variant="ghost"
                 onClick={() =>
                   invokeCmd<DbListResponse>("get_databases", { version })
-                    .then((r) => setDatabases(r.databases))
+                    .then((r) => {
+                      setDatabases(r.databases);
+                      setDatabase((cur) => (r.databases.includes(cur) ? cur : ""));
+                    })
                     .catch(reportError("Failed to refresh databases"))
                 }
               >

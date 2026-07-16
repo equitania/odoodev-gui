@@ -10,7 +10,7 @@ import {
   Trash2,
   RefreshCw,
 } from "lucide-react";
-import { VERSION_COLORS, VERSION_BG } from "../../lib/constants";
+import { versionColor, versionBg } from "../../lib/constants";
 import type { VersionInfo, VenvStatus } from "../../types";
 
 interface VenvCardProps {
@@ -47,7 +47,7 @@ export function VenvCard({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div
-            className={`flex items-center gap-2 rounded-md border px-3 py-1 ${VERSION_COLORS[version] ?? ""} ${VERSION_BG[version] ?? ""}`}
+            className={`flex items-center gap-2 rounded-md border px-3 py-1 ${versionColor(version)} ${versionBg(version)}`}
           >
             <span className="text-xl font-bold">v{version}</span>
           </div>

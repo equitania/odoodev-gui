@@ -32,7 +32,10 @@
     "busy": "Working...",
     "noResults": "No results yet.",
     "waitingForOutput": "Waiting for output...",
-    "noRuntime": "No runtime"
+    "noRuntime": "No runtime",
+    "back": "Back",
+    "next": "Next",
+    "browse": "Browse"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -142,7 +145,26 @@
     "skipConfirmation": "Skip confirmation (GUI is the confirmation)",
     "dryRun": "Dry Run",
     "openFolder": "Open Folder",
-    "goToServer": "Go to Server"
+    "goToServer": "Go to Server",
+    "restoreTitle": "Restore Database",
+    "restoreDescription": "Restore a backup into a new or existing database (v{{version}})",
+    "backupFile": "Backup file",
+    "supportedFormats": "Supported: .zip .7z .tar .tar.zst .gz .sql",
+    "dryRunPassed": "Dry run passed — ready to restore",
+    "dryRunFailed": "Dry run failed",
+    "restoreHelp": {
+      "drop": "Deletes an existing database with the same name first — unchecked, the restore aborts if the name already exists.",
+      "sanitize": "Enables all five cleanup steps below at once — including Purge master data!",
+      "deactivateCron": "Disables cron jobs and outgoing mail servers after the restore, so the copy never sends real e-mails.",
+      "neutralize": "Runs Odoo's native neutralize (mail, payment providers, bank sync off). Needs a working venv for this version.",
+      "anonymize": "Replaces personal data with Faker values (GDPR-safe test data).",
+      "wipe": "Blanks message and attachment content (mail_message, ir_attachment).",
+      "purgeMasterData": "Template-DB reset: deletes customers/vendors, CRM/HR data, messages and attachments; keeps products, pricelists, users, companies and configuration.",
+      "purgeTransactions": "Deletes all movement data (stock, sales, purchase, accounting, MRP, POS) and zeroes stock. Not part of Sanitize.",
+      "anonymizeUsers": "Anonymizes user logins and sets the dev password below on all users.",
+      "recompute": "Recomputes stored computed fields so overviews show the anonymized data. Runs only together with Anonymize (enabled automatically when Anonymize runs).",
+      "uninstallModules": "Comma-separated technical module names, uninstalled before the cleanup steps run."
+    }
   },
   "docker": {
     "title": "Docker / Containers",

@@ -43,7 +43,7 @@ pub async fn get_docker_status(
     let info = versions
         .get(&version)
         .ok_or_else(|| format!("Unknown version: {version}"))?;
-    Ok(docker_check::check_docker_status(&version, info.ports.db).await)
+    Ok(docker_check::check_docker_status(&version, info.db_port()).await)
 }
 
 #[tauri::command]
@@ -110,7 +110,7 @@ pub async fn get_all_dashboard_status(
         if let Some(info) = versions.get(k) {
             docker_status.insert(
                 k.clone(),
-                docker_check::check_docker_status(k, info.ports.db).await,
+                docker_check::check_docker_status(k, info.db_port()).await,
             );
         }
     }

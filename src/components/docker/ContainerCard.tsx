@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { RuntimeDot } from "./RuntimeBanner";
 import { ArrowUp, ArrowDown, FileCog, FileText, Gauge, Loader2 } from "lucide-react";
-import { VERSION_COLORS, VERSION_BG } from "../../lib/constants";
+import { versionColor, versionBg, effectivePorts } from "../../lib/constants";
 import type { ContainerInfo, DockerStatus, VersionInfo } from "../../types";
 
 interface ContainerCardProps {
@@ -45,7 +45,7 @@ export function ContainerCard({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div
-            className={`flex items-center gap-2 rounded-md border px-3 py-1 ${VERSION_COLORS[version] ?? ""} ${VERSION_BG[version] ?? ""}`}
+            className={`flex items-center gap-2 rounded-md border px-3 py-1 ${versionColor(version)} ${versionBg(version)}`}
           >
             <span className="text-xl font-bold">v{version}</span>
           </div>
@@ -78,7 +78,7 @@ export function ContainerCard({
 
         <div className="text-xs text-muted-foreground">
           <div>
-            DB port: <span className="font-mono">{info.ports.db}</span>
+            DB port: <span className="font-mono">{effectivePorts(info).db}</span>
             {" | "}
             PostgreSQL {info.postgres}
           </div>

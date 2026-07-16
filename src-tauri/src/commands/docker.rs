@@ -101,7 +101,7 @@ pub async fn docker_status(
     let info = versions
         .get(&version)
         .ok_or_else(|| format!("Unknown version: {version}"))?;
-    Ok(docker_check::check_docker_status(&version, info.ports.db).await)
+    Ok(docker_check::check_docker_status(&version, info.db_port()).await)
 }
 
 #[tauri::command]

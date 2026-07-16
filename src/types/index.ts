@@ -9,6 +9,9 @@ export interface VersionInfo {
   python: string;
   postgres: string;
   ports: Ports;
+  /** Runtime ports resolved from the version's .env (CLI >= 0.58.0);
+   *  multi-user hosts give every user an own port prefix. */
+  effective_ports?: Ports | null;
   base: string;
 }
 

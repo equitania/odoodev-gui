@@ -84,8 +84,11 @@ Syntax-Highlighting, Buffer-Persistenz über Stop/Start, klickbare Server-URL im
 Tab-Header.
 
 **Datenbanken** — DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Schritt-Wizard
-mit Dry-Run, Sanitize, Anonymize, Purge, Recompute), Drop (type-to-confirm), Duplizieren (inkl. Filestore), Umbenennen,
-Bulk-Drop, Operation-Progress mit live stdout.
+mit Dry-Run, Sanitize, Anonymize, Purge, Recompute — jede Option mit Klartext-Erklärung),
+nativer Datei-/Ordner-Picker mit `~/Downloads`-Default und Verzeichnis-Gedächtnis,
+Drop (type-to-confirm), Duplizieren (inkl. Filestore), Umbenennen, Bulk-Drop,
+Operation-Progress mit live stdout, Abschluss-Status (grün/rot + OK-Button) und
+automatischer Listen-Aktualisierung.
 
 **Editor** — Monaco-basierter Editor für alle odoodev-verwalteten Dateien pro Version:
 `.env`, `docker-compose.yml`, `requirements.txt`, `repos.yaml`, `postgresql.conf`,
@@ -104,7 +107,9 @@ maskierte Secrets, automatische Validierung), Init-Wizard, Migrate-Panel
 
 **Plattform & Betrieb** — Apple-Container-Integration (Runtime-Erkennung aus odoodev-Config
 `container_runtime: apple`, `container ls --format json`, Docker wird nie angerührt wenn
-Config apple sagt), Auto-Install-Dialog bei fehlendem uv/odoodev, Update-Badge bei neuer
+Config apple sagt), Multi-User-Terminal-Server-Support (Container-Erkennung, Ports und
+URLs folgen den `.env`-Ports des Anwenders via `effective_ports`, CLI ≥ 0.58.0),
+Auto-Install-Dialog bei fehlendem uv/odoodev, Update-Badge bei neuer
 odoodev-Version (PyPI-Check), Toast-Notifications, volle DE/EN-i18n mit Sprachumschaltung
 und Persistenz.
 
@@ -209,8 +214,11 @@ level of their origin line), search, auto-scroll, copy, syntax highlighting,
 buffer persistence across stop/start, clickable server URL in the tab header.
 
 **Databases** — DB list, backup (SQL/ZIP/tar.zst with level), restore (3-step wizard with
-dry run, sanitize, anonymize, purge, recompute), drop (type-to-confirm), duplicate (incl. filestore), rename,
-bulk drop, operation progress with live stdout.
+dry run, sanitize, anonymize, purge, recompute — every option with a plain-language
+explanation), native file/folder picker with `~/Downloads` default and directory memory,
+drop (type-to-confirm), duplicate (incl. filestore), rename, bulk drop, operation
+progress with live stdout, completion state (green/red + OK button) and automatic
+list refresh.
 
 **Editor** — Monaco-based editor for every odoodev-managed file per version: `.env`,
 `docker-compose.yml`, `requirements.txt`, `repos.yaml`, `postgresql.conf`, the Odoo
@@ -229,7 +237,9 @@ migration group management), Doctor / Health Check, Settings.
 
 **Platform & operation** — Apple Container integration (runtime detection from odoodev
 config `container_runtime: apple`, `container ls --format json`, Docker is never touched
-when config says apple), auto-install dialog for missing uv/odoodev, update badge for new
+when config says apple), multi-user terminal-server support (container detection, ports
+and URLs follow the user's `.env` ports via `effective_ports`, CLI ≥ 0.58.0),
+auto-install dialog for missing uv/odoodev, update badge for new
 odoodev version (PyPI check), toast notifications, full DE/EN i18n with language switch and
 persistence.
 
