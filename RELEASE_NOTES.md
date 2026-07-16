@@ -1,5 +1,19 @@
 # Release Notes
 
+## Version 1.5.1 (16.07.2026)
+
+### Fixed
+- **Update badge offered a downgrade:** the odoodev update check treated any
+  version difference as an update — a locally installed dev build newer than
+  PyPI produced "Update to v0.57.0" while v0.58.0 was running. The check now
+  compares versions numerically and only offers strictly newer releases.
+- **Bottom-right copy button copied 0 lines despite warnings:** it only
+  collected ERROR/CRITICAL lines, ignoring the warnings counted right next
+  to it — and used the raw level, so tracebacks/continuation lines would not
+  travel with their error. It now copies WARNING + ERROR + CRITICAL by
+  effective level (continuation lines included) and says "No warnings or
+  errors to copy" instead of "0 line(s) copied".
+
 ## Version 1.5.0 (16.07.2026)
 
 User-feedback release: every issue reported from the first multi-user

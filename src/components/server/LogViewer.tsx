@@ -78,13 +78,25 @@ export function LogViewer({
     }
   };
 
-  const copyErrors = async () => {
+  // effective_level so RAW continuation lines (tracebacks) travel with the
+  // warning/error they belong to.
+  const copyProblems = async () => {
     const lines = entries
-      .filter((e) => e.level === "ERROR" || e.level === "CRITICAL")
+      .filter(
+        (e) =>
+          !e.is_separator &&
+          (e.effective_level === "WARNING" ||
+            e.effective_level === "ERROR" ||
+            e.effective_level === "CRITICAL"),
+      )
       .map((e) => e.raw);
+    if (lines.length === 0) {
+      toastSuccess("No warnings or errors to copy");
+      return;
+    }
     try {
       await copyToClipboard(lines.join("\n"));
-      toastSuccess(`${lines.length} error line(s) copied`);
+      toastSuccess(`${lines.length} warning/error line(s) copied`);
     } catch (e) {
       toastError("Copy failed", String(e));
     }
@@ -186,7 +198,7 @@ export function LogViewer({
           <span>{entries.length} lines</span>
           {errorCount > 0 && <span className="text-red-500">{errorCount} errors</span>}
           {warnCount > 0 && <span className="text-yellow-500">{warnCount} warnings</span>}
-          <Button size="sm" variant="ghost" onClick={copyErrors} title="Copy errors">
+          <Button size="sm" variant="ghost" onClick={copyProblems} title="Copy warnings + errors">
             <Copy className="h-3 w-3" />
           </Button>
         </div>
