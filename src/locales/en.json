@@ -138,6 +138,7 @@
     "noDatabasesGenuine": "No databases exist yet. Create one via Restore or from a running server.",
     "pgUnreachable": "PostgreSQL for v{{version}} not reachable on port {{port}} — is the container running? A deviating DB_PORT in the version's .env or an active migration group can also redirect this port.",
     "connectedTo": "{{host}}:{{port}}",
+    "tagsFilter": "Filter by tag",
     "startPostgresql": "Start PostgreSQL",
     "refresh": "Refresh",
     "backupFormat": "Format",

@@ -13,9 +13,11 @@ import { RestoreDialog } from "./RestoreDialog";
 import { DropConfirmDialog } from "./DropConfirmDialog";
 import { NameInputDialog } from "./NameInputDialog";
 import { OperationProgress } from "./OperationProgress";
-import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2 } from "lucide-react";
+import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2, Plus } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { effectivePorts } from "../../lib/constants";
+import { effectivePorts, tagColor } from "../../lib/constants";
+import { useDbTagStore, dbTagKey } from "../../store/dbTagStore";
+import { TagInput } from "../ui/tag-input";
 
 export function DatabasePanel({ preselectVersion }: { preselectVersion: string | null }) {
   const { t } = useTranslation();
@@ -33,6 +35,13 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [search, setSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const tagsByDb = useDbTagStore((s) => s.tagsByDb);
+  const setDbTags = useDbTagStore((s) => s.setTags);
+  const removeDbTags = useDbTagStore((s) => s.removeDb);
+  const renameDbTags = useDbTagStore((s) => s.renameDb);
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  /** DB name whose tag editor is currently open (inline in the table row). */
+  const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const [backupTarget, setBackupTarget] = useState<string | null>(null);
@@ -93,6 +102,10 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
 
   useEffect(() => {
     fetchDatabases();
+    // Tags are keyed per version — a filter kept from another version would
+    // just hide everything.
+    setSelectedTags(new Set());
+    setEditingTagsFor(null);
     // Re-fetch whenever the selected version changes; fetchDatabases is a plain
     // (non-memoized) function, intentionally omitted to avoid a re-fetch loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,6 +159,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     try {
       const result = await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
       if (result.success) {
+        removeDbTags(selectedVersion, name);
         toastUpdate(tid, "success", `Database '${name}' dropped`);
       } else {
         toastUpdate(tid, "error", `Failed to drop '${name}'`, result.error ?? "");
@@ -185,6 +199,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     try {
       const result = await invokeCmd<OpResult>("rename_db", { version: selectedVersion, src: name, dst, terminateConnections: true });
       if (result.success) {
+        renameDbTags(selectedVersion, name, dst);
         toastUpdate(tid, "success", `Renamed '${name}' → '${dst}'`);
       } else {
         toastUpdate(tid, "error", `Rename failed`, result.error ?? "");
@@ -217,7 +232,24 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
 
   const selectedInfo = versions?.[selectedVersion] ?? null;
   const sorted = [...dbList].sort((a, b) => sortAsc ? a.localeCompare(b) : b.localeCompare(a));
-  const filtered = sorted.filter((d) => d.toLowerCase().includes(search.toLowerCase()));
+  const filtered = sorted.filter((d) => {
+    if (!d.toLowerCase().includes(search.toLowerCase())) return false;
+    if (selectedTags.size === 0) return true;
+    const tags = tagsByDb[dbTagKey(selectedVersion, d)] ?? [];
+    return [...selectedTags].every((tag) => tags.includes(tag));
+  });
+  const allVersionTags = Array.from(
+    new Set(dbList.flatMap((d) => tagsByDb[dbTagKey(selectedVersion, d)] ?? [])),
+  ).sort();
+
+  const toggleTagFilter = (tag: string) => {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
 
   const toggleSelect = (name: string) => {
     setSelected((prev) => {
@@ -234,6 +266,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     for (const name of names) {
       try {
         await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
+        removeDbTags(selectedVersion, name);
       } catch (e) {
         console.error(e);
       }
@@ -327,6 +360,24 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                 Drop selected ({selected.size})
               </Button>
             )}
+            {allVersionTags.length > 0 && (
+              <div className="ml-2 flex flex-wrap items-center gap-1">
+                <span className="text-xs text-muted-foreground">{t("database.tagsFilter")}:</span>
+                {allVersionTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTagFilter(tag)}
+                    className={cn(
+                      "rounded-md px-1.5 py-0.5 text-xs font-medium transition-opacity",
+                      tagColor(tag),
+                      selectedTags.has(tag) ? "ring-1 ring-current" : "opacity-60 hover:opacity-100",
+                    )}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border border-border overflow-hidden">
@@ -335,6 +386,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                 <tr className="border-b border-border text-left bg-muted/50">
                   <th className="w-8 p-2"></th>
                   <th className="p-2 font-medium text-muted-foreground">Database Name</th>
+                  <th className="p-2 font-medium text-muted-foreground">{t("common.tags")}</th>
                   <th className="p-2 font-medium text-muted-foreground text-right">Actions</th>
                 </tr>
               </thead>
@@ -359,6 +411,47 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                         />
                       </td>
                       <td className="p-2 font-mono">{db}</td>
+                      <td className="p-2">
+                        {editingTagsFor === db ? (
+                          <div
+                            onBlur={(e) => {
+                              // Close the inline editor once focus leaves it entirely
+                              // (chip remove buttons inside must not close it).
+                              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                setEditingTagsFor(null);
+                              }
+                            }}
+                          >
+                            <TagInput
+                              tags={tagsByDb[dbTagKey(selectedVersion, db)] ?? []}
+                              onChange={(tags) => setDbTags(selectedVersion, db, tags)}
+                              placeholder={t("common.addTag")}
+                              className="min-h-7 py-0.5"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {(tagsByDb[dbTagKey(selectedVersion, db)] ?? []).map((tag) => (
+                              <span
+                                key={tag}
+                                className={cn(
+                                  "rounded-md px-1.5 py-0.5 text-xs font-medium",
+                                  tagColor(tag),
+                                )}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            <button
+                              onClick={() => setEditingTagsFor(db)}
+                              title={t("common.addTag")}
+                              className="rounded-md p-0.5 text-muted-foreground opacity-50 hover:bg-accent hover:opacity-100"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
                       <td className="p-2">
                         <div className="flex justify-end gap-1">
                           <Button
