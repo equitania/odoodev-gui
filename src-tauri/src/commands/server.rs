@@ -23,6 +23,9 @@ pub struct StartServerArgs {
     pub allow_default_credentials: Option<bool>,
     pub runtime: Option<String>,
     pub extra_args: Option<String>,
+    /// Effective Odoo port for status/URL display; the CLI resolves the real
+    /// port itself from the version's .env.
+    pub port: Option<u16>,
 }
 
 #[derive(serde::Serialize)]
@@ -138,7 +141,7 @@ pub async fn start_server(
         }
     }
 
-    let port = port_for_version(&args.version);
+    let port = args.port.unwrap_or_else(|| port_for_version(&args.version));
     let cli_args = build_start_args(&args);
     let arg_refs: Vec<&str> = cli_args.iter().map(|s| s.as_str()).collect();
 

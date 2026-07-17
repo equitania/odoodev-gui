@@ -14,6 +14,14 @@ pub async fn get_databases(version: String) -> Result<DbListResponse, String> {
     Ok(resp)
 }
 
+/// The CLI's `db list --json` silently returns an empty list when PostgreSQL
+/// is unreachable — this probe lets the GUI tell "no databases" apart from
+/// "no connection".
+#[tauri::command]
+pub async fn check_postgres_port(port: u16) -> bool {
+    crate::pypi::check_pg_port(port).await
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct BackupArgs {
     pub version: String,

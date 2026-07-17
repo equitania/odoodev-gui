@@ -65,15 +65,14 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
     }
   };
 
-  const handleRestart = async (version: string) => {
+  const handleRestart = async (version: string, args: StartServerArgs) => {
     setServerBusy(true);
     const tid = toastLoading(`Restarting server v${version}...`);
     try {
       await stopServer(version, true, false);
-      const server = servers[version];
-      if (server?.config) {
-        await startServer(server.config);
-      }
+      // Restart with the live form state — not the stale snapshot from the
+      // last Start click — so freshly typed -u/-i modules take effect.
+      await startServer(args);
       toastUpdate(tid, "success", `Server v${version} restarted`);
     } catch (e) {
       toastUpdate(tid, "error", `Failed to restart server v${version}`, String(e));
@@ -140,7 +139,7 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
               busy={serverBusy}
               onStart={handleStart}
               onStop={() => handleStop(activeVersion)}
-              onRestart={() => handleRestart(activeVersion)}
+              onRestart={(args) => handleRestart(activeVersion, args)}
             />
           </div>
           <div className="flex-1 overflow-hidden">

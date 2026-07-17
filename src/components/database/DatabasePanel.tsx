@@ -24,6 +24,10 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [versionKeys, setVersionKeys] = useState<string[]>([]);
   const [selectedVersion, setSelectedVersion] = useState("");
   const [dbList, setDbList] = useState<string[]>([]);
+  const [dbResp, setDbResp] = useState<DbListResponse | null>(null);
+  /** null = not probed; the probe only runs when the CLI returned an empty
+   *  list, which it also does silently on connection failures. */
+  const [pgReachable, setPgReachable] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -67,8 +71,18 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     try {
       const resp = await invokeCmd<DbListResponse>("get_databases", { version: selectedVersion });
       setDbList(resp.databases);
+      setDbResp(resp);
+      if (resp.databases.length === 0) {
+        // The CLI reports an empty list on connection failures too — probe the
+        // exact port it queried to tell "no databases" from "no connection".
+        setPgReachable(await invokeCmd<boolean>("check_postgres_port", { port: resp.port }));
+      } else {
+        setPgReachable(true);
+      }
     } catch (e) {
       setDbList([]);
+      setDbResp(null);
+      setPgReachable(null);
       // Keep the CLI's own message — it names the exact host:port it probed,
       // which is the key diagnostic on multi-user hosts with port prefixes.
       setError(String(e));
@@ -104,10 +118,19 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
       await new Promise((resolve) => setTimeout(resolve, 1000));
       try {
         const resp = await invokeCmd<DbListResponse>("get_databases", { version: selectedVersion });
-        setDbList(resp.databases);
-        setError(null);
-        toastUpdate(tid, "success", "PostgreSQL started");
-        return;
+        // An empty list is also what the CLI reports while Postgres is still
+        // starting up — only accept it once the port actually answers.
+        const reachable =
+          resp.databases.length > 0 ||
+          (await invokeCmd<boolean>("check_postgres_port", { port: resp.port }));
+        if (reachable) {
+          setDbList(resp.databases);
+          setDbResp(resp);
+          setPgReachable(true);
+          setError(null);
+          toastUpdate(tid, "success", "PostgreSQL started");
+          return;
+        }
       } catch {
         // not ready yet — keep polling
       }
@@ -225,6 +248,11 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t("database.title")}</h1>
         <div className="flex items-center gap-2">
+          {dbResp && (
+            <span className="text-xs text-muted-foreground">
+              {t("database.connectedTo", { host: dbResp.host, port: dbResp.port })}
+            </span>
+          )}
           <Select value={selectedVersion} onChange={(e) => setSelectedVersion(e.target.value)} className="w-32">
             {versionKeys.map((k) => (
               <option key={k} value={k}>v{k}</option>
@@ -253,19 +281,30 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
         </Card>
       )}
 
-      {!error && !loading && dbList.length === 0 && (
+      {!error && !loading && dbList.length === 0 && pgReachable === false && (
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                No databases found on port {selectedInfo ? effectivePorts(selectedInfo).db : "?"}.
-                A deviating DB_PORT in the version's .env or an active migration group can
-                redirect this port.
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-destructive">
+                {t("database.pgUnreachable", {
+                  version: selectedVersion,
+                  port: dbResp?.port ?? (selectedInfo ? effectivePorts(selectedInfo).db : "?"),
+                })}
               </span>
               <Button size="sm" variant="outline" onClick={handleStartPostgres}>
-                Start PostgreSQL
+                {t("database.startPostgresql")}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!error && !loading && dbList.length === 0 && pgReachable !== false && (
+        <Card>
+          <CardContent className="p-4">
+            <span className="text-sm text-muted-foreground">
+              {t("database.noDatabasesGenuine")}
+            </span>
           </CardContent>
         </Card>
       )}

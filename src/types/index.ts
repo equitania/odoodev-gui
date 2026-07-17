@@ -289,6 +289,9 @@ export interface StartServerArgs {
   allow_default_credentials?: boolean;
   runtime?: string;
   extra_args?: string;
+  /** Effective Odoo port for status/URL display; the CLI resolves the real
+   *  port itself from the version's .env. */
+  port?: number;
 }
 
 export interface StartResult {

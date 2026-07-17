@@ -64,6 +64,7 @@ pub fn run() {
             server::get_server_status_cmd,
             // databases
             database::get_databases,
+            database::check_postgres_port,
             database::backup_db,
             database::restore_db,
             database::drop_db,
