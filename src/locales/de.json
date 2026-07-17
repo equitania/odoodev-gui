@@ -35,7 +35,9 @@
     "noRuntime": "Keine Runtime",
     "back": "Zurück",
     "next": "Weiter",
-    "browse": "Durchsuchen"
+    "browse": "Durchsuchen",
+    "tags": "Tags",
+    "addTag": "Tag hinzufügen…"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -81,6 +83,16 @@
     "refreshDatabasesFailed": "Datenbanken konnten nicht aktualisiert werden",
     "allowDefaultCredentialsWarning": "Warnung: Standard-Anmeldedaten sind unsicher",
     "pgUnreachableShort": "PostgreSQL nicht erreichbar auf Port {{port}}",
+    "presets": "Vorlagen",
+    "presetNone": "— Eigene Konfiguration —",
+    "presetSave": "Speichern",
+    "presetSaveAs": "Speichern unter…",
+    "presetDelete": "Löschen",
+    "presetModified": "geändert",
+    "presetSaveTitle": "Server-Vorlage speichern",
+    "presetName": "Name",
+    "presetDeleteConfirmTitle": "Vorlage „{{name}}“ löschen?",
+    "presetDeleteConfirmDescription": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "mode": "Modus",
     "normal": "Normal",
     "dev": "Dev",

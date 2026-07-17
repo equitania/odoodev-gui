@@ -32,6 +32,27 @@ export function versionBg(version: string): string {
   return VERSION_BG[version] ?? BG_CYCLE[cycleIndex(version, BG_CYCLE.length)];
 }
 
+/** Fixed chip palette for free-text tags — deterministic per tag name so the
+ *  same tag always renders the same color (same approach as the version cycle). */
+const TAG_COLORS = [
+  "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  "bg-green-500/15 text-green-600 dark:text-green-400",
+  "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  "bg-pink-500/15 text-pink-600 dark:text-pink-400",
+  "bg-teal-500/15 text-teal-600 dark:text-teal-400",
+  "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  "bg-red-500/15 text-red-600 dark:text-red-400",
+];
+
+export function tagColor(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = (hash * 31 + tag.charCodeAt(i)) | 0;
+  }
+  return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
+}
+
 /** Runtime ports of a version: .env-resolved (CLI >= 0.58.0, per-user port
  *  prefixes on multi-user hosts) with registry-default fallback. */
 export function effectivePorts(info: VersionInfo): Ports {

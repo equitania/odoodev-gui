@@ -35,7 +35,9 @@
     "noRuntime": "No runtime",
     "back": "Back",
     "next": "Next",
-    "browse": "Browse"
+    "browse": "Browse",
+    "tags": "Tags",
+    "addTag": "Add tag…"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -81,6 +83,16 @@
     "refreshDatabasesFailed": "Failed to refresh databases",
     "allowDefaultCredentialsWarning": "Warning: allowing default credentials is insecure",
     "pgUnreachableShort": "PostgreSQL not reachable on port {{port}}",
+    "presets": "Presets",
+    "presetNone": "— Custom —",
+    "presetSave": "Save",
+    "presetSaveAs": "Save As…",
+    "presetDelete": "Delete",
+    "presetModified": "modified",
+    "presetSaveTitle": "Save server preset",
+    "presetName": "Name",
+    "presetDeleteConfirmTitle": "Delete preset '{{name}}'?",
+    "presetDeleteConfirmDescription": "This action cannot be undone.",
     "mode": "Mode",
     "normal": "Normal",
     "dev": "Dev",

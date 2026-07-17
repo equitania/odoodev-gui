@@ -10,9 +10,19 @@ import { Checkbox } from "../ui/checkbox";
 import { invokeCmd } from "../../lib/tauri";
 import { reportError } from "../../lib/errors";
 import { useAppStore } from "../../store/appStore";
-import { effectivePorts } from "../../lib/constants";
+import { usePresetStore } from "../../store/presetStore";
+import { effectivePorts, tagColor } from "../../lib/constants";
+import { cn } from "../../lib/utils";
+import { PresetSaveDialog } from "./PresetSaveDialog";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import type { DbListResponse, StartServerArgs } from "../../types";
 import { ChevronDown, ChevronUp, Play, Square, RotateCcw, Loader2 } from "lucide-react";
+
+/** Preset dirty-check ignores environment-derived fields — port and runtime
+ *  are resolved at start time, not user configuration. */
+function presetComparable(args: StartServerArgs): string {
+  return JSON.stringify({ ...args, port: undefined, runtime: undefined });
+}
 
 export function ServerConfig({
   version,
@@ -49,6 +59,36 @@ export function ServerConfig({
   const [extraArgs, setExtraArgs] = useState("");
   const runtime = useAppStore((s) => s.runtime);
   const versions = useAppStore((s) => s.versions);
+
+  const presets = usePresetStore((s) => s.presets);
+  const savePreset = usePresetStore((s) => s.savePreset);
+  const updatePreset = usePresetStore((s) => s.updatePreset);
+  const removePreset = usePresetStore((s) => s.removePreset);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const versionPresets = presets.filter((p) => p.args.version === version);
+  const activePreset = versionPresets.find((p) => p.id === activePresetId) ?? null;
+
+  // Presets are per-version; a preset from another tab must not stay "active".
+  useEffect(() => {
+    setActivePresetId(null);
+  }, [version]);
+
+  const applyPreset = (args: StartServerArgs) => {
+    setMode(args.mode ?? "normal");
+    setDatabase(args.database ?? "");
+    setUpdateModules(args.update_modules ?? "");
+    setInstallModules(args.install_modules ?? "");
+    setHost(args.host ?? "");
+    setLoadLanguage(args.load_language ?? "");
+    setI18nOverwrite(args.i18n_overwrite ?? false);
+    setCleanSessions(args.clean_sessions ?? false);
+    setConfigPath(args.config_path ?? "");
+    setAllowDefaultCreds(args.allow_default_credentials ?? false);
+    setExtraArgs(args.extra_args ?? "");
+  };
 
   const modeOptions = [
     { value: "normal", label: t("server.normal") },
@@ -97,12 +137,77 @@ export function ServerConfig({
     port: versions?.[version] ? effectivePorts(versions[version]).odoo : undefined,
   });
 
+  const presetModified = activePreset
+    ? presetComparable(buildArgs()) !== presetComparable(activePreset.args)
+    : false;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t("server.configTitle", { version })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Label>{t("server.presets")}</Label>
+            {presetModified && (
+              <span className="rounded-md bg-yellow-500/15 px-1.5 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                {t("server.presetModified")}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={activePresetId ?? ""}
+              onChange={(e) => {
+                const id = e.target.value || null;
+                setActivePresetId(id);
+                const preset = versionPresets.find((p) => p.id === id);
+                if (preset) applyPreset(preset.args);
+              }}
+              className="flex-1"
+            >
+              <option value="">{t("server.presetNone")}</option>
+              {versionPresets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {p.tags.length > 0 ? ` [${p.tags.join(", ")}]` : ""}
+                </option>
+              ))}
+            </Select>
+            {activePreset && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!presetModified}
+                onClick={() => updatePreset(activePreset.id, buildArgs())}
+              >
+                {t("server.presetSave")}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={() => setShowSaveDialog(true)}>
+              {t("server.presetSaveAs")}
+            </Button>
+            {activePreset && (
+              <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(true)}>
+                {t("server.presetDelete")}
+              </Button>
+            )}
+          </div>
+          {activePreset && activePreset.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {activePreset.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className={cn("rounded-md px-1.5 py-0.5 text-xs font-medium", tagColor(tag))}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="space-y-2">
           <Label>{t("server.mode")}</Label>
           <SegmentedControl options={modeOptions} value={mode} onChange={setMode} />
@@ -233,6 +338,34 @@ export function ServerConfig({
             </>
           )}
         </div>
+
+        <PresetSaveDialog
+          open={showSaveDialog}
+          onClose={() => setShowSaveDialog(false)}
+          initialName={activePreset?.name}
+          initialTags={activePreset?.tags}
+          onConfirm={(name, tags) => {
+            const preset = savePreset(name, tags, buildArgs());
+            setActivePresetId(preset.id);
+            setShowSaveDialog(false);
+          }}
+        />
+
+        {activePreset && (
+          <ConfirmDialog
+            open={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            title={t("server.presetDeleteConfirmTitle", { name: activePreset.name })}
+            description={t("server.presetDeleteConfirmDescription")}
+            confirmLabel={t("server.presetDelete")}
+            danger
+            onConfirm={() => {
+              removePreset(activePreset.id);
+              setActivePresetId(null);
+              setShowDeleteConfirm(false);
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   );

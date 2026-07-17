@@ -299,6 +299,17 @@ export interface StartResult {
   port: number;
 }
 
+/** Named, persisted server start configuration ("Regression", "Dev", ...).
+ *  The version lives inside args.version; presets are GUI-only (localStorage). */
+export interface ServerPreset {
+  id: string;
+  name: string;
+  tags: string[];
+  args: StartServerArgs;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BackupArgs {
   version: string;
   name: string;
