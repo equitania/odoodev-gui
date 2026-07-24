@@ -101,12 +101,14 @@ export function RestoreDialog({
     // Always send an explicit boolean: the CLI defaults to --drop (overwrite),
     // so omitting the field would silently drop the target database.
     drop: dropExisting,
-    deactivate_cron: (sanitize && deactivateCron) || undefined,
-    neutralize: (sanitize && neutralize) || undefined,
-    anonymize: (sanitize && anonymize) || undefined,
-    wipe: (sanitize && wipe) || undefined,
-    purge_master_data: (sanitize && purgeMasterData) || undefined,
-    no_purge_master_data: (sanitize && !purgeMasterData) || undefined,
+    // Each checkbox maps 1:1 to its CLI opt-in flag. The "sanitize" parent is a
+    // pure UI toggle-all — its state must never gate the children, otherwise an
+    // individually checked option (e.g. anonymize) is silently dropped.
+    deactivate_cron: deactivateCron || undefined,
+    neutralize: neutralize || undefined,
+    anonymize: anonymize || undefined,
+    wipe: wipe || undefined,
+    purge_master_data: purgeMasterData || undefined,
     purge_transactions: purgeTransactions || undefined,
     anonymize_users: anonymizeUsers || undefined,
     user_password: anonymizeUsers ? userPassword : undefined,
@@ -215,7 +217,7 @@ export function RestoreDialog({
               <OptionRow checked={anonymize} onChange={setAnonymize} label={t("database.anonymize")} hint={t("database.restoreHelp.anonymize")} />
               <OptionRow checked={wipe} onChange={setWipe} label={t("database.wipe")} hint={t("database.restoreHelp.wipe")} />
               <OptionRow checked={purgeMasterData} onChange={setPurgeMasterData} label={t("database.purgeMasterData")} hint={t("database.restoreHelp.purgeMasterData")} />
-              {sanitize && purgeMasterData && (
+              {purgeMasterData && (
                 <div className="flex items-start gap-2 rounded-md bg-yellow-500/10 p-2 text-xs text-yellow-600 dark:text-yellow-400">
                   <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span>{t("database.purgeMasterDataWarning")}</span>

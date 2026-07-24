@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.6.1 (24.07.2026)
+
+### Fixed
+- **Anonymize (and the other sanitize options) silently did nothing without the
+  parent "Sanitize" toggle:** the restore wizard only forwarded the
+  deactivate-cron/neutralize/anonymize/wipe/purge-master-data checkboxes when
+  the "Sanitize (enable all below)" parent was also checked — an individually
+  checked "Anonymize" produced a successful restore **without** anonymization.
+  Every checkbox now maps 1:1 to its CLI flag; the parent remains a pure
+  toggle-all convenience. The master-data purge warning now shows whenever the
+  purge checkbox is set, independent of the parent.
+- **Restore Dry-Run button never worked:** it sent `--dry-run`, a flag
+  `odoodev db restore` did not have. odoodev 0.61.0 introduces the flag as a
+  validation-only preflight (backup file, target-DB collision, disk space,
+  planned steps) — the button now works against odoodev >= 0.61.0. The obsolete
+  `--no-purge-master-data` forwarding was removed (the GUI never sends
+  `--sanitize`, so all post-restore steps default to off).
+- **Empty restore error messages:** Click usage errors land on stderr only;
+  the restore command now falls back to the last stderr line, so failures
+  (e.g. an unknown option on an older CLI) show the actual reason instead of
+  an empty message.
+
+## Version 1.6.0 (17.07.2026)
+
+### Added
+- **Server presets:** named, persisted start configurations with tags.
+- **Database tags:** chips on the DB list, inline editor, filter bar.
+
+### Fixed
+- **Restart** uses the live form state and the effective start port; DB
+  reachability diagnosis on empty database lists (TCP probe + clear
+  "not reachable on port X" message).
+- Update badge no longer offers a downgrade; log copy button ignores warnings.
+
 ## Version 1.5.1 (16.07.2026)
 
 ### Fixed

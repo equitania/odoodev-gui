@@ -145,7 +145,6 @@ pub struct RestoreArgs {
     pub anonymize: Option<bool>,
     pub wipe: Option<bool>,
     pub purge_master_data: Option<bool>,
-    pub no_purge_master_data: Option<bool>,
     pub purge_transactions: Option<bool>,
     pub anonymize_users: Option<bool>,
     pub user_password: Option<String>,
@@ -197,9 +196,6 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
     }
     if args.purge_master_data.unwrap_or(false) {
         cli.push("--purge-master-data".into());
-    }
-    if args.no_purge_master_data.unwrap_or(false) {
-        cli.push("--no-purge-master-data".into());
     }
     if args.purge_transactions.unwrap_or(false) {
         cli.push("--purge-transactions".into());
@@ -256,13 +252,21 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
 
+    // Click usage errors (e.g. an unknown option on an older CLI) go to stderr
+    // only — keep the last stderr line as an error fallback so the GUI never
+    // shows an empty failure message.
     let win_err = window.clone();
-    tokio::spawn(async move {
+    let stderr_task = tokio::spawn(async move {
         let reader = BufReader::new(stderr);
         let mut lines = reader.lines();
+        let mut last = String::new();
         while let Ok(Some(line)) = lines.next_line().await {
             let _ = win_err.emit("restore-progress", &line);
+            if !line.trim().is_empty() {
+                last = line;
+            }
         }
+        last
     });
 
     let reader = BufReader::new(stdout);
@@ -273,6 +277,9 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
         last_line = line;
     }
     let status = child.wait().await.map_err(|e| format!("wait: {e}"))?;
+    if last_line.trim().is_empty() {
+        last_line = stderr_task.await.unwrap_or_default();
+    }
 
     if status.success() {
         Ok(RestoreResult {

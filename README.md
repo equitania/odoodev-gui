@@ -84,7 +84,7 @@ Syntax-Highlighting, Buffer-Persistenz über Stop/Start, klickbare Server-URL im
 Tab-Header.
 
 **Datenbanken** — DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Schritt-Wizard
-mit Dry-Run, Sanitize, Anonymize, Purge, Recompute — jede Option mit Klartext-Erklärung),
+mit Dry-Run (benötigt odoodev ≥ 0.61.0), Sanitize, Anonymize, Purge, Recompute — jede Option mit Klartext-Erklärung),
 nativer Datei-/Ordner-Picker mit `~/Downloads`-Default und Verzeichnis-Gedächtnis,
 Drop (type-to-confirm), Duplizieren (inkl. Filestore), Umbenennen, Bulk-Drop,
 Operation-Progress mit live stdout, Abschluss-Status (grün/rot + OK-Button) und
@@ -214,8 +214,8 @@ level of their origin line), search, auto-scroll, copy, syntax highlighting,
 buffer persistence across stop/start, clickable server URL in the tab header.
 
 **Databases** — DB list, backup (SQL/ZIP/tar.zst with level), restore (3-step wizard with
-dry run, sanitize, anonymize, purge, recompute — every option with a plain-language
-explanation), native file/folder picker with `~/Downloads` default and directory memory,
+dry run (requires odoodev ≥ 0.61.0), sanitize, anonymize, purge, recompute — every option
+with a plain-language explanation), native file/folder picker with `~/Downloads` default and directory memory,
 drop (type-to-confirm), duplicate (incl. filestore), rename, bulk drop, operation
 progress with live stdout, completion state (green/red + OK button) and automatic
 list refresh.

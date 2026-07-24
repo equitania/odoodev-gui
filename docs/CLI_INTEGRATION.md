@@ -580,17 +580,23 @@ odoodev db restore 18 -n new -z backup.zip --sanitize -y
 odoodev db restore 18 -n new -z backup.zip \
   --deactivate-cron --neutralize --anonymize --wipe --purge-master-data -y
 
-# If user wants sanitize but NOT purge-master-data:
+# If user wants sanitize but NOT purge-master-data: simply omit the flag.
+# The GUI never sends --sanitize, so every post-restore step defaults to off
+# and --no-* escapes are unnecessary.
 odoodev db restore 18 -n new -z backup.zip \
-  --deactivate-cron --neutralize --anonymize --wipe \
-  --no-purge-master-data -y
+  --deactivate-cron --neutralize --anonymize --wipe -y
 ```
 
-**Dry run:**
+**Dry run (requires odoodev >= 0.61.0):**
 ```bash
-odoodev db restore 18 -n new -z backup.zip --dry-run
+odoodev db restore 18 -n new -z backup.zip --dry-run -y
 ```
-→ Shows steps without executing. Output: text describing what would happen.
+→ Validates backup file, target-DB collision, and disk space, then lists the
+planned post-restore steps. Nothing is dropped, created, extracted, or restored.
+Exit 0 = restore would proceed, exit 1 = it would fail (last line names the
+reason). On older CLIs the flag does not exist — Click then fails with
+`Error: No such option '--dry-run'` on stderr (surfaced via the stderr
+fallback in `restore_db`).
 
 **Output:** Text progress messages (Rich format), streamed line-by-line:
 ```

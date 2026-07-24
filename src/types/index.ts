@@ -328,7 +328,6 @@ export interface RestoreArgs {
   anonymize?: boolean;
   wipe?: boolean;
   purge_master_data?: boolean;
-  no_purge_master_data?: boolean;
   purge_transactions?: boolean;
   anonymize_users?: boolean;
   user_password?: string;
