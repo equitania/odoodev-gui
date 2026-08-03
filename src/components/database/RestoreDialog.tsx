@@ -216,6 +216,12 @@ export function RestoreDialog({
               <OptionRow checked={neutralize} onChange={setNeutralize} label={t("database.neutralize")} hint={t("database.restoreHelp.neutralize")} />
               <OptionRow checked={anonymize} onChange={setAnonymize} label={t("database.anonymize")} hint={t("database.restoreHelp.anonymize")} />
               <OptionRow checked={wipe} onChange={setWipe} label={t("database.wipe")} hint={t("database.restoreHelp.wipe")} />
+              {wipe && (
+                <div className="flex items-start gap-2 rounded-md bg-yellow-500/10 p-2 text-xs text-yellow-600 dark:text-yellow-400">
+                  <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{t("database.wipeWarning")}</span>
+                </div>
+              )}
               <OptionRow checked={purgeMasterData} onChange={setPurgeMasterData} label={t("database.purgeMasterData")} hint={t("database.restoreHelp.purgeMasterData")} />
               {purgeMasterData && (
                 <div className="flex items-start gap-2 rounded-md bg-yellow-500/10 p-2 text-xs text-yellow-600 dark:text-yellow-400">

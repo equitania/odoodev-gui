@@ -377,7 +377,7 @@ invoke('restore_db', {
   deactivate_cron?: boolean,      // --deactivate-cron
   neutralize?: boolean,           // --neutralize
   anonymize?: boolean,            // --anonymize
-  wipe?: boolean,                 // --wipe
+  wipe?: boolean,                 // --wipe (deletes chatter + attachments + filestore files)
   purge_master_data?: boolean,    // --purge-master-data
   no_purge_master_data?: boolean, // --no-purge-master-data (override sanitize)
   purge_transactions?: boolean,   // --purge-transactions

@@ -157,7 +157,8 @@
     "deactivateCron": "Deactivate cron + mail",
     "neutralize": "Neutralize",
     "anonymize": "Anonymize",
-    "wipe": "Wipe content",
+    "wipe": "Delete chatter & attachments",
+    "wipeWarning": "WARNING: This DELETEs the entire chatter (messages, tracking history, followers, activities) and all attachments — including the files in the filestore. Product images and asset bundles are kept.",
     "purgeMasterData": "Purge master data",
     "purgeMasterDataWarning": "WARNING: This DELETEs customers/vendors, CRM/HR data, messages, attachments. Keeps products, pricelists, users, companies, config.",
     "anonymizeUsers": "Anonymize users",
@@ -181,7 +182,7 @@
       "deactivateCron": "Disables cron jobs and outgoing mail servers after the restore, so the copy never sends real e-mails.",
       "neutralize": "Runs Odoo's native neutralize (mail, payment providers, bank sync off). Needs a working venv for this version.",
       "anonymize": "Replaces personal data with Faker values (GDPR-safe test data).",
-      "wipe": "Blanks message and attachment content (mail_message, ir_attachment).",
+      "wipe": "Deletes the entire chatter and all attachments including their files in the filestore — irreversible. Product images and compiled asset bundles are kept.",
       "purgeMasterData": "Template-DB reset: deletes customers/vendors, CRM/HR data, messages and attachments; keeps products, pricelists, users, companies and configuration.",
       "purgeTransactions": "Deletes all movement data (stock, sales, purchase, accounting, MRP, POS) and zeroes stock. Not part of Sanitize.",
       "anonymizeUsers": "Anonymizes user logins and sets the dev password below on all users.",
@@ -553,7 +554,7 @@
           "deactivate_cron": "deactivate_cron — disable cron jobs & outgoing mail",
           "neutralize": "neutralize — neutralize Odoo (payments, IAP, webhooks, bank sync off)",
           "purge_transactions": "purge_transactions — delete transactional data (orders, postings, stock)",
-          "wipe": "wipe — delete messages & attachments"
+          "wipe": "wipe — delete chatter & attachments (incl. files)"
         },
         "neutralize_needs_start": "neutralize needs the Odoo container running — without 'start after restore' only the psql part runs; the odoo-bin neutralize step is skipped.",
         "purge_master_data": "Also purge ALL master data (destructive template reset)?",

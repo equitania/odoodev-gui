@@ -157,7 +157,8 @@
     "deactivateCron": "Cron + Mail deaktivieren",
     "neutralize": "Neutralisieren",
     "anonymize": "Anonymisieren",
-    "wipe": "Inhalte löschen",
+    "wipe": "Chatter & Anhänge löschen",
+    "wipeWarning": "WARNUNG: Dies LÖSCHT den kompletten Chatter (Nachrichten, Tracking-Historie, Follower, Aktivitäten) sowie alle Anhänge — auch die Dateien im Filestore. Produktbilder und Asset-Bundles bleiben erhalten.",
     "purgeMasterData": "Stammdaten löschen",
     "purgeMasterDataWarning": "WARNUNG: Dies LÖSCHT Kunden/Lieferanten, CRM/HR-Daten, Nachrichten, Anhänge. Behält Produkte, Preislisten, Benutzer, Unternehmen, Konfiguration.",
     "anonymizeUsers": "Benutzer anonymisieren",
@@ -181,7 +182,7 @@
       "deactivateCron": "Deaktiviert Cron-Jobs und ausgehende Mailserver nach dem Restore — die Kopie verschickt so nie echte E-Mails.",
       "neutralize": "Führt Odoos natives Neutralize aus (Mail, Zahlungsanbieter, Bank-Sync aus). Benötigt ein lauffähiges venv dieser Version.",
       "anonymize": "Ersetzt personenbezogene Daten durch Faker-Werte (DSGVO-konforme Testdaten).",
-      "wipe": "Leert Nachrichten- und Anhang-Inhalte (mail_message, ir_attachment).",
+      "wipe": "Löscht den kompletten Chatter und alle Anhänge samt ihrer Dateien im Filestore — unwiderruflich. Produktbilder und kompilierte Asset-Bundles bleiben erhalten.",
       "purgeMasterData": "Template-DB-Reset: löscht Kunden/Lieferanten, CRM/HR-Daten, Nachrichten und Anhänge; behält Produkte, Preislisten, Benutzer, Firmen und Konfiguration.",
       "purgeTransactions": "Löscht alle Bewegungsdaten (Lager, Verkauf, Einkauf, Buchhaltung, MRP, POS) und setzt Bestände auf null. Nicht Teil von Sanitize.",
       "anonymizeUsers": "Anonymisiert Benutzer-Logins und setzt das untenstehende Dev-Passwort auf allen Benutzern.",
@@ -553,7 +554,7 @@
           "deactivate_cron": "deactivate_cron — Cronjobs & Mailversand deaktivieren",
           "neutralize": "neutralize — Odoo neutralisieren (Zahlungen, IAP, Webhooks, Bank-Sync aus)",
           "purge_transactions": "purge_transactions — Bewegungsdaten löschen (Aufträge, Buchungen, Lager)",
-          "wipe": "wipe — Nachrichten & Anhänge löschen"
+          "wipe": "wipe — Chatter & Anhänge löschen (inkl. Dateien)"
         },
         "neutralize_needs_start": "neutralize braucht den laufenden Odoo-Container — ohne 'nach dem Restore starten' läuft nur der psql-Teil; der odoo-bin-neutralize-Schritt entfällt.",
         "purge_master_data": "Zusätzlich ALLE Stammdaten löschen (destruktiver Template-Reset)?",

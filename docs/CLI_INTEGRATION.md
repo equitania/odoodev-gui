@@ -559,7 +559,7 @@ odoodev db restore 18 -n v18_restored -z ~/Downloads/backup.zip \
 | "Deactivate cron" | `--deactivate-cron` | off | |
 | "Neutralize" | `--neutralize` | off | |
 | "Anonymize" | `--anonymize` | off | |
-| "Wipe content" | `--wipe` | off | |
+| "Delete chatter & attachments" | `--wipe` | off | ⚠ Shows warning text (since odoodev 0.62.0 a real DELETE incl. filestore files) |
 | "Purge master data" | `--purge-master-data` | off | ⚠ Shows warning text |
 | "No purge master data" | `--no-purge-master-data` | — | Override when sanitize is on but this sub is off |
 | "Anonymize users" | `--anonymize-users` | off | Separate from --sanitize |

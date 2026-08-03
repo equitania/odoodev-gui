@@ -1,5 +1,34 @@
 # Release Notes
 
+## Version 1.6.2 (03.08.2026)
+
+### Fixed
+- **The "Wipe content" option described behaviour that no longer exists and
+  carried no warning.** odoodev 0.62.0 fixed a bug in which `--wipe` only
+  blanked `mail_message.body` and cleared the attachment search index — it now
+  really DELETEs the whole chatter (messages, tracking history, followers,
+  activities), the attachment rows and the attachment files in the filestore.
+  The GUI still called the option "Wipe content" and explained it as "Blanks
+  message and attachment content (mail_message, ir_attachment)", so an operator
+  could tick what read like a harmless cleanup and irreversibly lose every
+  invoice attachment including the files on disk.
+
+  The option is now called "Delete chatter & attachments", its hint states what
+  is actually deleted (and that product images and compiled asset bundles are
+  kept), and — like the master-data purge next to it — ticking it reveals an
+  inline warning. The playbook wizard label was resynced with odoodev's own
+  wording.
+
+  No contract change: the GUI still passes a plain `--wipe` boolean, so this
+  release is compatible with every odoodev version. On odoodev < 0.62.0 the
+  flag simply does less than the new text promises.
+
+### Changed
+- `docs/CLI_INTEGRATION.md` and `docs/TAURI_API.md` updated to describe the
+  actual `--wipe` semantics.
+
+**Requires odoodev >= 0.62.0** for the described wipe behaviour.
+
 ## Version 1.6.1 (24.07.2026)
 
 ### Fixed
