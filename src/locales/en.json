@@ -187,8 +187,11 @@
       "purgeTransactions": "Deletes all movement data (stock, sales, purchase, accounting, MRP, POS) and zeroes stock. Not part of Sanitize.",
       "anonymizeUsers": "Anonymizes user logins and sets the dev password below on all users.",
       "recompute": "Recomputes stored computed fields so overviews show the anonymized data. Runs only together with Anonymize (enabled automatically when Anonymize runs).",
-      "uninstallModules": "Comma-separated technical module names, uninstalled before the cleanup steps run."
-    }
+      "uninstallModules": "Comma-separated technical module names, uninstalled before the cleanup steps run.",
+      "checkSpace": "Verifies free space before extracting. Turn off only if the check blocks a restore wrongly.",
+      "recomputeNeedsAnonymize": "Only has an effect together with “Anonymize” — the CLI skips the step otherwise."
+    },
+    "checkSpace": "Check free disk space"
   },
   "docker": {
     "title": "Docker / Containers",

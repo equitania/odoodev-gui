@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use serde::Deserialize;
 use tauri::Emitter;
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -215,8 +217,14 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
             cli.push(m.clone());
         }
     }
-    if args.recompute.unwrap_or(false) {
-        cli.push("--recompute".into());
+    // `--recompute` must always be explicit. The CLI resolves an omitted value
+    // to `anonymize` (db.py: `recompute if recompute is not None else anonymize`),
+    // so leaving the flag out would silently recompute whenever anonymize runs —
+    // an unchecked GUI box would have no effect at all.
+    match args.recompute {
+        Some(true) => cli.push("--recompute".into()),
+        Some(false) => cli.push("--no-recompute".into()),
+        None => {}
     }
     if args.keep_temp.unwrap_or(false) {
         cli.push("--keep-temp".into());
@@ -252,46 +260,78 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
 
-    // Click usage errors (e.g. an unknown option on an older CLI) go to stderr
-    // only — keep the last stderr line as an error fallback so the GUI never
-    // shows an empty failure message.
+    // Both streams are collected into one buffer in emission order: the CLI
+    // splits its report across them (print_info -> stdout, print_error ->
+    // stderr), so neither alone tells the whole story.
+    let collected: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+
     let win_err = window.clone();
+    let err_lines = Arc::clone(&collected);
     let stderr_task = tokio::spawn(async move {
         let reader = BufReader::new(stderr);
         let mut lines = reader.lines();
-        let mut last = String::new();
         while let Ok(Some(line)) = lines.next_line().await {
             let _ = win_err.emit("restore-progress", &line);
             if !line.trim().is_empty() {
-                last = line;
+                err_lines.lock().unwrap().push(line);
             }
         }
-        last
     });
 
     let reader = BufReader::new(stdout);
     let mut lines = reader.lines();
-    let mut last_line = String::new();
     while let Ok(Some(line)) = lines.next_line().await {
         let _ = window.emit("restore-progress", &line);
-        last_line = line;
+        if !line.trim().is_empty() {
+            collected.lock().unwrap().push(line);
+        }
     }
     let status = child.wait().await.map_err(|e| format!("wait: {e}"))?;
-    if last_line.trim().is_empty() {
-        last_line = stderr_task.await.unwrap_or_default();
-    }
+    let _ = stderr_task.await;
+
+    let output = collected.lock().unwrap().clone();
 
     if status.success() {
         Ok(RestoreResult {
             success: true,
             error: None,
+            output,
         })
     } else {
+        let error = pick_failure_reason(&output);
         Ok(RestoreResult {
             success: false,
-            error: Some(last_line),
+            error: Some(error),
+            output,
         })
     }
+}
+
+/// Pick the line that actually explains a failure.
+///
+/// The CLI ends a failed run with a generic `[ERROR] … — nothing was changed`
+/// while the real cause (missing backup file, name collision, too little disk
+/// space) sits in an earlier `[ERROR]` line. Taking the last line of either
+/// stream would surface a harmless `[INFO]` as the failure reason, so prefer
+/// the first specific `[ERROR]`, then any error line, and only then the tail.
+fn pick_failure_reason(output: &[String]) -> String {
+    let errors: Vec<&String> = output
+        .iter()
+        .filter(|l| l.contains("[ERROR]") || l.contains("[FAIL]"))
+        .collect();
+    if let Some(specific) = errors
+        .iter()
+        .find(|l| !l.contains("nothing was changed") && !l.contains("Dry run failed"))
+    {
+        return specific.trim().to_string();
+    }
+    if let Some(last) = errors.last() {
+        return last.trim().to_string();
+    }
+    output
+        .last()
+        .map(|l| l.trim().to_string())
+        .unwrap_or_else(|| "odoodev db restore failed without any output".to_string())
 }
 
 #[tauri::command]
@@ -390,7 +430,63 @@ pub async fn rename_db(
 
 #[cfg(test)]
 mod tests {
-    use super::parse_backup_summary;
+    use super::{parse_backup_summary, pick_failure_reason};
+
+    /// Verbatim output of a real failed dry run against v18 (missing backup
+    /// file). Before the fix the GUI reported the trailing `[INFO]` line as the
+    /// failure reason.
+    fn failed_dry_run() -> Vec<String> {
+        [
+            "[INFO] Database 'probe' would be created",
+            "[INFO] Filestore destination: /Users/x/odoo-share/v18/filestore/probe",
+            "[INFO] Post-restore steps: anonymize, wipe, recompute",
+            "[ERROR] Backup file not found: /tmp/missing.zip",
+            "[ERROR] Dry run failed — nothing was changed",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
+    }
+
+    #[test]
+    fn prefers_the_specific_error_over_the_generic_trailer() {
+        assert_eq!(
+            pick_failure_reason(&failed_dry_run()),
+            "[ERROR] Backup file not found: /tmp/missing.zip"
+        );
+    }
+
+    #[test]
+    fn never_reports_an_info_line_as_the_failure() {
+        let reason = pick_failure_reason(&failed_dry_run());
+        assert!(!reason.contains("[INFO]"));
+    }
+
+    #[test]
+    fn falls_back_to_the_generic_error_when_it_is_the_only_one() {
+        let out = vec![
+            "[INFO] Restoring database 'probe'".to_string(),
+            "[ERROR] Dry run failed — nothing was changed".to_string(),
+        ];
+        assert_eq!(
+            pick_failure_reason(&out),
+            "[ERROR] Dry run failed — nothing was changed"
+        );
+    }
+
+    #[test]
+    fn falls_back_to_the_last_line_without_any_error_marker() {
+        let out = vec!["Usage: odoodev db restore [OPTIONS]".to_string()];
+        assert_eq!(
+            pick_failure_reason(&out),
+            "Usage: odoodev db restore [OPTIONS]"
+        );
+    }
+
+    #[test]
+    fn reports_something_useful_when_the_cli_stayed_silent() {
+        assert!(!pick_failure_reason(&[]).is_empty());
+    }
 
     #[test]
     fn parses_created_marker_with_size() {

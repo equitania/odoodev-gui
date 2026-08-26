@@ -200,6 +200,11 @@ pub struct BackupResult {
 pub struct RestoreResult {
     pub success: bool,
     pub error: Option<String>,
+    /// Every stdout/stderr line in emission order. A `--dry-run` reports its
+    /// whole verdict here (backup file, target-DB collision, filestore path,
+    /// free space, planned post-restore steps) — the dialog shows it verbatim
+    /// instead of collapsing it into a generic "passed" string.
+    pub output: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

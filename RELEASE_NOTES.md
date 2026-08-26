@@ -1,5 +1,51 @@
 # Release Notes
 
+## Version 1.6.3 (26.08.2026)
+
+### Fixed
+- **A failed restore reported the wrong reason.** The CLI writes its progress to
+  stdout and its errors to stderr, but the GUI only fell back to stderr when
+  stdout had stayed completely empty — which never happens. A restore that
+  failed because the backup file was missing announced itself as
+  `[INFO] Post-restore steps: anonymize, wipe, recompute`. Both streams are now
+  collected in emission order, and the reported reason is the first specific
+  `[ERROR]` line rather than whatever happened to be printed last.
+- **The dry run threw away its own verdict.** `db restore --dry-run` reports the
+  backup file and its size, whether the target database would be dropped or
+  created, the filestore destination, the free disk space and the exact list of
+  post-restore steps that would run. All of it was replaced by the single word
+  "passed". The full report is now shown in the dialog.
+- **The "Recompute" checkbox had no effect.** The CLI defaults `--recompute` to
+  the value of `--anonymize`, so an unticked box still recomputed whenever
+  anonymize ran. The flag is now always sent explicitly, and the box is tied to
+  anonymize — disabled while anonymize is off, where the CLI would skip the step
+  anyway.
+- **The "Sanitize" master switch could show a stale state.** It kept its tick
+  after a child option was unticked. It is now derived from the five children,
+  so it can no longer claim more than is actually enabled.
+
+### Added
+- Restore wizard: the disk-space pre-check (`--check-space`) can now be turned
+  off for the case where it blocks a restore wrongly.
+- Frontend test suite (vitest): `pnpm test`. First covered unit is the restore
+  argument builder — the flag matrix where an omitted option means the opposite
+  of what the checkbox shows.
+
+### Changed
+- CLI subprocesses now run with `COLUMNS=200`, `NO_COLOR=1` and a null stdin.
+  Without a terminal, Rich wrapped long messages at 80 columns and split them
+  mid-path, which broke every parser keyed on a `[LEVEL]` prefix; an inherited
+  stdin would have let an unexpected prompt block the app with no visible cause.
+- Dependencies: removed `react-router-dom` (imported but never used — the app
+  navigates through the sidebar and the store), raised `which` to 8, pinned
+  `dompurify` to 3.4.14 through a pnpm override, corrected the
+  `tauri-plugin-clipboard-manager` beta pin to the stable 2.x line, and applied
+  the pending patch updates. `pnpm audit` and `cargo audit` both report no known
+  vulnerabilities.
+  `monaco-editor` deliberately stays on 0.55: 0.56 reworked its worker exports
+  and breaks the `?worker` import in `src/monaco.ts`, while the override already
+  covers the only reason to upgrade.
+
 ## Version 1.6.2 (03.08.2026)
 
 ### Fixed

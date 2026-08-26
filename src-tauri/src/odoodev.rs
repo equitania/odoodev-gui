@@ -22,7 +22,21 @@ pub fn home_dir() -> PathBuf {
     dirs::home_dir().unwrap_or_else(|| PathBuf::from("."))
 }
 
+/// Prepare a CLI subprocess. Despite the historical name this sets up the whole
+/// child environment, not just PATH — every call site that spawns a CLI goes
+/// through it, so this is the one place that keeps their behaviour uniform.
+///
+/// * `COLUMNS` / `NO_COLOR`: without a TTY, Rich falls back to an 80-column
+///   width and soft-wraps long messages (a filestore path lands on its own
+///   line), which breaks every parser that keys on a `[LEVEL]` line prefix.
+/// * `stdin` = null: a packaged desktop app has no terminal. Inheriting stdin
+///   would let an unexpected CLI prompt block forever with no visible reason;
+///   a null stdin turns that into an immediate, reportable failure instead.
 pub fn augment_path(cmd: &mut Command) {
+    cmd.env("COLUMNS", "200");
+    cmd.env("NO_COLOR", "1");
+    cmd.stdin(std::process::Stdio::null());
+
     let home = home_dir();
     let extra: Vec<PathBuf> = if cfg!(target_os = "windows") {
         EXTRA_PATHS_WIN.iter().map(|p| home.join(p)).collect()
@@ -231,6 +245,29 @@ pub async fn run_odoodev_spawn(args: &[&str]) -> Result<Child, String> {
         .map_err(|e| format!("Failed to spawn odoodev: {e}"))
 }
 
+pub async fn get_odoodev_version() -> Option<String> {
+    let mut cmd = Command::new(find_odoodev());
+    cmd.arg("--version");
+    augment_path(&mut cmd);
+    let output = cmd.output().await.ok()?;
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if let Some(v) = stdout.split("version ").nth(1) {
+        return Some(v.trim().to_string());
+    }
+    // Fallback: any version-like token
+    for tok in stdout.split_whitespace() {
+        if tok
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_digit())
+            .unwrap_or(false)
+        {
+            return Some(tok.trim().to_string());
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::{find_binary_opt, reject_flag_like};
@@ -259,27 +296,4 @@ mod tests {
         assert!(reject_flag_like("name", "--drop").is_err());
         assert!(reject_flag_like("version", "-d").is_err());
     }
-}
-
-pub async fn get_odoodev_version() -> Option<String> {
-    let mut cmd = Command::new(find_odoodev());
-    cmd.arg("--version");
-    augment_path(&mut cmd);
-    let output = cmd.output().await.ok()?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    if let Some(v) = stdout.split("version ").nth(1) {
-        return Some(v.trim().to_string());
-    }
-    // Fallback: any version-like token
-    for tok in stdout.split_whitespace() {
-        if tok
-            .chars()
-            .next()
-            .map(|c| c.is_ascii_digit())
-            .unwrap_or(false)
-        {
-            return Some(tok.trim().to_string());
-        }
-    }
-    None
 }

@@ -9,7 +9,9 @@ import { Checkbox } from "../ui/checkbox";
 import type { RestoreArgs, RestoreResult } from "../../types";
 import { invokeCmd } from "../../lib/tauri";
 import { defaultBackupDir, rememberBackupDir } from "../../lib/backupDir";
-import { FolderOpen, TriangleAlert } from "lucide-react";
+import { buildRestoreArgs } from "./restoreArgs";
+import { cn } from "../../lib/utils";
+import { CheckCircle2, FolderOpen, TriangleAlert } from "lucide-react";
 
 /** Checkbox with a short explanation of what the CLI flag actually does. */
 function OptionRow({
@@ -17,15 +19,17 @@ function OptionRow({
   onChange,
   label,
   hint,
+  disabled,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
   hint: string;
+  disabled?: boolean;
 }) {
   return (
-    <div className="space-y-0.5">
-      <Checkbox checked={checked} onChange={onChange} label={label} />
+    <div className={cn("space-y-0.5", disabled && "opacity-50")}>
+      <Checkbox checked={checked} onChange={onChange} label={label} disabled={disabled} />
       <p className="ml-6 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
@@ -49,7 +53,6 @@ export function RestoreDialog({
   const [backupFile, setBackupFile] = useState("");
   const [dbName, setDbName] = useState("");
   const [dropExisting, setDropExisting] = useState(false);
-  const [sanitize, setSanitize] = useState(false);
   const [deactivateCron, setDeactivateCron] = useState(false);
   const [neutralize, setNeutralize] = useState(false);
   const [anonymize, setAnonymize] = useState(false);
@@ -59,16 +62,30 @@ export function RestoreDialog({
   const [anonymizeUsers, setAnonymizeUsers] = useState(false);
   const [userPassword, setUserPassword] = useState("ownerp");
   const [uninstallModules, setUninstallModules] = useState("");
-  const [recompute, setRecompute] = useState(false);
+  const [recompute, setRecompute] = useState(true);
+  const [checkSpace, setCheckSpace] = useState(true);
   const [dryRunResult, setDryRunResult] = useState<string | null>(null);
+  const [dryRunOk, setDryRunOk] = useState<boolean | null>(null);
   const [running, setRunning] = useState(false);
+
+  // Derived, never stored: a "sanitize" flag of its own would drift out of sync
+  // as soon as a single child is unticked, and this dialog's options are far
+  // too destructive to display a stale summary state.
+  const sanitize = deactivateCron && neutralize && anonymize && wipe && purgeMasterData;
+
+  const setSanitize = (v: boolean) => {
+    setDeactivateCron(v);
+    setNeutralize(v);
+    setAnonymize(v);
+    setWipe(v);
+    setPurgeMasterData(v);
+  };
 
   const reset = () => {
     setStep(1);
     setBackupFile("");
     setDbName("");
     setDropExisting(false);
-    setSanitize(false);
     setDeactivateCron(false);
     setNeutralize(false);
     setAnonymize(false);
@@ -77,8 +94,10 @@ export function RestoreDialog({
     setPurgeTransactions(false);
     setAnonymizeUsers(false);
     setUninstallModules("");
-    setRecompute(false);
+    setRecompute(true);
+    setCheckSpace(true);
     setDryRunResult(null);
+    setDryRunOk(null);
   };
 
   const browseBackupFile = async () => {
@@ -94,36 +113,46 @@ export function RestoreDialog({
     }
   };
 
-  const buildArgs = (dry: boolean): RestoreArgs => ({
-    version,
-    name: dbName,
-    backup_file: backupFile,
-    // Always send an explicit boolean: the CLI defaults to --drop (overwrite),
-    // so omitting the field would silently drop the target database.
-    drop: dropExisting,
-    // Each checkbox maps 1:1 to its CLI opt-in flag. The "sanitize" parent is a
-    // pure UI toggle-all — its state must never gate the children, otherwise an
-    // individually checked option (e.g. anonymize) is silently dropped.
-    deactivate_cron: deactivateCron || undefined,
-    neutralize: neutralize || undefined,
-    anonymize: anonymize || undefined,
-    wipe: wipe || undefined,
-    purge_master_data: purgeMasterData || undefined,
-    purge_transactions: purgeTransactions || undefined,
-    anonymize_users: anonymizeUsers || undefined,
-    user_password: anonymizeUsers ? userPassword : undefined,
-    uninstall_modules: uninstallModules || undefined,
-    recompute: recompute || undefined,
-    dry_run: dry || undefined,
-  });
+  const buildArgs = (dry: boolean): RestoreArgs =>
+    buildRestoreArgs(
+      {
+        version,
+        dbName,
+        backupFile,
+        dropExisting,
+        deactivateCron,
+        neutralize,
+        anonymize,
+        wipe,
+        purgeMasterData,
+        purgeTransactions,
+        anonymizeUsers,
+        userPassword,
+        uninstallModules,
+        recompute,
+        checkSpace,
+      },
+      dry,
+    );
 
   const handleDryRun = async () => {
     setRunning(true);
+    setDryRunResult(null);
+    setDryRunOk(null);
     try {
       const result = await invokeCmd<RestoreResult>("restore_db", { args: buildArgs(true) });
-      setDryRunResult(result.success ? t("database.dryRunPassed") : result.error ?? t("database.dryRunFailed"));
+      // The dry run's whole point is its report — which backup file, whether the
+      // target database would be dropped or created, where the filestore lands,
+      // how much disk space is left and which post-restore steps would run.
+      // Show it verbatim instead of collapsing it into a single verdict word.
+      const report = result.output?.length
+        ? result.output.join("\n")
+        : result.error ?? t(result.success ? "database.dryRunPassed" : "database.dryRunFailed");
+      setDryRunResult(report);
+      setDryRunOk(result.success);
     } catch (e) {
       setDryRunResult(String(e));
+      setDryRunOk(false);
     } finally {
       setRunning(false);
     }
@@ -203,11 +232,7 @@ export function RestoreDialog({
           <div className="rounded-md border border-border p-3 space-y-2">
             <OptionRow
               checked={sanitize}
-              onChange={(v) => {
-                setSanitize(v);
-                if (v) { setDeactivateCron(true); setNeutralize(true); setAnonymize(true); setWipe(true); setPurgeMasterData(true); }
-                else { setDeactivateCron(false); setNeutralize(false); setAnonymize(false); setWipe(false); setPurgeMasterData(false); }
-              }}
+              onChange={setSanitize}
               label={t("database.sanitize")}
               hint={t("database.restoreHelp.sanitize")}
             />
@@ -244,10 +269,30 @@ export function RestoreDialog({
             <Input value={uninstallModules} onChange={(e) => setUninstallModules(e.target.value)} placeholder="eq_sale,eq_stock" />
             <p className="text-xs text-muted-foreground">{t("database.restoreHelp.uninstallModules")}</p>
           </div>
-          <OptionRow checked={recompute} onChange={setRecompute} label={t("database.recompute")} hint={t("database.restoreHelp.recompute")} />
+          {/* The CLI runs recompute only together with anonymize and defaults it
+              to anonymize's own value — so the box is meaningless on its own. */}
+          <OptionRow
+            checked={anonymize && recompute}
+            onChange={setRecompute}
+            disabled={!anonymize}
+            label={t("database.recompute")}
+            hint={anonymize ? t("database.restoreHelp.recompute") : t("database.restoreHelp.recomputeNeedsAnonymize")}
+          />
+          <OptionRow
+            checked={checkSpace}
+            onChange={setCheckSpace}
+            label={t("database.checkSpace")}
+            hint={t("database.restoreHelp.checkSpace")}
+          />
 
           {dryRunResult && (
-            <pre className="rounded-md border border-border bg-muted p-2 text-xs whitespace-pre-wrap">{dryRunResult}</pre>
+            <div className="space-y-1">
+              <div className={cn("flex items-center gap-2 text-xs font-medium", dryRunOk ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                {dryRunOk ? <CheckCircle2 className="h-3.5 w-3.5" /> : <TriangleAlert className="h-3.5 w-3.5" />}
+                <span>{t(dryRunOk ? "database.dryRunPassed" : "database.dryRunFailed")}</span>
+              </div>
+              <pre className="max-h-48 overflow-auto rounded-md border border-border bg-muted p-2 text-xs whitespace-pre-wrap">{dryRunResult}</pre>
+            </div>
           )}
 
           <div className="flex justify-between">

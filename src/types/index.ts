@@ -116,6 +116,8 @@ export interface BackupResult {
 export interface RestoreResult {
   success: boolean;
   error: string | null;
+  /** Every stdout/stderr line in emission order — a dry run's full verdict. */
+  output: string[];
 }
 
 export interface OpResult {

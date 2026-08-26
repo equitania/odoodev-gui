@@ -9,7 +9,7 @@ export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   clearScreen: false,
@@ -27,5 +27,9 @@ export default defineConfig(async () => ({
     watch: {
       ignored: ["**/src-tauri/**"],
     },
+  },
+  test: {
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    environment: "node",
   },
 }));

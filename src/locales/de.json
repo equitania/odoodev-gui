@@ -187,8 +187,11 @@
       "purgeTransactions": "Löscht alle Bewegungsdaten (Lager, Verkauf, Einkauf, Buchhaltung, MRP, POS) und setzt Bestände auf null. Nicht Teil von Sanitize.",
       "anonymizeUsers": "Anonymisiert Benutzer-Logins und setzt das untenstehende Dev-Passwort auf allen Benutzern.",
       "recompute": "Berechnet gespeicherte berechnete Felder neu, damit Übersichten die anonymisierten Daten zeigen. Läuft nur zusammen mit Anonymize (bei Anonymize automatisch aktiv).",
-      "uninstallModules": "Kommagetrennte technische Modulnamen, die vor den Bereinigungsschritten deinstalliert werden."
-    }
+      "uninstallModules": "Kommagetrennte technische Modulnamen, die vor den Bereinigungsschritten deinstalliert werden.",
+      "checkSpace": "Prüft vor dem Entpacken, ob genug Platz frei ist. Abschalten nur, wenn die Prüfung fälschlich blockiert.",
+      "recomputeNeedsAnonymize": "Wirkt nur zusammen mit „Anonymisieren“ — die CLI überspringt den Schritt sonst."
+    },
+    "checkSpace": "Freien Speicherplatz prüfen"
   },
   "docker": {
     "title": "Docker / Container",

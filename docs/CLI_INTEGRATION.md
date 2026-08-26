@@ -554,20 +554,31 @@ odoodev db restore 18 -n v18_restored -z ~/Downloads/backup.zip \
 
 | GUI Checkbox/Field | CLI Flag | Default | Notes |
 |--------------------|----------|---------|-------|
-| "Drop existing first" | `--drop` | off | |
-| "—sanitize (all)" | individual flags instead | — | GUI uses individual flags for better control |
+| "Drop existing first" | `--drop` / `--no-drop` | **on** | ⚠ CLI default is *drop* — always sent explicitly, never omitted |
+| "Sanitize (all)" | individual flags instead | — | Pure UI toggle-all; derived from the five children so it cannot show a stale state |
 | "Deactivate cron" | `--deactivate-cron` | off | |
 | "Neutralize" | `--neutralize` | off | |
 | "Anonymize" | `--anonymize` | off | |
 | "Delete chatter & attachments" | `--wipe` | off | ⚠ Shows warning text (since odoodev 0.62.0 a real DELETE incl. filestore files) |
-| "Purge master data" | `--purge-master-data` | off | ⚠ Shows warning text |
-| "No purge master data" | `--no-purge-master-data` | — | Override when sanitize is on but this sub is off |
+| "Purge master data" | `--purge-master-data` | off | ⚠ Shows warning text; needs a superuser DB role |
 | "Anonymize users" | `--anonymize-users` | off | Separate from --sanitize |
 | Dev password | `--user-password TEXT` | "ownerp" | Only with --anonymize-users |
 | "Purge transactions" | `--purge-transactions` | off | Separate from --sanitize |
-| Modules to uninstall | `--uninstall-modules TEXT` | — | |
-| "Recompute" | `--recompute` | off | Auto-on with --anonymize |
-| Skip confirmation | `-y` | always on | GUI IS the confirmation |
+| Modules to uninstall | `--uninstall-modules TEXT` | — | Omitting it prompts interactively unless `-y` is set |
+| "Recompute" | `--recompute` / `--no-recompute` | **= anonymize** | ⚠ CLI default follows `--anonymize` — always sent explicitly while anonymize is on, omitted while it is off (the CLI skips the step then anyway); the checkbox is disabled without anonymize |
+| "Check disk space" | `--check-space` / `--no-check-space` | on | Only `--no-check-space` is ever sent |
+| Backup file handling | `--keep-backup` | always on | Never auto-delete the user's original |
+| Skip confirmation | `-y` | always on | GUI IS the confirmation — also suppresses the uninstall-modules prompt |
+
+**The two flag pairs whose default is not "off" must always be sent explicitly.**
+Omitting `--drop/--no-drop` overwrites the target database; omitting
+`--recompute/--no-recompute` recomputes whenever anonymize runs. In both cases an
+unticked checkbox would have no effect at all. `db.py` resolves the latter as
+`recompute if recompute is not None else anonymize`, and runs the step only when
+`recompute and anonymize`.
+
+`--no-purge-master-data` is **not** used: it only matters as an escape from
+`--sanitize`, which the GUI never sends.
 
 **Important:** The GUI should pass **individual flags** instead of `--sanitize` for
 fine-grained control. Example:
@@ -593,10 +604,25 @@ odoodev db restore 18 -n new -z backup.zip --dry-run -y
 ```
 → Validates backup file, target-DB collision, and disk space, then lists the
 planned post-restore steps. Nothing is dropped, created, extracted, or restored.
-Exit 0 = restore would proceed, exit 1 = it would fail (last line names the
-reason). On older CLIs the flag does not exist — Click then fails with
-`Error: No such option '--dry-run'` on stderr (surfaced via the stderr
-fallback in `restore_db`).
+Exit 0 = restore would proceed, exit 1 = it would fail. On older CLIs the flag
+does not exist — Click then fails with `Error: No such option '--dry-run'` on
+stderr, which the error selection below surfaces.
+
+The report is the point, so `restore_db` returns every line in `RestoreResult.output`
+and the dialog renders it verbatim. A real failed dry run against v18:
+
+```
+stdout: [INFO] Database 'probe' would be created
+        [INFO] Filestore destination: /Users/x/odoo-share/v18/filestore/probe
+        [INFO] Post-restore steps: anonymize, wipe
+stderr: [ERROR] Backup file not found: /tmp/missing.zip
+        [ERROR] Dry run failed — nothing was changed
+```
+
+**Error selection.** Note how the streams interleave: taking "the last line" would
+report `[INFO] Post-restore steps: …` as the failure reason, and the last stderr
+line is only a generic trailer. `pick_failure_reason()` therefore prefers the
+first *specific* `[ERROR]` line, then any error line, then the tail.
 
 **Output:** Text progress messages (Rich format), streamed line-by-line:
 ```
@@ -608,7 +634,10 @@ fallback in `restore_db`).
 [OK] Database 'v18_restored' restored successfully
 ```
 
-**Parsing:** Stream stdout lines as `restore-progress` events. Check exit code.
+**Parsing:** Stream **both** stdout and stderr as `restore-progress` events and
+collect them into one buffer in emission order (the CLI's `print_info` writes to
+stdout, `print_error` to stderr — neither stream alone tells the whole story).
+Check the exit code.
 
 ---
 

@@ -151,12 +151,13 @@ pnpm test                 # Frontend tests (vitest, once added)
 - **odoodev CLI:** `/Users/picard/gitbase/PyPi-Projects/odoo-dev` (Python, PyPI package `odoodev-equitania`)
 - **Agent Capability Card:** `usage/AGENT.md` in the odoodev repo — documents every CLI command and flag
 
-## Current Project Status (Stand 10. Juli 2026)
+## Current Project Status (Stand 26. August 2026, v1.6.3)
 
-### Implemented — Phase 0 + Phase 1 MVP
+### Implemented — Phase 0 + Phase 1 + Phase 2
 
 **Rust-Backend** (fertig):
-- `odoodev.rs`: subprocess wrapper (JSON/text/streaming/spawn), PATH augmentation
+- `odoodev.rs`: subprocess wrapper (JSON/text/streaming/spawn); `augment_path()` prepares
+  the whole child environment — PATH augmentation plus `COLUMNS`/`NO_COLOR`/null stdin
 - `log_parser.rs`: ported Odoo log regex parser with unit tests
 - `server_manager.rs`: parallel server process management (HashMap)
 - `installer.rs`: uv install + odoodev install/upgrade
@@ -164,21 +165,34 @@ pnpm test                 # Frontend tests (vitest, once added)
 - `docker_check.rs`: runtime detection (config → docker → apple), `container ls --format json` parsing
 - `config.rs`: odoodev YAML config reader (active_versions, container_runtime)
 - `models.rs`: serde structs for all CLI JSON responses
-- `commands/`: 6 command modules (versions, server, database, docker, system, self_update)
+- `commands/`: 14 command modules (versions, server, database, docker, doctor, editor,
+  env, init, migrate, playbook, repos, venv, system, self_update)
 
 **React-Frontend** (fertig):
-- App shell: Sidebar (4 views), Header (version + update badge), InstallDialog, ToastContainer
+- App shell: Sidebar, Header (version + update badge), InstallDialog, ToastContainer
 - Dashboard: 4 VersionCards mit StatusBadges, Polling, Docker Up/Down
-- Server: alle 4 Version-Tabs sichtbar, ServerConfig (5 Modi + Advanced), LogViewer mit Virtual Scrolling
-- Database: Liste, Backup (3 Formate), Restore (3-Step Wizard + Dry Run), Drop/Copy/Rename, Bulk-Drop
+- Server: alle 4 Version-Tabs sichtbar, ServerConfig (5 Modi + Advanced), Presets, LogViewer
+  mit Virtual Scrolling
+- Database: Liste, Tags, Backup (3 Formate), Restore (3-Step Wizard + Dry Run mit vollem
+  CLI-Report), Drop/Copy/Rename, Bulk-Drop
+- Docker/Bench, Venv, Repos, Env, Init, Migrate, Doctor, Playbook-Runner + Wizard,
+  Monaco-Editor für Playbooks/Configs
 - Settings: Version-Info, Update, Reinstall, About
+- i18n (de/en) über i18next — Sprachdateien vollständig, Komponenten-Abdeckung ~50 %
 - Zustand store mit platform/runtime detection + toast notification system
-- 11 shadcn/ui primitives
 
 ### Open — Next Steps
 
-1. **Phase 1.9:** Manuelle Tests, Edge-Case-Handling, Loading/Empty-States verfeinern
-2. **Phase 2:** Docker Panel, Venv Panel, Repos Panel, Playbook Runner, Init Wizard, Migrate, Doctor, i18n
+1. **i18n fertigstellen:** ~27 der 54 Komponenten tragen noch harte englische Strings
+   (u. a. `Dashboard.tsx`, `VersionCard.tsx`, `LogViewer.tsx`, die Docker- und Venv-Panels).
+2. **Testabdeckung ausbauen:** vitest ist eingerichtet (`pnpm test`), bisher nur
+   `restoreArgs.test.ts`. Nächste Kandidaten: `buildAnswers.ts`, `dotPath.ts`, `errors.ts`.
+3. **TypeScript 7:** neuer nativer Compiler, eigener Verifikationslauf — nicht huckepack
+   mit Patch-Updates.
+4. **Doctor-Panel:** der PyPI-Freshness-Check erscheint nur in Richs Zusammenfassungstabelle,
+   nie als `[OK]`/`[WARN]`-Zeile — `doctor.rs::parse_detail_line` sieht ihn deshalb nicht.
+5. **CLI-Feature-Lücken:** `db cleanup`, `db users`, `db drop --multi/--all/--filter`,
+   `export modules`, `venv setup --python-version`, `docker logs --follow`.
 
 ### Key Architecture Decisions
 
@@ -197,5 +211,7 @@ pnpm install                    # frontend deps
 ~/.cargo/bin/cargo-tauri build # production build
 pnpm run typecheck              # tsc --noEmit
 pnpm run lint                   # eslint
+pnpm test                       # vitest run
 cargo check                     # Rust compile check (src-tauri/)
+cargo test                      # Rust unit tests (src-tauri/)
 ```

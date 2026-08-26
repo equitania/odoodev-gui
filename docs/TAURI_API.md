@@ -368,53 +368,78 @@ Emits events: `backup-progress` (stdout lines during backup)
 #### `restore_db`
 Restore a database from backup.
 
+All fields are passed inside a single `args` object (Tauri deserializes it into
+`RestoreArgs`), not as top-level parameters:
+
 ```typescript
-invoke('restore_db', {
+invoke('restore_db', { args: {
   version: "18",
   name: "v18_restored",
   backup_file: "~/Downloads/backup.zip",
-  drop?: boolean,                 // --drop
+  drop?: boolean,                 // --drop / --no-drop  (ALWAYS sent, see below)
   deactivate_cron?: boolean,      // --deactivate-cron
   neutralize?: boolean,           // --neutralize
   anonymize?: boolean,            // --anonymize
   wipe?: boolean,                 // --wipe (deletes chatter + attachments + filestore files)
   purge_master_data?: boolean,    // --purge-master-data
-  no_purge_master_data?: boolean, // --no-purge-master-data (override sanitize)
   purge_transactions?: boolean,   // --purge-transactions
   anonymize_users?: boolean,      // --anonymize-users
   user_password?: string,         // --user-password (default: "ownerp")
   uninstall_modules?: string,     // --uninstall-modules "mod1,mod2"
-  recompute?: boolean,            // --recompute
+  recompute?: boolean,            // --recompute / --no-recompute (ALWAYS sent, see below)
   keep_temp?: boolean,            // --keep-temp
-  check_space?: boolean,           // --check-space (default: true)
-  delete_backup?: boolean,        // --delete-backup
-  dry_run?: boolean,               // --dry-run
-}) → RestoreResult
+  check_space?: boolean,          // --check-space / --no-check-space (CLI default: on)
+  delete_backup?: boolean,        // --delete-backup (else --keep-backup)
+  dry_run?: boolean,              // --dry-run
+}}) → RestoreResult
 ```
 
-CLI mapping (example with sanitize):
+CLI mapping (example with every sanitize step):
 ```bash
 odoodev db restore 18 -n v18_restored -z ~/Downloads/backup.zip \
   --drop --deactivate-cron --neutralize --anonymize --wipe --purge-master-data \
-  --uninstall-modules mod1,mod2 --recompute -y
+  --uninstall-modules mod1,mod2 --recompute --keep-backup -y
 ```
 
-GUI always passes `-y` (the GUI dialog IS the confirmation).
-
 Flag construction:
-- Individual sanitize flags (not `--sanitize`) for fine-grained control
-- If user selects "sanitize all" in GUI → set all 5 sub-flags individually
-- `no_purge_master_data` → `--no-purge-master-data` (override when sanitize on but purge off)
-- Always pass `-y`
-- `--keep-backup` by default (never auto-delete original from GUI)
+- **`--sanitize` is never sent.** It would pull in `--purge-master-data`, which
+  deletes customers, vendors and CRM/HR data. The dialog's "sanitize" switch is a
+  toggle-all over the five children, each sent individually.
+- **Two flag pairs are always explicit**, because omitting them is a decision
+  rather than a neutral act:
+  - `--drop/--no-drop` — the CLI defaults to *drop*, so an omitted flag would
+    silently overwrite the target database.
+  - `--recompute/--no-recompute` — the CLI defaults it to the value of
+    `--anonymize`, so an omitted flag would recompute whenever anonymize runs.
+    Only meaningful together with anonymize; omitted entirely when anonymize is
+    off, where the CLI skips the step regardless.
+- The remaining options are opt-in (CLI default off), so the positive flag alone
+  is enough.
+- Always `-y` (the GUI dialog IS the confirmation) — this also suppresses the
+  CLI's interactive "modules to uninstall" prompt, which would otherwise appear
+  whenever a sanitize step is enabled and `--uninstall-modules` was omitted.
+- Always `--keep-backup` unless `delete_backup` is set — never auto-delete the
+  user's original.
 
 ```typescript
 interface RestoreResult {
   success: boolean;
   error?: string;
+  output: string[];   // every stdout/stderr line, in emission order
 }
 ```
-Emits events: `restore-progress` (stdout lines during restore)
+
+`output` carries the run's full report. It matters most for `dry_run`, whose
+entire value is its verdict: backup file and size, whether the target DB would be
+dropped or created, the filestore destination, free disk space, and the list of
+post-restore steps that would run. The dialog renders it verbatim.
+
+`error` is chosen by `pick_failure_reason()`, not taken from the last line: the
+CLI prints progress to stdout and errors to stderr and ends a failed run with a
+generic `[ERROR] … — nothing was changed`, so the first *specific* `[ERROR]` line
+is the one that actually explains the failure.
+
+Emits events: `restore-progress` (stdout **and** stderr lines during the run)
 
 #### `drop_db`
 Drop a database.
