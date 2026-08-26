@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "../ui/card";
+import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { GitBranch, GitPullRequest, Loader2, Pencil, Settings2, FolderOpen } from "lucide-react";
@@ -29,6 +30,7 @@ export function ReposCard({
   reposYamlPath,
   onEditReposYaml,
 }: ReposCardProps) {
+  const { t } = useTranslation();
   return (
     <Card className={`hover:shadow-md ${!active ? "opacity-50" : ""}`}>
       <CardHeader>
@@ -41,7 +43,7 @@ export function ReposCard({
           {reposYamlPath && onEditReposYaml ? (
             <button
               onClick={() => onEditReposYaml(reposYamlPath)}
-              title={`Edit ${reposYamlPath}`}
+              title={t("common.editFile", { path: reposYamlPath })}
               className="cursor-pointer"
             >
               <Badge variant="outline" className="hover:border-primary/60 hover:text-foreground">
@@ -61,7 +63,7 @@ export function ReposCard({
         <div className="text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <FolderOpen className="h-3 w-3" />
-            Base: <span className="font-mono">{info.base}</span>
+            {t("repos.baseDir")}: <span className="font-mono">{info.base}</span>
           </div>
         </div>
 
@@ -77,7 +79,7 @@ export function ReposCard({
             ) : (
               <GitBranch className="h-3.5 w-3.5" />
             )}
-            Repos
+            {t("repos.reposAction")}
           </Button>
           <Button
             size="sm"
@@ -90,7 +92,7 @@ export function ReposCard({
             ) : (
               <GitPullRequest className="h-3.5 w-3.5" />
             )}
-            Pull
+            {t("repos.pullAction")}
           </Button>
           <Button
             size="sm"
@@ -99,7 +101,7 @@ export function ReposCard({
             disabled={busy || !active}
           >
             <Settings2 className="h-3.5 w-3.5" />
-            Config Only
+            {t("repos.configOnly")}
           </Button>
         </div>
       </CardContent>

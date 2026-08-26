@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "../ui/button";
 import { copyToClipboard } from "../../lib/clipboard";
@@ -16,6 +17,7 @@ export function DockerLogViewer({
   onClear: () => void;
   onStop: () => void;
 }) {
+  const { t } = useTranslation();
   const [autoScroll, setAutoScroll] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevLengthRef = useRef(lines.length);
@@ -44,9 +46,9 @@ export function DockerLogViewer({
   const copyAll = async () => {
     try {
       await copyToClipboard(lines.join("\n"));
-      toastSuccess(`${lines.length} log line(s) copied`);
+      toastSuccess(t("server.linesCopied", { count: lines.length }));
     } catch (e) {
-      toastError("Copy failed", String(e));
+      toastError(t("common.copyFailed"), String(e));
     }
   };
 
@@ -60,21 +62,21 @@ export function DockerLogViewer({
             <Circle className="h-2 w-2 fill-muted-foreground text-muted-foreground" />
           )}
           <span className="text-xs text-muted-foreground">
-            {listening ? "Streaming..." : "Stopped"}
+            {listening ? t("docker.streaming") : t("common.stopped")}
           </span>
-          <span className="text-xs text-muted-foreground">{lines.length} lines</span>
+          <span className="text-xs text-muted-foreground">{lines.length} {t("server.lines")}</span>
         </div>
         <div className="flex items-center gap-1">
           {listening && (
-            <Button size="sm" variant="ghost" onClick={onStop} title="Stop">
+            <Button size="sm" variant="ghost" onClick={onStop} title={t("common.stop")}>
               <Loader2 className="h-3.5 w-3.5" />
-              Stop
+              {t("common.stop")}
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={onClear} title="Clear">
+          <Button size="sm" variant="ghost" onClick={onClear} title={t("server.clear")}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={copyAll} title="Copy all">
+          <Button size="sm" variant="ghost" onClick={copyAll} title={t("docker.copyAll")}>
             <Copy className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -87,7 +89,7 @@ export function DockerLogViewer({
       >
         {lines.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No log entries
+            {t("docker.noLogEntries")}
           </div>
         ) : (
           <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}>
@@ -120,7 +122,7 @@ export function DockerLogViewer({
             onChange={(e) => setAutoScroll(e.target.checked)}
             className="h-3 w-3"
           />
-          Auto-scroll
+          {t("server.autoScroll")}
         </label>
       </div>
     </div>

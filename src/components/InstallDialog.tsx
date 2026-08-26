@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAppStore } from "../store/appStore";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 
 export function InstallDialog() {
+  const { t } = useTranslation();
   const odoodevInfo = useAppStore((s) => s.odoodevInfo);
   const uvInfo = useAppStore((s) => s.uvInfo);
   const firstRunChecked = useAppStore((s) => s.firstRunChecked);
@@ -45,18 +47,18 @@ export function InstallDialog() {
     <Dialog open onClose={() => {}} className="max-w-md">
       <DialogHeader>
         <DialogTitle>
-          {needsUv ? "uv is not installed" : "odoodev is not installed"}
+          {t(needsUv ? "install.uvNotInstalled" : "install.odoodevNotInstalled")}
         </DialogTitle>
         <DialogDescription>
-          {needsUv
-            ? "uv is the Python package manager needed to install and update odoodev."
-            : "odoodev is the CLI tool that this GUI controls. It will be installed via uv."}
+          {t(needsUv ? "install.uvNotInstalledText" : "install.odoodevNotInstalledText")}
         </DialogDescription>
       </DialogHeader>
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
       <DialogFooter>
         <Button onClick={handleInstall} disabled={installing}>
-          {installing ? "Installing..." : needsUv ? "Install uv now" : "Install now"}
+          {installing
+            ? t("install.installing")
+            : t(needsUv ? "install.installUvNow" : "install.installNow")}
         </Button>
       </DialogFooter>
     </Dialog>

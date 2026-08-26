@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, CircleCheckBig, Terminal } from "lucide-react";
 import { Button } from "../ui/button";
 
@@ -10,6 +11,7 @@ interface SetupProgressProps {
 }
 
 export function SetupProgress({ version, lines, running, onClose }: SetupProgressProps) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,9 +25,7 @@ export function SetupProgress({ version, lines, running, onClose }: SetupProgres
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Terminal className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold">
-            venv setup v{version}
-          </span>
+          <span className="text-sm font-semibold">{t("venv.setupProgress", { version })}</span>
           {running ? (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
@@ -34,7 +34,7 @@ export function SetupProgress({ version, lines, running, onClose }: SetupProgres
         </div>
         {!running && (
           <Button size="sm" variant="ghost" onClick={onClose}>
-            Close
+            {t("common.close")}
           </Button>
         )}
       </div>
@@ -43,7 +43,7 @@ export function SetupProgress({ version, lines, running, onClose }: SetupProgres
         className="max-h-64 overflow-auto rounded-md bg-black/90 p-3 font-mono text-xs leading-relaxed text-green-400"
       >
         {lines.length === 0 ? (
-          <span className="text-muted-foreground">Waiting for output...</span>
+          <span className="text-muted-foreground">{t("common.waitingForOutput")}</span>
         ) : (
           lines.map((line, i) => (
             <div key={i} className="whitespace-pre-wrap break-all">

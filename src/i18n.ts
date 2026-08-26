@@ -6,9 +6,15 @@ import de from "./locales/de.json";
 const STORAGE_KEY = "odoodev-gui-language";
 
 function detectLanguage(): string {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "en" || stored === "de") {
-    return stored;
+  // This runs before the first render — a throwing storage accessor (private
+  // mode, blocked site data) must not take the whole app down with it.
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "en" || stored === "de") {
+      return stored;
+    }
+  } catch {
+    // fall through to the browser language
   }
   const nav = navigator.language.toLowerCase();
   if (nav.startsWith("de")) {
@@ -18,7 +24,11 @@ function detectLanguage(): string {
 }
 
 export function setLanguage(lang: string) {
-  localStorage.setItem(STORAGE_KEY, lang);
+  try {
+    localStorage.setItem(STORAGE_KEY, lang);
+  } catch {
+    // The choice still applies to this session, it just won't be remembered.
+  }
   i18n.changeLanguage(lang);
 }
 

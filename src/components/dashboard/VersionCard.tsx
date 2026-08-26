@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { StatusBadge } from "./StatusBadge";
@@ -40,6 +41,7 @@ export function VersionCard({
   fileGroup: VersionFileGroup | null;
   onNavigate: (view: ViewKey, version?: string, editorPath?: string) => void;
 }) {
+  const { t } = useTranslation();
   const [venvStatus, setVenvStatus] = useState<VenvStatus | null>(null);
   const [dockerStatus, setDockerStatus] = useState<DockerStatus | null>(null);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
@@ -86,30 +88,31 @@ export function VersionCard({
     (e) => e.exists && (e.role !== "compose" || dockerRuntime === "docker"),
   );
 
+  const apple = dockerRuntime === "apple";
   const dockerBadge = dockerRunning
-    ? { status: "running" as const, label: dockerRuntime === "apple" ? "Container running" : "Docker running" }
+    ? { status: "running" as const, label: t(apple ? "dashboard.containerRunning" : "dashboard.dockerRunning") }
     : dockerRuntime === "none"
-      ? { status: "neutral" as const, label: "No runtime" }
-      : { status: "stopped" as const, label: dockerRuntime === "apple" ? "Container stopped" : "Docker stopped" };
+      ? { status: "neutral" as const, label: t("common.noRuntime") }
+      : { status: "stopped" as const, label: t(apple ? "dashboard.containerStopped" : "dashboard.dockerStopped") };
 
   const venvBadge = !venvStatus?.exists
-    ? { status: "error" as const, label: "Venv missing" }
+    ? { status: "error" as const, label: t("dashboard.venvMissing") }
     : venvStatus.requirements_current === false
-      ? { status: "warn" as const, label: "Venv stale" }
+      ? { status: "warn" as const, label: t("dashboard.venvStale") }
       : venvStatus.requirements_current === true
-        ? { status: "ok" as const, label: "Venv current" }
-        : { status: "neutral" as const, label: "Venv unknown" };
+        ? { status: "ok" as const, label: t("dashboard.venvReady") }
+        : { status: "neutral" as const, label: t("dashboard.venvUnknown") };
 
   const pythonBadge = venvStatus?.python_version
     ? {
         status: venvStatus.python_matches === false ? ("error" as const) : ("ok" as const),
         label: `Python ${venvStatus.python_version}`,
       }
-    : { status: "neutral" as const, label: "Python —" };
+    : { status: "neutral" as const, label: t("dashboard.pythonNone") };
 
   const odooBadge = odooRunning
     ? { status: "running" as const, label: `Odoo :${ports.odoo}` }
-    : { status: "stopped" as const, label: "Odoo stopped" };
+    : { status: "stopped" as const, label: t("dashboard.odooStopped") };
 
   const odooUrl = odooRunning
     ? `http://localhost:${serverStatus?.port ?? ports.odoo}`
@@ -117,16 +120,16 @@ export function VersionCard({
 
   const handleDockerUp = async () => {
     setDockerBusy(true);
-    const tid = toastLoading(`Starting PostgreSQL for v${version}...`);
+    const tid = toastLoading(t("toast.startingPostgresql", { version }));
     try {
       const result = await invokeCmd<{ success: boolean; error: string | null }>("docker_up", { version, runtime: dockerStatus?.runtime });
       if (result.success) {
-        toastUpdate(tid, "success", `PostgreSQL started for v${version}`);
+        toastUpdate(tid, "success", t("toast.postgresqlStarted", { version }));
       } else {
-        toastUpdate(tid, "error", `Failed to start PostgreSQL`, result.error ?? "");
+        toastUpdate(tid, "error", t("toast.postgresqlStartFailed"), result.error ?? "");
       }
     } catch (e) {
-      toastUpdate(tid, "error", `Failed to start PostgreSQL`, String(e));
+      toastUpdate(tid, "error", t("toast.postgresqlStartFailed"), String(e));
     } finally {
       setDockerBusy(false);
     }
@@ -134,16 +137,16 @@ export function VersionCard({
 
   const handleDockerDown = async () => {
     setDockerBusy(true);
-    const tid = toastLoading(`Stopping PostgreSQL for v${version}...`);
+    const tid = toastLoading(t("toast.stoppingPostgresql", { version }));
     try {
       const result = await invokeCmd<{ success: boolean; error: string | null }>("docker_down", { version, runtime: dockerStatus?.runtime });
       if (result.success) {
-        toastUpdate(tid, "success", `PostgreSQL stopped for v${version}`);
+        toastUpdate(tid, "success", t("toast.postgresqlStopped", { version }));
       } else {
-        toastUpdate(tid, "error", `Failed to stop PostgreSQL`, result.error ?? "");
+        toastUpdate(tid, "error", t("toast.postgresqlStopFailed"), result.error ?? "");
       }
     } catch (e) {
-      toastUpdate(tid, "error", `Failed to stop PostgreSQL`, String(e));
+      toastUpdate(tid, "error", t("toast.postgresqlStopFailed"), String(e));
     } finally {
       setDockerBusy(false);
     }
@@ -156,7 +159,7 @@ export function VersionCard({
           <div className={`flex items-center gap-2 rounded-md border px-3 py-1 ${versionColor(version)} ${versionBg(version)}`}>
             <span className="text-xl font-bold">v{version}</span>
           </div>
-          {!active && <span className="text-xs text-muted-foreground">Not in active versions</span>}
+          {!active && <span className="text-xs text-muted-foreground">{t("dashboard.notInActiveVersions")}</span>}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -168,15 +171,15 @@ export function VersionCard({
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <div>DB: {ports.db} | Odoo: {ports.odoo} | Mailpit: {ports.mailpit}</div>
+          <div>{t("dashboard.ports", { db: ports.db, odoo: ports.odoo, mailpit: ports.mailpit })}</div>
           {odooUrl && (
             <button
               onClick={() =>
                 invokeCmd("open_external", { url: odooUrl }).catch(
-                  reportError("Could not open Odoo in browser"),
+                  reportError(t("dashboard.openOdooFailed")),
                 )
               }
-              title="Open Odoo in browser"
+              title={t("dashboard.openOdoo")}
               className="inline-flex items-center gap-1 text-primary hover:underline"
             >
               {odooUrl}
@@ -193,10 +196,16 @@ export function VersionCard({
             variant="default"
             disabled={!active || odooRunning}
             onClick={() => onNavigate("server", version)}
-            title={odooRunning ? "Server already running" : !active ? "Version not active" : "Start server"}
+            title={
+              odooRunning
+                ? t("dashboard.serverAlreadyRunning")
+                : !active
+                  ? t("dashboard.versionNotActive")
+                  : t("dashboard.startServer")
+            }
           >
             <Rocket className="h-3.5 w-3.5" />
-            Start Server
+            {t("dashboard.startServer")}
           </Button>
           <Button
             size="sm"
@@ -204,19 +213,19 @@ export function VersionCard({
             onClick={() => onNavigate("database", version)}
           >
             <DbIcon className="h-3.5 w-3.5" />
-            Databases
+            {t("dashboard.databases")}
           </Button>
           {dockerRunning ? (
-            <Button size="sm" variant="outline" onClick={handleDockerDown} disabled={!active || dockerBusy} title="Stop PostgreSQL container">
+            <Button size="sm" variant="outline" onClick={handleDockerDown} disabled={!active || dockerBusy} title={t("dashboard.stopPgTitle")}>
               {dockerBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDown className="h-3.5 w-3.5" />}
               <HardDrive className="h-3.5 w-3.5" />
-              {dockerRuntime === "apple" ? "Stop PG" : "PG Down"}
+              {t("dashboard.stopPg")}
             </Button>
           ) : (
-            <Button size="sm" variant="outline" onClick={handleDockerUp} disabled={!active || dockerBusy} title="Start PostgreSQL container">
+            <Button size="sm" variant="outline" onClick={handleDockerUp} disabled={!active || dockerBusy} title={t("dashboard.startPgTitle")}>
               {dockerBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5" />}
               <HardDrive className="h-3.5 w-3.5" />
-              {dockerRuntime === "apple" ? "Start PG" : "PG Up"}
+              {t("dashboard.startPg")}
             </Button>
           )}
           <div className="relative">
@@ -225,10 +234,10 @@ export function VersionCard({
               variant="outline"
               onClick={() => setFilesOpen((o) => !o)}
               disabled={editableEntries.length === 0}
-              title="Edit config files"
+              title={t("dashboard.editConfigFiles")}
             >
               <FileCog className="h-3.5 w-3.5" />
-              Config
+              {t("dashboard.config")}
               <ChevronDown className="h-3 w-3" />
             </Button>
             {filesOpen && (

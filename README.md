@@ -115,8 +115,9 @@ maskierte Secrets, automatische Validierung), Init-Wizard, Migrate-Panel
 Config apple sagt), Multi-User-Terminal-Server-Support (Container-Erkennung, Ports und
 URLs folgen den `.env`-Ports des Anwenders via `effective_ports`, CLI ≥ 0.58.0),
 Auto-Install-Dialog bei fehlendem uv/odoodev, Update-Badge bei neuer
-odoodev-Version (PyPI-Check), Toast-Notifications, volle DE/EN-i18n mit Sprachumschaltung
-und Persistenz.
+odoodev-Version (PyPI-Check), Toast-Notifications, vollständige DE/EN-Oberfläche
+(692 Schlüssel je Sprache, jede textführende Komponente verdrahtet) mit
+Sprachumschaltung und Persistenz — durch Tests abgesichert.
 
 ### Erste Schritte (Entwicklung)
 
@@ -248,8 +249,9 @@ config `container_runtime: apple`, `container ls --format json`, Docker is never
 when config says apple), multi-user terminal-server support (container detection, ports
 and URLs follow the user's `.env` ports via `effective_ports`, CLI ≥ 0.58.0),
 auto-install dialog for missing uv/odoodev, update badge for new
-odoodev version (PyPI check), toast notifications, full DE/EN i18n with language switch and
-persistence.
+odoodev version (PyPI check), toast notifications, a fully translated DE/EN interface
+(692 keys per language, every text-carrying component wired) with language switch
+and persistence — covered by tests.
 
 ### Getting Started (Development)
 

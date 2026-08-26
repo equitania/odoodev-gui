@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "../ui/card";
+import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
@@ -36,6 +37,7 @@ export function VenvCard({
   onRemove,
   onRefresh,
 }: VenvCardProps) {
+  const { t } = useTranslation();
   const exists = status?.exists ?? false;
   const pythonMatches = status?.python_matches;
   const reqCurrent = status?.requirements_current;
@@ -59,12 +61,12 @@ export function VenvCard({
                 ) : (
                   <CircleCheckBig className="h-3 w-3" />
                 )}
-                {isStale ? "Stale" : pythonMismatch ? "Mismatch" : "Ready"}
+                {isStale ? t("venv.stale") : pythonMismatch ? t("venv.mismatch") : t("venv.ready")}
               </Badge>
             ) : (
               <Badge variant="neutral">
                 <CircleX className="h-3 w-3" />
-                Missing
+                {t("common.missing")}
               </Badge>
             )}
           </div>
@@ -82,27 +84,27 @@ export function VenvCard({
             </Badge>
           )}
           {exists && reqCurrent === true && (
-            <Badge variant="success">Requirements current</Badge>
+            <Badge variant="success">{t("venv.requirementsCurrent")}</Badge>
           )}
           {exists && reqCurrent === false && (
-            <Badge variant="warning">Requirements stale</Badge>
+            <Badge variant="warning">{t("venv.requirementsStale")}</Badge>
           )}
           {exists && reqCurrent === null && (
-            <Badge variant="neutral">No requirements.txt</Badge>
+            <Badge variant="neutral">{t("venv.noRequirements")}</Badge>
           )}
           {status?.is_symlink && (
-            <Badge variant="outline">symlink</Badge>
+            <Badge variant="outline">{t("venv.symlink")}</Badge>
           )}
         </div>
 
         <div className="text-xs text-muted-foreground space-y-0.5">
           {status?.venv_dir && (
             <div>
-              Path: <span className="font-mono">{status.venv_dir}</span>
+              {t("venv.venvPath")}: <span className="font-mono">{status.venv_dir}</span>
             </div>
           )}
           <div>
-            Expected Python: <span className="font-mono">{info.python}</span>
+            {t("venv.pythonExpected")}: <span className="font-mono">{info.python}</span>
           </div>
         </div>
 
@@ -121,7 +123,7 @@ export function VenvCard({
               ) : (
                 <Package className="h-3.5 w-3.5" />
               )}
-              {exists ? "Recreate" : "Setup"}
+              {t(exists ? "venv.recreate" : "common.setup")}
             </Button>
           ) : (
             <Button
@@ -135,7 +137,7 @@ export function VenvCard({
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              Reinstall
+              {t("common.reinstall")}
             </Button>
           )}
           <Button
@@ -145,7 +147,7 @@ export function VenvCard({
             disabled={busy || setupRunning}
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Check
+            {t("common.check")}
           </Button>
           {exists && (
             <Button
@@ -156,7 +158,7 @@ export function VenvCard({
               className="text-red-500 hover:text-red-600"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Remove
+              {t("common.remove")}
             </Button>
           )}
         </div>

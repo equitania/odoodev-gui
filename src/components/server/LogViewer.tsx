@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -18,6 +19,7 @@ export function LogViewer({
   entries: OdooLogEntry[];
   onClear: () => void;
 }) {
+  const { t } = useTranslation();
   const [enabledLevels, setEnabledLevels] = useState<Set<LogLevel>>(new Set(ALL_LEVELS));
   const [searchTerm, setSearchTerm] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
@@ -72,9 +74,9 @@ export function LogViewer({
     const lines = filtered.map((e) => e.raw);
     try {
       await copyToClipboard(lines.join("\n"));
-      toastSuccess(`${lines.length} log line(s) copied`);
+      toastSuccess(t("server.linesCopied", { count: lines.length }));
     } catch (e) {
-      toastError("Copy failed", String(e));
+      toastError(t("common.copyFailed"), String(e));
     }
   };
 
@@ -91,14 +93,14 @@ export function LogViewer({
       )
       .map((e) => e.raw);
     if (lines.length === 0) {
-      toastSuccess("No warnings or errors to copy");
+      toastSuccess(t("server.noProblemsToCopy"));
       return;
     }
     try {
       await copyToClipboard(lines.join("\n"));
-      toastSuccess(`${lines.length} warning/error line(s) copied`);
+      toastSuccess(t("server.problemsCopied", { count: lines.length }));
     } catch (e) {
-      toastError("Copy failed", String(e));
+      toastError(t("common.copyFailed"), String(e));
     }
   };
 
@@ -109,7 +111,7 @@ export function LogViewer({
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 border-b border-border p-2">
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">Levels:</span>
+          <span className="text-xs text-muted-foreground">{t("server.levels")}</span>
           {ALL_LEVELS.map((level) => (
             <button
               key={level}
@@ -126,16 +128,16 @@ export function LogViewer({
         </div>
         <Input
           type="text"
-          placeholder="Search..."
+          placeholder={t("server.search")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="h-7 w-40 text-xs"
         />
         <div className="flex items-center gap-1">
-          <Button size="sm" variant="ghost" onClick={onClear} title="Clear">
+          <Button size="sm" variant="ghost" onClick={onClear} title={t("server.clear")}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={copyVisible} title="Copy visible">
+          <Button size="sm" variant="ghost" onClick={copyVisible} title={t("server.copyVisible")}>
             <Copy className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -148,7 +150,7 @@ export function LogViewer({
       >
         {filtered.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No log entries
+            {t("server.noLogEntries")}
           </div>
         ) : (
           <div
@@ -182,7 +184,7 @@ export function LogViewer({
           }}
           className="absolute bottom-14 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground shadow-lg"
         >
-          {newLinesCount} new lines <ChevronDown className="inline h-3 w-3" />
+          {t("server.newLines", { count: newLinesCount })} <ChevronDown className="inline h-3 w-3" />
         </button>
       )}
 
@@ -191,14 +193,14 @@ export function LogViewer({
           <Checkbox
             checked={autoScroll}
             onChange={setAutoScroll}
-            label="Auto-scroll"
+            label={t("server.autoScroll")}
           />
         </div>
         <div className="flex items-center gap-3">
-          <span>{entries.length} lines</span>
-          {errorCount > 0 && <span className="text-red-500">{errorCount} errors</span>}
-          {warnCount > 0 && <span className="text-yellow-500">{warnCount} warnings</span>}
-          <Button size="sm" variant="ghost" onClick={copyProblems} title="Copy warnings + errors">
+          <span>{entries.length} {t("server.lines")}</span>
+          {errorCount > 0 && <span className="text-red-500">{errorCount} {t("server.errors")}</span>}
+          {warnCount > 0 && <span className="text-yellow-500">{warnCount} {t("server.warnings")}</span>}
+          <Button size="sm" variant="ghost" onClick={copyProblems} title={t("server.copyWarningsErrors")}>
             <Copy className="h-3 w-3" />
           </Button>
         </div>

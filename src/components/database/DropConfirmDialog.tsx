@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -14,6 +15,7 @@ export function DropConfirmDialog({
   dbName: string;
   onConfirm: () => void;
 }) {
+  const { t } = useTranslation();
   const [confirmText, setConfirmText] = useState("");
 
   const matches = confirmText === dbName;
@@ -21,13 +23,11 @@ export function DropConfirmDialog({
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogHeader>
-        <DialogTitle>Drop database '{dbName}'?</DialogTitle>
-        <DialogDescription>
-          This action cannot be undone. All data will be permanently lost.
-        </DialogDescription>
+        <DialogTitle>{t("database.dropConfirm", { name: dbName })}</DialogTitle>
+        <DialogDescription>{t("database.dropWarning")}</DialogDescription>
       </DialogHeader>
       <div className="space-y-3">
-        <p className="text-sm">Type the database name to confirm:</p>
+        <p className="text-sm">{t("database.typeToConfirm")}</p>
         <Input
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
@@ -35,7 +35,7 @@ export function DropConfirmDialog({
         />
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
         <Button
           variant="destructive"
           disabled={!matches}
@@ -44,7 +44,7 @@ export function DropConfirmDialog({
             setConfirmText("");
           }}
         >
-          Drop
+          {t("database.drop")}
         </Button>
       </DialogFooter>
     </Dialog>

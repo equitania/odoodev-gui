@@ -1,13 +1,15 @@
+import { useTranslation } from "react-i18next";
 import { Apple, Container, CircleAlert, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { ContainerRuntime, RuntimeInfo } from "../../types";
 
 export function RuntimeBanner({ info }: { info: RuntimeInfo | null }) {
+  const { t } = useTranslation();
   if (!info) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-3">
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Detecting runtime...</span>
+        <span className="text-sm text-muted-foreground">{t("docker.detectingRuntime")}</span>
       </div>
     );
   }
@@ -18,8 +20,8 @@ export function RuntimeBanner({ info }: { info: RuntimeInfo | null }) {
   const isNone = runtime === "none";
 
   const configLabel = info.configured
-    ? `configured: ${info.configured}`
-    : "auto-detected";
+    ? t("docker.configuredAs", { runtime: info.configured })
+    : t("docker.autoDetected");
 
   return (
     <div
@@ -37,9 +39,9 @@ export function RuntimeBanner({ info }: { info: RuntimeInfo | null }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">
-              {isApple && "Apple Container"}
-              {isDocker && "Docker"}
-              {isNone && "No runtime"}
+              {isApple && t("docker.appleContainer")}
+              {isDocker && t("docker.dockerEngine")}
+              {isNone && t("docker.noRuntime")}
             </span>
             <span
               className={cn(
@@ -53,9 +55,9 @@ export function RuntimeBanner({ info }: { info: RuntimeInfo | null }) {
             </span>
           </div>
           <div className="text-xs text-muted-foreground">
-            {isApple && "Native macOS Linux containers on Apple Silicon"}
-            {isDocker && "Docker Engine / Docker Desktop"}
-            {isNone && "Neither Docker nor Apple Container found in PATH"}
+            {isApple && t("docker.appleContainerDesc")}
+            {isDocker && t("docker.dockerEngineDesc")}
+            {isNone && t("docker.noRuntimeDesc")}
           </div>
         </div>
       </div>

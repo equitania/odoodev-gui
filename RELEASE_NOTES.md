@@ -1,5 +1,31 @@
 # Release Notes
 
+## Version 1.7.0 (26.08.2026)
+
+### Added
+- **The interface is now fully bilingual.** Previously about half of it was —
+  the language switch left dashboards, log viewers, container cards and most
+  dialogs in English regardless of the setting. All 49 text-carrying components
+  are now wired to the catalog, which grew from 618 to 692 keys per language.
+  (The five remaining components render no text of their own: a badge whose
+  label is a prop, the Monaco wrapper, the CLI step list, a schema form that
+  delegates, and the log line.)
+- Translation catalogs are covered by tests (`src/locales/locales.test.ts`):
+  both languages must hold the same keys, no value may be empty, a key's
+  `{{placeholders}}` must match across languages, and every `t("…")` used in the
+  source must resolve. A guard on the extraction itself keeps the suite from
+  passing vacuously if a refactor breaks it.
+
+### Fixed
+- Five panels imported `useTranslation` and were counted as done, yet still
+  carried hard-coded English: the database table's column headers and row action
+  tooltips, its filter placeholder, and "Waiting for output…" in the env, init
+  and playbook panels.
+- The language detection ran before the first render and read `localStorage`
+  unguarded — a throwing storage accessor (private mode, blocked site data)
+  would have taken the app down at startup. Both read and write are now guarded;
+  a failed write costs the remembered choice, not the session.
+
 ## Version 1.6.3 (26.08.2026)
 
 ### Fixed

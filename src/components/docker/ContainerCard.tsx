@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -37,6 +38,7 @@ export function ContainerCard({
   composePath,
   onEditCompose,
 }: ContainerCardProps) {
+  const { t } = useTranslation();
   const running = dockerStatus?.running ?? false;
   const runtime = dockerStatus?.runtime ?? "none";
 
@@ -60,11 +62,11 @@ export function ContainerCard({
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-1.5">
           {running ? (
-            <Badge variant="success">PostgreSQL running</Badge>
+            <Badge variant="success">{t("docker.postgresqlRunning")}</Badge>
           ) : runtime === "none" ? (
-            <Badge variant="neutral">No runtime</Badge>
+            <Badge variant="neutral">{t("docker.noRuntime")}</Badge>
           ) : (
-            <Badge variant="neutral">PostgreSQL stopped</Badge>
+            <Badge variant="neutral">{t("docker.postgresqlStopped")}</Badge>
           )}
           {container && (
             <>
@@ -78,26 +80,26 @@ export function ContainerCard({
 
         <div className="text-xs text-muted-foreground">
           <div>
-            DB port: <span className="font-mono">{effectivePorts(info).db}</span>
+            {t("docker.dbPort")}: <span className="font-mono">{effectivePorts(info).db}</span>
             {" | "}
             PostgreSQL {info.postgres}
           </div>
           {container && (
             <div className="mt-1 space-y-0.5">
               <div>
-                Container: <span className="font-mono">{container.id}</span>
+                {t("docker.container")}: <span className="font-mono">{container.id}</span>
               </div>
               <div>
-                CPUs: {container.cpus} | RAM: {container.memory_mb} MB
+                {t("docker.cpus")}: {container.cpus} | {t("docker.ram")}: {container.memory_mb} MB
               </div>
               {container.started && (
-                <div>Started: {container.started}</div>
+                <div>{t("docker.started")}: {container.started}</div>
               )}
             </div>
           )}
           {dockerStatus?.container_name && !container && (
             <div className="mt-1">
-              Container: <span className="font-mono">{dockerStatus.container_name}</span>
+              {t("docker.container")}: <span className="font-mono">{dockerStatus.container_name}</span>
             </div>
           )}
         </div>
@@ -106,22 +108,22 @@ export function ContainerCard({
           {running ? (
             <Button size="sm" variant="outline" onClick={onDown} disabled={busy}>
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDown className="h-3.5 w-3.5" />}
-              Stop
+              {t("common.stop")}
             </Button>
           ) : (
             <Button size="sm" variant="default" onClick={onUp} disabled={busy || runtime === "none"}>
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5" />}
-              Start
+              {t("common.start")}
             </Button>
           )}
           <Button size="sm" variant="ghost" onClick={onLogs} disabled={!running}>
             <FileText className="h-3.5 w-3.5" />
-            Logs
+            {t("docker.logs")}
           </Button>
           {benchAvailable && (
             <Button size="sm" variant="ghost" onClick={onBench} disabled={runtime === "none"}>
               <Gauge className="h-3.5 w-3.5" />
-              Bench
+              {t("docker.bench")}
             </Button>
           )}
           {runtime === "docker" && composePath && (
@@ -132,7 +134,7 @@ export function ContainerCard({
               title={composePath}
             >
               <FileCog className="h-3.5 w-3.5" />
-              Compose
+              {t("docker.compose")}
             </Button>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
@@ -23,6 +24,7 @@ export function OperationProgress({
   success: boolean | null;
   finalMessage?: string;
 }) {
+  const { t } = useTranslation();
   const [lines, setLines] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +63,7 @@ export function OperationProgress({
         </div>
       </DialogHeader>
       <div ref={scrollRef} className="h-64 overflow-auto rounded-md border border-border bg-muted/50 p-2">
-        <pre className="whitespace-pre-wrap break-all font-mono text-xs">{lines.join("\n") || "Waiting..."}</pre>
+        <pre className="whitespace-pre-wrap break-all font-mono text-xs">{lines.join("\n") || t("common.waiting")}</pre>
       </div>
       {done && finalMessage && (
         <p className={`text-sm ${success ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
@@ -70,7 +72,7 @@ export function OperationProgress({
       )}
       <DialogFooter>
         <Button onClick={onClose} disabled={!done}>
-          OK
+          {t("common.ok")}
         </Button>
       </DialogFooter>
     </Dialog>

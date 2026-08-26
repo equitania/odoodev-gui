@@ -106,7 +106,7 @@ export function InitPanel() {
         {mode === "init" && (
           <>
             <div className="space-y-2">
-              <Label>Version</Label>
+              <Label>{t("common.version")}</Label>
               <div className="flex gap-2">
                 {versions &&
                   Object.keys(versions)

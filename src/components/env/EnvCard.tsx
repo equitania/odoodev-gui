@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "../ui/card";
+import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
@@ -40,6 +41,7 @@ export function EnvCard({
   onEdit,
   onCheck,
 }: EnvCardProps) {
+  const { t } = useTranslation();
   const exists = checkResult?.exists ?? false;
   const complete = checkResult?.complete ?? false;
 
@@ -57,21 +59,21 @@ export function EnvCard({
               complete ? (
                 <Badge variant="success">
                   <CircleCheckBig className="h-3 w-3" />
-                  Complete
+                  {t("common.complete")}
                 </Badge>
               ) : exists ? (
                 <Badge variant="warning">
                   <TriangleAlert className="h-3 w-3" />
-                  Incomplete
+                  {t("common.incomplete")}
                 </Badge>
               ) : (
                 <Badge variant="neutral">
                   <CircleX className="h-3 w-3" />
-                  Missing
+                  {t("common.missing")}
                 </Badge>
               )
             ) : (
-              <Badge variant="neutral">Unknown</Badge>
+              <Badge variant="neutral">{t("common.unknown")}</Badge>
             )}
           </div>
         </div>
@@ -102,7 +104,7 @@ export function EnvCard({
               ) : (
                 <FileCog className="h-3.5 w-3.5" />
               )}
-              Setup
+              {t("common.setup")}
             </Button>
           ) : (
             <Button
@@ -116,7 +118,7 @@ export function EnvCard({
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              Update
+              {t("common.update")}
             </Button>
           )}
           <Button
@@ -126,7 +128,7 @@ export function EnvCard({
             disabled={busy || setupRunning || !exists}
           >
             <Eye className="h-3.5 w-3.5" />
-            Show
+            {t("common.show")}
           </Button>
           <Button
             size="sm"
@@ -135,7 +137,7 @@ export function EnvCard({
             disabled={busy || setupRunning || !exists || !envDir}
           >
             <Pencil className="h-3.5 w-3.5" />
-            Edit
+            {t("common.edit")}
           </Button>
           <Button
             size="sm"
@@ -144,7 +146,7 @@ export function EnvCard({
             disabled={busy || setupRunning}
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Check
+            {t("common.check")}
           </Button>
         </div>
       </CardContent>

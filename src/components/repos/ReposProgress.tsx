@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, CircleCheckBig, Terminal } from "lucide-react";
 import { Button } from "../ui/button";
 
@@ -11,6 +12,7 @@ interface ReposProgressProps {
 }
 
 export function ReposProgress({ version, command, lines, running, onClose }: ReposProgressProps) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function ReposProgress({ version, command, lines, running, onClose }: Rep
         </div>
         {!running && (
           <Button size="sm" variant="ghost" onClick={onClose}>
-            Close
+            {t("common.close")}
           </Button>
         )}
       </div>
@@ -44,7 +46,7 @@ export function ReposProgress({ version, command, lines, running, onClose }: Rep
         className="max-h-80 overflow-auto rounded-md bg-black/90 p-3 font-mono text-xs leading-relaxed text-green-400"
       >
         {lines.length === 0 ? (
-          <span className="text-muted-foreground">Waiting for output...</span>
+          <span className="text-muted-foreground">{t("common.waitingForOutput")}</span>
         ) : (
           lines.map((line, i) => (
             <div key={i} className="whitespace-pre-wrap break-all">

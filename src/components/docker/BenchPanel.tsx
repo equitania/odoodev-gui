@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "../ui/button";
 import { Gauge, Loader2 } from "lucide-react";
@@ -12,6 +13,7 @@ interface BenchPanelProps {
 }
 
 export function BenchPanel({ lines, running, runtime, onStart }: BenchPanelProps) {
+  const { t } = useTranslation();
   const [duration, setDuration] = useState(10);
   const [scale, setScale] = useState(5);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -33,10 +35,10 @@ export function BenchPanel({ lines, running, runtime, onStart }: BenchPanelProps
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-border p-2">
         <Gauge className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Benchmark</span>
+        <span className="text-sm font-medium">{t("docker.benchmark")}</span>
         <div className="flex items-center gap-2 text-xs">
           <label className="flex items-center gap-1">
-            Duration:
+            {t("docker.duration")}
             <input
               type="number"
               min={1}
@@ -49,7 +51,7 @@ export function BenchPanel({ lines, running, runtime, onStart }: BenchPanelProps
             s
           </label>
           <label className="flex items-center gap-1">
-            Scale:
+            {t("docker.scale")}
             <input
               type="number"
               min={1}
@@ -68,11 +70,11 @@ export function BenchPanel({ lines, running, runtime, onStart }: BenchPanelProps
           onClick={() => onStart(undefined, duration, scale)}
         >
           {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Gauge className="h-3.5 w-3.5" />}
-          {running ? "Running..." : "Run"}
+          {running ? t("docker.benchRunning") : t("docker.run")}
         </Button>
         {runtime === "apple" && (
           <span className="text-xs text-muted-foreground">
-            Both runtimes benchmarked if available
+            {t("docker.benchBothRuntimes")}
           </span>
         )}
       </div>
@@ -83,7 +85,7 @@ export function BenchPanel({ lines, running, runtime, onStart }: BenchPanelProps
       >
         {lines.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            {running ? "Starting benchmark..." : "Click Run to benchmark PostgreSQL"}
+            {running ? t("docker.benchStarting") : t("docker.benchHint")}
           </div>
         ) : (
           <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}>

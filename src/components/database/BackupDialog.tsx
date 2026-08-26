@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
@@ -25,6 +26,7 @@ export function BackupDialog({
   onProgress: (title: string, eventName: string) => void;
   onFinished: (success: boolean, message?: string) => void;
 }) {
+  const { t } = useTranslation();
   const [format, setFormat] = useState("zip");
   const [level, setLevel] = useState(5);
   const [outputDir, setOutputDir] = useState("");
@@ -33,7 +35,7 @@ export function BackupDialog({
     const picked = await open({
       directory: true,
       defaultPath: outputDir || (await defaultBackupDir()),
-      title: "Select backup output directory",
+      title: t("database.selectOutputDir"),
     });
     if (typeof picked === "string") {
       setOutputDir(picked);
@@ -65,12 +67,18 @@ export function BackupDialog({
   return (
     <Dialog open={isOpen} onClose={onClose}>
       <DialogHeader>
-        <DialogTitle>Backup Database</DialogTitle>
-        <DialogDescription>Creating a backup of <code className="rounded bg-muted px-1">{dbName}</code> (v{version})</DialogDescription>
+        <DialogTitle>{t("database.backupTitle")}</DialogTitle>
+        <DialogDescription>
+          <Trans
+            i18nKey="database.backupDescription"
+            values={{ name: dbName, version }}
+            components={[<code key="db" className="rounded bg-muted px-1" />]}
+          />
+        </DialogDescription>
       </DialogHeader>
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Format</Label>
+          <Label>{t("database.backupFormat")}</Label>
           <Select value={format} onChange={(e) => setFormat(e.target.value)}>
             <option value="sql">SQL</option>
             <option value="zip">ZIP</option>
@@ -79,7 +87,7 @@ export function BackupDialog({
         </div>
         {format === "tar.zst" && (
           <div className="space-y-2">
-            <Label>Compression level ({level})</Label>
+            <Label>{t("database.backupLevelWith", { level })}</Label>
             <input
               type="range"
               min={1}
@@ -91,7 +99,7 @@ export function BackupDialog({
           </div>
         )}
         <div className="space-y-2">
-          <Label>Output directory (default: ~/Downloads)</Label>
+          <Label>{t("database.outputDirDefault")}</Label>
           <div className="flex gap-2">
             <Input
               value={outputDir}
@@ -101,14 +109,14 @@ export function BackupDialog({
             />
             <Button variant="outline" size="sm" onClick={browseOutputDir} className="h-9">
               <FolderOpen className="h-3.5 w-3.5" />
-              Browse
+              {t("common.browse")}
             </Button>
           </div>
         </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleBackup}>Backup</Button>
+        <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
+        <Button onClick={handleBackup}>{t("database.backup")}</Button>
       </DialogFooter>
     </Dialog>
   );

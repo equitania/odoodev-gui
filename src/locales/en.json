@@ -37,7 +37,14 @@
     "next": "Next",
     "browse": "Browse",
     "tags": "Tags",
-    "addTag": "Add tag…"
+    "addTag": "Add tag…",
+    "settings": "Settings",
+    "ok": "OK",
+    "waiting": "Waiting...",
+    "source": "Source",
+    "copyFailed": "Copy failed",
+    "edit": "Edit",
+    "editFile": "Edit {{path}}"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -59,19 +66,36 @@
     "notInActiveVersions": "Not in active versions",
     "dockerRunning": "PostgreSQL running",
     "dockerStopped": "PostgreSQL stopped",
-    "venvReady": "Ready",
-    "venvStale": "Stale",
-    "venvMismatch": "Mismatch",
-    "venvMissing": "Missing",
+    "venvReady": "Venv current",
+    "venvStale": "Venv stale",
+    "venvMismatch": "Venv mismatch",
+    "venvMissing": "Venv missing",
     "requirementsCurrent": "Requirements current",
     "requirementsStale": "Requirements stale",
     "noRequirements": "No requirements.txt",
-    "odooRunning": "Running",
-    "odooStopped": "Stopped",
+    "odooRunning": "Odoo running",
+    "odooStopped": "Odoo stopped",
     "startServer": "Start Server",
     "databases": "Databases",
     "dockerUp": "Docker Up",
-    "dockerDown": "Docker Down"
+    "dockerDown": "Docker Down",
+    "noVersions": "No versions configured",
+    "noVersionsHint": "Run <1>odoodev setup</1> to get started.",
+    "containerRunning": "Container running",
+    "containerStopped": "Container stopped",
+    "venvUnknown": "Venv unknown",
+    "pythonNone": "Python —",
+    "ports": "DB: {{db}} | Odoo: {{odoo}} | Mailpit: {{mailpit}}",
+    "openOdoo": "Open Odoo in browser",
+    "openOdooFailed": "Could not open Odoo in browser",
+    "serverAlreadyRunning": "Server already running",
+    "versionNotActive": "Version not active",
+    "startPg": "PG Up",
+    "stopPg": "PG Down",
+    "startPgTitle": "Start PostgreSQL container",
+    "stopPgTitle": "Stop PostgreSQL container",
+    "config": "Config",
+    "editConfigFiles": "Edit config files"
   },
   "server": {
     "title": "Server",
@@ -125,7 +149,18 @@
     "filterAll": "All",
     "search": "Search...",
     "serverStopped": "--- Server stopped (exit code {{code}}) ---",
-    "newLines": "{{count}} new lines"
+    "newLines": "{{count}} new lines",
+    "levels": "Levels:",
+    "noLogEntries": "No log entries",
+    "copyWarningsErrors": "Copy warnings + errors",
+    "warnings": "warnings",
+    "linesCopied_one": "{{count}} log line copied",
+    "linesCopied_other": "{{count}} log lines copied",
+    "problemsCopied_one": "{{count}} warning/error line copied",
+    "problemsCopied_other": "{{count}} warning/error lines copied",
+    "noProblemsToCopy": "No warnings or errors to copy",
+    "openOdoo": "Open Odoo in browser",
+    "openOdooFailed": "Could not open Odoo in browser"
   },
   "database": {
     "title": "Databases",
@@ -191,7 +226,19 @@
       "checkSpace": "Verifies free space before extracting. Turn off only if the check blocks a restore wrongly.",
       "recomputeNeedsAnonymize": "Only has an effect together with “Anonymize” — the CLI skips the step otherwise."
     },
-    "checkSpace": "Check free disk space"
+    "checkSpace": "Check free disk space",
+    "nameRuleHint": "Only letters, digits and underscore; must not start with a digit.",
+    "nameExists": "A database with this name already exists.",
+    "backupTitle": "Backup Database",
+    "backupDescription": "Creating a backup of <1>{{name}}</1> (v{{version}})",
+    "backupLevelWith": "Compression level ({{level}})",
+    "outputDirDefault": "Output directory (default: ~/Downloads)",
+    "selectOutputDir": "Select backup output directory",
+    "filterPlaceholder": "Filter databases...",
+    "dbNameColumn": "Database Name",
+    "actionsColumn": "Actions",
+    "duplicateTitle": "Duplicate (incl. filestore)",
+    "dropSelectedCount": "Drop selected ({{count}})"
   },
   "docker": {
     "title": "Docker / Containers",
@@ -221,7 +268,19 @@
     "startService": "Start service",
     "serviceStarting": "Starting container service...",
     "serviceStarted": "Container service started",
-    "serviceStartFailed": "Could not start container service"
+    "serviceStartFailed": "Could not start container service",
+    "configuredAs": "configured: {{runtime}}",
+    "compose": "Compose",
+    "streaming": "Streaming...",
+    "copyAll": "Copy all",
+    "noLogEntries": "No log entries",
+    "duration": "Duration:",
+    "scale": "Scale:",
+    "run": "Run",
+    "benchRunning": "Running...",
+    "benchStarting": "Starting benchmark...",
+    "benchHint": "Click Run to benchmark PostgreSQL",
+    "benchBothRuntimes": "Both runtimes benchmarked if available"
   },
   "venv": {
     "title": "Virtual Environments",
@@ -238,7 +297,13 @@
     "venvRemove": "Removing venv for v{{version}}...",
     "venvRemoveComplete": "venv removed for v{{version}}",
     "venvRemoveFailed": "Failed to remove venv",
-    "symlink": "symlink"
+    "symlink": "symlink",
+    "stale": "Stale",
+    "mismatch": "Mismatch",
+    "ready": "Ready",
+    "requirementsCurrent": "Requirements current",
+    "requirementsStale": "Requirements stale",
+    "noRequirements": "No requirements.txt"
   },
   "repos": {
     "title": "Repositories",
@@ -297,7 +362,9 @@
       "targets": "Targets",
       "serverModeWarning": "This playbook contains server-mode steps (container/database operations).",
       "serverModeWarningTargets": "This playbook contains server-mode steps targeting: {{targets}}."
-    }
+    },
+    "stepSummary": "{{ok}} ok / {{error}} error",
+    "outputTitle": "Playbook Output"
   },
   "init": {
     "title": "Init Wizard",
@@ -357,7 +424,8 @@
     "deactivate": "Deactivate",
     "activate": "Activate",
     "experimental": "Experimental",
-    "experimentalHint": "This panel reads migrate list/status from the CLI's text output — display may break when the CLI format changes. Verify results in the terminal for critical migrations."
+    "experimentalHint": "This panel reads migrate list/status from the CLI's text output — display may break when the CLI format changes. Verify results in the terminal for critical migrations.",
+    "port": "Port"
   },
   "doctor": {
     "title": "Health Check",
@@ -407,14 +475,17 @@
     "skip": "Skip",
     "uvNotInstalled": "uv is not installed",
     "uvNotInstalledText": "uv is the Python package manager needed to install and update odoodev.",
-    "installUvNow": "Install uv now"
+    "installUvNow": "Install uv now",
+    "installing": "Installing..."
   },
   "update": {
     "updateAvailable": "Update available",
     "current": "Current",
     "latest": "Latest",
     "updateTo": "Update odoodev to v{{version}}",
-    "releaseNotes": "Release notes"
+    "releaseNotes": "Release notes",
+    "versionSummary": "Current: v{{installed}} → Latest: v{{latest}}",
+    "updating": "Updating..."
   },
   "toast": {
     "startingPostgresql": "Starting PostgreSQL for v{{version}}...",

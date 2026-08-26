@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -28,6 +29,7 @@ export function NameInputDialog({
   confirmLabel: string;
   onConfirm: (newName: string) => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
 
   const trimmed = name.trim();
@@ -49,7 +51,7 @@ export function NameInputDialog({
       </DialogHeader>
       <div className="space-y-3">
         <div className="text-sm">
-          Source: <span className="font-mono">{sourceName}</span>
+          {t("common.source")}: <span className="font-mono">{sourceName}</span>
         </div>
         <Input
           value={name}
@@ -60,16 +62,14 @@ export function NameInputDialog({
           autoFocus
         />
         {invalid && (
-          <p className="text-xs text-destructive">
-            Only letters, digits and underscore; must not start with a digit.
-          </p>
+          <p className="text-xs text-destructive">{t("database.nameRuleHint")}</p>
         )}
         {duplicate && (
-          <p className="text-xs text-destructive">A database with this name already exists.</p>
+          <p className="text-xs text-destructive">{t("database.nameExists")}</p>
         )}
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
         <Button disabled={!canConfirm} onClick={confirm}>
           {confirmLabel}
         </Button>

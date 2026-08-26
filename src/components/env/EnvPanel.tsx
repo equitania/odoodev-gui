@@ -153,7 +153,7 @@ export function EnvPanel({ onNavigate }: EnvPanelProps) {
             </div>
             <div className="max-h-64 overflow-auto rounded-md bg-black/90 p-3 font-mono text-xs leading-relaxed text-green-400">
               {envSetup.lines.length === 0 ? (
-                <span className="text-muted-foreground">Waiting for output...</span>
+                <span className="text-muted-foreground">{t("common.waitingForOutput")}</span>
               ) : (
                 envSetup.lines.map((line, i) => (
                   <div key={i} className="whitespace-pre-wrap break-all">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Tabs } from "../ui/tabs";
 import { ServerConfig } from "./ServerConfig";
 import { LogViewer } from "./LogViewer";
@@ -12,6 +13,7 @@ import { ExternalLink } from "lucide-react";
 import type { StartServerArgs } from "../../types";
 
 export function ServerPanel({ preselectVersion }: { preselectVersion: string | null }) {
+  const { t } = useTranslation();
   const versions = useAppStore((s) => s.versions);
   const servers = useAppStore((s) => s.servers);
   const startServer = useAppStore((s) => s.startServer);
@@ -84,7 +86,7 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
   if (versionKeys.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        No versions configured
+        {t("dashboard.noVersions")}
       </div>
     );
   }
@@ -119,10 +121,10 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
           <button
             onClick={() =>
               invokeCmd("open_external", { url: odooUrl }).catch(
-                reportError("Could not open Odoo in browser"),
+                reportError(t("server.openOdooFailed")),
               )
             }
-            title="Open Odoo in browser"
+            title={t("server.openOdoo")}
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
             {odooUrl}

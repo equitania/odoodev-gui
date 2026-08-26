@@ -178,20 +178,22 @@ pnpm test                 # Frontend tests (vitest, once added)
 - Docker/Bench, Venv, Repos, Env, Init, Migrate, Doctor, Playbook-Runner + Wizard,
   Monaco-Editor für Playbooks/Configs
 - Settings: Version-Info, Update, Reinstall, About
-- i18n (de/en) über i18next — Sprachdateien vollständig, Komponenten-Abdeckung ~50 %
+- i18n (de/en) über i18next — vollständig: 692 Keys je Sprache, alle 49 textführenden
+  Komponenten verdrahtet (die übrigen 5 sind reine Präsentationskomponenten ohne
+  eigene Texte). `src/locales/locales.test.ts` sichert Sprachparität, gleiche
+  Interpolations-Platzhalter und die Auflösbarkeit jedes im Code benutzten Keys ab
 - Zustand store mit platform/runtime detection + toast notification system
 
 ### Open — Next Steps
 
-1. **i18n fertigstellen:** ~27 der 54 Komponenten tragen noch harte englische Strings
-   (u. a. `Dashboard.tsx`, `VersionCard.tsx`, `LogViewer.tsx`, die Docker- und Venv-Panels).
-2. **Testabdeckung ausbauen:** vitest ist eingerichtet (`pnpm test`), bisher nur
-   `restoreArgs.test.ts`. Nächste Kandidaten: `buildAnswers.ts`, `dotPath.ts`, `errors.ts`.
-3. **TypeScript 7:** neuer nativer Compiler, eigener Verifikationslauf — nicht huckepack
+1. **Testabdeckung ausbauen:** vitest ist eingerichtet (`pnpm test`), bisher
+   `restoreArgs.test.ts` und `locales.test.ts`. Nächste Kandidaten: `buildAnswers.ts`,
+   `dotPath.ts`, `errors.ts`.
+2. **TypeScript 7:** neuer nativer Compiler, eigener Verifikationslauf — nicht huckepack
    mit Patch-Updates.
-4. **Doctor-Panel:** der PyPI-Freshness-Check erscheint nur in Richs Zusammenfassungstabelle,
+3. **Doctor-Panel:** der PyPI-Freshness-Check erscheint nur in Richs Zusammenfassungstabelle,
    nie als `[OK]`/`[WARN]`-Zeile — `doctor.rs::parse_detail_line` sieht ihn deshalb nicht.
-5. **CLI-Feature-Lücken:** `db cleanup`, `db users`, `db drop --multi/--all/--filter`,
+4. **CLI-Feature-Lücken:** `db cleanup`, `db users`, `db drop --multi/--all/--filter`,
    `export modules`, `venv setup --python-version`, `docker logs --follow`.
 
 ### Key Architecture Decisions

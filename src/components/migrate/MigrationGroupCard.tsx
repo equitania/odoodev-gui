@@ -1,4 +1,5 @@
 import { Button } from "../ui/button";
+import { useTranslation } from "react-i18next";
 import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { ArrowRight, Play, Trash2, Loader2, Activity } from "lucide-react";
@@ -15,6 +16,7 @@ export function MigrationGroupCard({
   onActivate: (name: string) => void;
   onRemove: (name: string) => void;
 }) {
+  const { t } = useTranslation();
   const isActive = group.status.toLowerCase() === "active";
   return (
     <Card className={isActive ? "border-green-500/30" : ""}>
@@ -34,14 +36,14 @@ export function MigrationGroupCard({
             {" | "}
             PostgreSQL <span className="font-mono">{group.postgres}</span>
             {" | "}
-            Port <span className="font-mono">{group.shared_port}</span>
+            {t("migrate.port")} <span className="font-mono">{group.shared_port}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {isActive ? (
             <Badge variant="success">
               <Activity className="h-3 w-3" />
-              Active
+              {t("common.active")}
             </Badge>
           ) : (
             <Button
@@ -55,7 +57,7 @@ export function MigrationGroupCard({
               ) : (
                 <Play className="h-3.5 w-3.5" />
               )}
-              Activate
+              {t("migrate.activate")}
             </Button>
           )}
           <Button

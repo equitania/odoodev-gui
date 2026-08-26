@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { useAppStore } from "../../store/appStore";
 import { invokeCmd } from "../../lib/tauri";
 import { logError } from "../../lib/errors";
@@ -11,6 +12,7 @@ export function Dashboard({
 }: {
   onNavigate: (view: ViewKey, version?: string, editorPath?: string) => void;
 }) {
+  const { t } = useTranslation();
   const versions = useAppStore((s) => s.versions);
   const activeVersions = useAppStore((s) => s.activeVersions);
   const dashboardLoading = useAppStore((s) => s.dashboardLoading);
@@ -45,8 +47,13 @@ export function Dashboard({
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
         <div className="text-center">
-          <p className="mb-2 text-lg">No versions configured</p>
-          <p className="text-sm">Run <code className="rounded bg-muted px-1 py-0.5">odoodev setup</code> to get started.</p>
+          <p className="mb-2 text-lg">{t("dashboard.noVersions")}</p>
+          <p className="text-sm">
+            <Trans
+              i18nKey="dashboard.noVersionsHint"
+              components={[<code key="cmd" className="rounded bg-muted px-1 py-0.5" />]}
+            />
+          </p>
         </div>
       </div>
     );
@@ -56,7 +63,7 @@ export function Dashboard({
 
   return (
     <div className="p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Dashboard</h1>
+      <h1 className="mb-4 text-2xl font-semibold">{t("dashboard.title")}</h1>
       <div className="mb-4 empty:hidden">
         <RuntimeServiceBanner />
       </div>

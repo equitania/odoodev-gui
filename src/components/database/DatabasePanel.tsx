@@ -296,7 +296,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           </Button>
           <Button size="sm" variant="outline" onClick={() => setShowRestore(true)}>
             <HardDriveUpload className="h-3.5 w-3.5" />
-            Restore
+            {t("database.restore")}
           </Button>
         </div>
       </div>
@@ -347,7 +347,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           <div className="flex items-center gap-2">
             <Input
               type="text"
-              placeholder="Filter databases..."
+              placeholder={t("database.filterPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-48 text-sm"
@@ -357,7 +357,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
             </Button>
             {selected.size > 0 && (
               <Button size="sm" variant="destructive" onClick={handleBulkDrop}>
-                Drop selected ({selected.size})
+                {t("database.dropSelectedCount", { count: selected.size })}
               </Button>
             )}
             {allVersionTags.length > 0 && (
@@ -385,9 +385,9 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
               <thead>
                 <tr className="border-b border-border text-left bg-muted/50">
                   <th className="w-8 p-2"></th>
-                  <th className="p-2 font-medium text-muted-foreground">Database Name</th>
+                  <th className="p-2 font-medium text-muted-foreground">{t("database.dbNameColumn")}</th>
                   <th className="p-2 font-medium text-muted-foreground">{t("common.tags")}</th>
-                  <th className="p-2 font-medium text-muted-foreground text-right">Actions</th>
+                  <th className="p-2 font-medium text-muted-foreground text-right">{t("database.actionsColumn")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -458,7 +458,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                             size="sm"
                             variant="ghost"
                             onClick={() => setBackupTarget(db)}
-                            title="Backup"
+                            title={t("database.backup")}
                             disabled={isBusy}
                             className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-500"
                           >
@@ -468,7 +468,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                             size="sm"
                             variant="ghost"
                             onClick={() => setDuplicateTarget(db)}
-                            title="Duplicate (incl. filestore)"
+                            title={t("database.duplicateTitle")}
                             disabled={isBusy}
                             className="h-7 w-7 p-0 hover:bg-green-500/10 hover:text-green-500"
                           >
@@ -478,7 +478,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                             size="sm"
                             variant="ghost"
                             onClick={() => setRenameTarget(db)}
-                            title="Rename"
+                            title={t("database.rename")}
                             disabled={isBusy}
                             className="h-7 w-7 p-0 hover:bg-yellow-500/10 hover:text-yellow-500"
                           >
@@ -488,7 +488,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                             size="sm"
                             variant="ghost"
                             onClick={() => setDropTarget(db)}
-                            title="Drop"
+                            title={t("database.drop")}
                             disabled={isBusy}
                             className="h-7 w-7 p-0 hover:bg-red-500/10 hover:text-red-500"
                           >

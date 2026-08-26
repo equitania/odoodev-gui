@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, Terminal, CircleCheckBig, CircleX, CircleAlert } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
@@ -34,6 +35,7 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
   }, [events]);
 
   const summary = events.find((e) => e.event === "playbook_done");
+  const { t } = useTranslation();
   const hasError = events.some((e) => e.event === "error" || e.status === "error");
 
   return (
@@ -41,7 +43,7 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Terminal className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold">Playbook Output</span>
+          <span className="text-sm font-semibold">{t("playbook.outputTitle")}</span>
           {running && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
           {!running && summary && (
             <span
@@ -50,7 +52,10 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
                 hasError ? "text-red-500" : "text-green-500",
               )}
             >
-              {summary.steps_ok ?? 0} ok / {summary.steps_error ?? 0} error
+              {t("playbook.stepSummary", {
+                ok: summary.steps_ok ?? 0,
+                error: summary.steps_error ?? 0,
+              })}
               {summary.total_duration_ms
                 ? ` · ${(summary.total_duration_ms / 1000).toFixed(1)}s`
                 : ""}
@@ -59,7 +64,7 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
         </div>
         {!running && events.length > 0 && (
           <Button size="sm" variant="ghost" onClick={onClose}>
-            Close
+            {t("common.close")}
           </Button>
         )}
       </div>
@@ -69,7 +74,7 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
         className="max-h-96 overflow-auto rounded-md border border-border bg-black/90 p-3 font-mono text-xs leading-relaxed"
       >
         {events.length === 0 ? (
-          <span className="text-muted-foreground">Waiting for events...</span>
+          <span className="text-muted-foreground">{t("playbook.waitingForEvents")}</span>
         ) : (
           events.map((e, i) => {
             if (e.event === "error") {
