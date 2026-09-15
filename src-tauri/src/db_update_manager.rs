@@ -68,16 +68,6 @@ impl DbUpdateManager {
         self.runs.lock().unwrap().remove(version);
     }
 
-    /// Whether a graceful SIGTERM has already been sent for this run.
-    pub fn is_signalled(&self, version: &str) -> bool {
-        self.runs
-            .lock()
-            .unwrap()
-            .get(version)
-            .map(|h| h.signalled)
-            .unwrap_or(false)
-    }
-
     /// `force = false`: SIGTERM, so odoodev kills Odoo's process group and exits
     /// 130 — sent at most once per run; a repeat call is a no-op `Ok(())`.
     /// `force = true` (or no signals, i.e. Windows): the owning task kills
@@ -218,31 +208,59 @@ mod tests {
     /// A second SIGTERM while odoodev is already cleaning up after the first
     /// was a real risk of leaving odoo-bin running — the graceful path must
     /// signal at most once, while a forced kill remains available afterwards.
+    ///
+    /// A `sleep`'d child can't tell two SIGTERMs from one (kill(2) on a
+    /// zombie still returns 0), so this spawns a shell that traps TERM and
+    /// prints a line each time it fires — that count is the actual proof
+    /// that at most one signal reached the process.
     #[cfg(unix)]
-    #[test]
-    fn graceful_cancel_signals_at_most_once_but_force_still_works() {
+    #[tokio::test]
+    async fn graceful_cancel_signals_sigterm_at_most_once_but_force_still_works() {
+        use tokio::io::{AsyncBufReadExt, BufReader};
+
         let m = DbUpdateManager::new();
-        let mut child = std::process::Command::new("sleep")
-            .arg("30")
+        let mut child = tokio::process::Command::new("sh")
+            .arg("-c")
+            .arg("trap 'echo T' TERM; echo READY; while :; do sleep 0.05; done")
+            .stdout(std::process::Stdio::piped())
             .spawn()
             .unwrap();
-        let pid = child.id();
+        let pid = child.id().unwrap();
+        let mut lines = BufReader::new(child.stdout.take().unwrap()).lines();
+
+        // Wait for the trap to actually be installed before signalling —
+        // otherwise a SIGTERM that arrives before the shell reaches the
+        // `trap` statement falls back to the default action (terminate) and
+        // the test would flakily "pass" for the wrong reason.
+        assert_eq!(lines.next_line().await.unwrap().as_deref(), Some("READY"));
+
         let (tx, mut rx) = unbounded_channel();
         m.insert("19".into(), pid, tx).unwrap();
 
         assert!(m.cancel("19", false).is_ok());
-        assert!(m.is_signalled("19"));
-        assert!(rx.try_recv().is_err());
+        tokio::time::sleep(Duration::from_millis(200)).await;
 
         // A repeat graceful cancel is a no-op — it must not signal again.
         assert!(m.cancel("19", false).is_ok());
+        tokio::time::sleep(Duration::from_millis(200)).await;
         assert!(rx.try_recv().is_err());
 
         // A forced kill is still allowed after a prior graceful SIGTERM.
         assert!(m.cancel("19", true).is_ok());
         assert!(rx.try_recv().is_ok());
 
-        let _ = child.kill();
-        let _ = child.wait();
+        let _ = child.start_kill();
+        let _ = child.wait().await;
+
+        let mut term_traps = 0;
+        while let Ok(Some(line)) = lines.next_line().await {
+            if line == "T" {
+                term_traps += 1;
+            }
+        }
+        assert_eq!(
+            term_traps, 1,
+            "expected exactly one SIGTERM to reach the process, got {term_traps}"
+        );
     }
 }
