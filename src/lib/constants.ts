@@ -63,6 +63,8 @@ export const POLL_INTERVALS = {
   docker: 5_000,
   venv: 30_000,
   server: 1_000,
+  /** Stale-database count: each `db list` with a state file runs `git status` per repo. */
+  stale: 300_000,
 };
 
 export const LOG_BUFFER_CAP = 50_000;

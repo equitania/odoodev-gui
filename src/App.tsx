@@ -59,7 +59,10 @@ export default function App() {
     <div className="flex h-screen w-screen overflow-hidden">
       <Sidebar activeView={activeView} onSelect={(view) => handleNavigate(view)} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onSelectSettings={() => setActiveView("settings")} />
+        <Header
+          onSelectSettings={() => setActiveView("settings")}
+          onOpenDatabase={(version) => handleNavigate("database", version)}
+        />
         <main className="flex-1 overflow-auto">
           {activeView === "dashboard" && <Dashboard onNavigate={handleNavigate} />}
           {activeView === "server" && (

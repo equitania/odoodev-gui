@@ -95,7 +95,9 @@
     "startPgTitle": "PostgreSQL-Container starten",
     "stopPgTitle": "PostgreSQL-Container stoppen",
     "config": "Config",
-    "editConfigFiles": "Konfigurationsdateien bearbeiten"
+    "editConfigFiles": "Konfigurationsdateien bearbeiten",
+    "staleDatabases_one": "{{count}} Datenbank veraltet",
+    "staleDatabases_other": "{{count}} Datenbanken veraltet"
   },
   "server": {
     "title": "Server",

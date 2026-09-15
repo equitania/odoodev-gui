@@ -95,7 +95,9 @@
     "startPgTitle": "Start PostgreSQL container",
     "stopPgTitle": "Stop PostgreSQL container",
     "config": "Config",
-    "editConfigFiles": "Edit config files"
+    "editConfigFiles": "Edit config files",
+    "staleDatabases_one": "{{count}} database stale",
+    "staleDatabases_other": "{{count}} databases stale"
   },
   "server": {
     "title": "Server",

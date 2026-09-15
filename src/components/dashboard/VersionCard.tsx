@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
@@ -9,6 +10,7 @@ import { reportError } from "../../lib/errors";
 import { versionColor, versionBg, effectivePorts, POLL_INTERVALS } from "../../lib/constants";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type {
+  DbListResponse,
   DockerStatus,
   ServerStatus,
   VenvStatus,
@@ -80,6 +82,28 @@ export function VersionCard({
 
   const odooRunning = serverStatus?.running ?? false;
   const dockerRunning = dockerStatus?.running ?? false;
+  const [staleCount, setStaleCount] = useState<number | null>(null);
+  const refreshStale = useCallback(() => {
+    invokeCmd<DbListResponse>("get_databases", { version })
+      .then((resp) => setStaleCount(resp.stale ? resp.databases.filter((d) => resp.stale?.[d]).length : null))
+      .catch(() => setStaleCount(null));
+  }, [version]);
+  // Not on the 30 s venv interval: with a state file every `db list` runs git status per repository.
+  usePolling(refreshStale, POLL_INTERVALS.stale, active && dockerRunning);
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    listen<{ version: string }>("db-update-exited", (e) => {
+      if (e.payload.version === version && dockerRunning) refreshStale();
+    }).then((u) => {
+      if (disposed) u();
+      else unlisten = u;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [version, dockerRunning, refreshStale]);
   const dockerRuntime = dockerStatus?.runtime ?? "none";
   const ports = effectivePorts(info);
 
@@ -168,6 +192,11 @@ export function VersionCard({
           <StatusBadge {...venvBadge} />
           <StatusBadge {...pythonBadge} />
           <StatusBadge {...odooBadge} />
+          {dockerRunning && staleCount !== null && staleCount > 0 && (
+            <button onClick={() => onNavigate("database", version)} title={t("dashboard.databases")}>
+              <StatusBadge status="warn" label={t("dashboard.staleDatabases", { count: staleCount })} />
+            </button>
+          )}
         </div>
 
         <div className="text-xs text-muted-foreground">

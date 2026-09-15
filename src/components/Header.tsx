@@ -4,9 +4,16 @@ import { useAppStore } from "../store/appStore";
 import { invokeCmd } from "../lib/tauri";
 import { logError } from "../lib/errors";
 import { UpdateBadge } from "./UpdateBadge";
+import { DbUpdateIndicator } from "./DbUpdateIndicator";
 import { Settings as SettingsIcon } from "lucide-react";
 
-export function Header({ onSelectSettings }: { onSelectSettings: () => void }) {
+export function Header({
+  onSelectSettings,
+  onOpenDatabase,
+}: {
+  onSelectSettings: () => void;
+  onOpenDatabase: (version: string) => void;
+}) {
   const { t } = useTranslation();
   const odoodevInfo = useAppStore((s) => s.odoodevInfo);
   const updateCheck = useAppStore((s) => s.updateCheck);
@@ -30,6 +37,7 @@ export function Header({ onSelectSettings }: { onSelectSettings: () => void }) {
         <span className="text-xs text-muted-foreground">GUI v{appVersion}</span>
       </div>
       <div className="flex items-center gap-2">
+        <DbUpdateIndicator onOpen={onOpenDatabase} />
         {updateCheck?.update_available && <UpdateBadge />}
         <button
           onClick={onSelectSettings}
