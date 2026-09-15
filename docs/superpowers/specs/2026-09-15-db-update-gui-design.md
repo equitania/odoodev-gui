@@ -107,15 +107,20 @@ non-empty and must not start with `-`, `mode = names` requires names.
 ### Process handling
 
 - Spawned through `build_odoodev_command` (augmented PATH, null stdin, `COLUMNS`/`NO_COLOR`).
-- New managed state `DbUpdateManager` (same shape as `ServerManager`):
-  `Arc<Mutex<HashMap<String /*version*/, UpdateHandle { pid: u32, child: Child }>>>`.
+- New managed state `DbUpdateManager`: `Arc<Mutex<HashMap<String /*version*/, RunHandle { pid: u32,
+  force_kill: UnboundedSender<()> }>>>`. The spawned task owns the `Child` (so no lock is held across
+  an await) and kills it when the force channel fires.
   Updates on different versions may run in parallel (separate PostgreSQL per version).
 - stdout reader: each line is deserialized into
-  `#[serde(tag = "event", rename_all = "snake_case")] enum DbUpdateEvent` and emitted as
-  `db-update:<version>`. A line that is not a known event is emitted on the console channel
-  instead (never dropped, never a crash).
-- stderr reader: every line emitted as `db-update-log:<version>` (plain string).
-- On exit: remove the handle, emit `db-update-exited:<version>` with `{ exitCode }`.
+  `#[serde(tag = "event", rename_all = "snake_case")] enum DbUpdateEvent` and emitted as the
+  global event `db-update-event` with `{ version, event }`. A line that is not a known event is
+  emitted on the console channel instead (never dropped, never a crash).
+- stderr reader: every line emitted as `db-update-log` with `{ version, line }`.
+- On exit: remove the handle, emit `db-update-exited` with `{ version, exit_code }` (`null` when
+  killed by a signal) — same key as `server-exited`.
+- *Amended during planning:* global event names with the version in the payload replace
+  `db-update:<version>`, so the frontend needs no per-version listeners (versions load later
+  than `App` mounts).
 - SIGTERM via `libc::kill(pid, SIGTERM)` (new dependency `libc`, `cfg(unix)`).
 - **App exit:** on `RunEvent::ExitRequested` every running update gets SIGTERM; the app waits
   up to 10 s for them to exit. Otherwise closing the GUI would orphan `odoo-bin`, the exact
@@ -123,8 +128,9 @@ non-empty and must not start with `-`, `mode = names` requires names.
 
 ### Database list
 
-`DbListResponse` gains `#[serde(default)] stale: HashMap<String, String>` (database → reason).
-Older odoodev versions simply return no map.
+`DbListResponse` gains `#[serde(default)] stale: Option<HashMap<String, String>>` (database →
+reason), serialized as `null` when the CLI sent none — the GUI distinguishes "no update recorded
+yet" (button "Update all") from "all current" (empty map).
 
 ## 3. Frontend (`src/`)
 
@@ -160,7 +166,7 @@ interface DbUpdateRun {
 ```
 
 The event → state transitions live in a pure reducer `applyDbUpdateEvent(run, event)` (unit
-tested). Listeners for `db-update:*`, `db-update-log:*`, `db-update-exited:*` are registered
+tested). Listeners for `db-update-event`, `db-update-log`, `db-update-exited` are registered
 once in `App.tsx` so switching views loses nothing. The running processes live in the Rust
 process, so only a webview reload (not an app restart) can lose the frontend state while a run
 continues: on mount the store calls `list_db_updates` and shows such a run as "running —
@@ -253,3 +259,21 @@ and `dashboard.staleDatabases`; `locales.test.ts` keeps parity and key resolutio
 
 1. odoodev 0.69.0 (CLI contract + tests) → tag, push, PyPI (published by the maintainer).
 2. odoodev-gui 1.8.0 against the published 0.69.0.
+
+## Amendments during implementation
+
+- The CLI emits `interrupted` for SIGTERM/SIGHUP/Ctrl+C at any point of an NDJSON run (also
+  before the first database or between databases, `database: null` outside a database); a
+  second SIGTERM during odoodev's cleanup is ignored so the forced kill of odoo-bin still
+  happens; a preflight `error` message is the CLI's `[ERROR]` line (not a trailing hint); an
+  unexpected exception ends with `error` "unexpected failure: …".
+- Every NDJSON run ends with exactly one of `summary`/`interrupted`/`error`, except a dry run,
+  which ends when the process exits after `plan`. The GUI treats a process exit without a
+  terminal event (including a null exit code) as error/interrupted (`applyExit`).
+- `DbUpdateManager` sends SIGTERM at most once per run (`RunHandle.signalled`);
+  `terminate_all_and_wait` skips runs already signalled but still waits for them; force kill
+  stays possible.
+- The reducer applies `summary.results` to the rows, so a run re-attached after a webview
+  reload converges to the final state.
+- `DbUpdateRun.finishedAt` records when a run left the active phase; the panel's elapsed time
+  uses it, so a finished run shows its real duration after the panel remounts.

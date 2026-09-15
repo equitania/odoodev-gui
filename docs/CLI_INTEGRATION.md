@@ -239,7 +239,8 @@ odoodev db list 18 --json
   "version": "18",
   "host": "localhost",
   "port": 18432,
-  "databases": ["v18_exam", "v18_test", "v18_demo"]
+  "databases": ["v18_exam", "v18_test", "v18_demo"],
+  "stale": {"v19_b": "2 repos changed: v19-addons, v19e"}
 }
 ```
 
@@ -283,6 +284,7 @@ async fn get_databases(version: &str) -> Result<DbListResponse, String> {
 **Notes:**
 - System databases (postgres, template0, template1) are already excluded by odoodev.
 - The `databases` array is a list of names, not objects. No size/metadata.
+- `stale` is optional; absent until a `db update` state file exists (odoodev ≥ 0.68.0).
 
 ---
 
@@ -678,6 +680,32 @@ odoodev db rename 18 -s v18_old -d v18_new -y
 
 ---
 
+### 15. `odoodev db update <VERSION> --output ndjson`
+
+**Purpose:** Module update (`odoo-bin -u`) over many databases with live per-database progress (odoodev ≥ 0.69.0).
+
+**CLI Command:**
+```bash
+odoodev db update 19 --stale -u all --output ndjson
+odoodev db update 19 -n v19_a -n v19_b -u eq_base --stop-on-error --timeout 1800 --output ndjson
+```
+
+**Output Format:** one JSON object per stdout line, flushed immediately; human-readable text on stderr.
+
+| `event` | Fields |
+|---|---|
+| `plan` | `version`, `modules`, `targets: [{database, reason}]`, `skipped_current`, `server_running` |
+| `start` | `database`, `index`, `total`, `log` |
+| `issue` | `database`, `level` (`WARNING`/`ERROR`/`CRITICAL`/`RAW`), `text` |
+| `result` | `database`, `ok`, `exit_code`, `duration_s`, `warnings`, `errors`, `last_error`, `timed_out`, `log` |
+| `summary` | `results`, `skipped_current`, `exit_code` |
+| `interrupted` | `database` (exit 130) |
+| `error` | `message` (exit 1, before `plan`) |
+
+`--dry-run` emits `plan` only. Requires `-n`, `--stale` or `--all`. Stop with SIGTERM, never SIGKILL — only then does odoodev kill Odoo's process group. SIGTERM/SIGHUP/Ctrl+C at any point end the stream with `interrupted` (exit 130); every run ends with exactly one of `summary`/`interrupted`/`error`, except `--dry-run`, which ends after `plan`. Send SIGTERM once.
+
+---
+
 ## Direct (Rust-Native, Bypassing CLI)
 
 ### 12. Docker Status Check
@@ -851,10 +879,13 @@ The GUI must handle different odoodev versions gracefully:
 | 0.43.0-0.48.0 | JSON on core commands, `--sanitize` excludes purge-master-data | Restore dialog adapts |
 | 0.48.0+ | `--sanitize` includes `--purge-master-data` | Restore dialog shows warning |
 | 0.49.0+ | Current version | Full feature support |
+| 0.69.0+ | `db update --output ndjson` | Database update view enabled |
 | Future | May add `--json` to more commands | GUI prefers JSON when available |
 
-**Minimum required version:** 0.49.0 (current). The GUI checks version at startup
-and prompts to update if older.
+**Minimum required version:** 0.49.0. The database update view additionally needs
+odoodev ≥ 0.69.0 for `db update --output ndjson`; older installs keep every other
+feature and see the update buttons disabled with an upgrade hint. The GUI checks
+version at startup and prompts to update if older than 0.49.0.
 
 ---
 
