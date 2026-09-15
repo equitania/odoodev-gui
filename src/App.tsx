@@ -23,12 +23,15 @@ import { MigratePanel } from "./components/migrate/MigratePanel";
 import { DoctorPanel } from "./components/doctor/DoctorPanel";
 import { useAppStore } from "./store/appStore";
 import { notifyIfAppUpdate } from "./lib/appUpdate";
+import { useDbUpdateEvents } from "./hooks/useDbUpdateEvents";
 import type { ViewKey } from "./types";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [preselectVersion, setPreselectVersion] = useState<string | null>(null);
   const [pendingEditorPath, setPendingEditorPath] = useState<string | null>(null);
+
+  useDbUpdateEvents();
 
   const fetchAllDashboard = useAppStore((s) => s.fetchAllDashboard);
   const fetchPlatformAndRuntime = useAppStore((s) => s.fetchPlatformAndRuntime);
