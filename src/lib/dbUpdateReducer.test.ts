@@ -109,6 +109,35 @@ describe("applyEvent", () => {
     expect(run.order).toEqual(["v19_x"]);
     expect(run.rows.v19_x.status).toBe("running");
   });
+
+  it("applies summary results to create missing rows (re-attached after reload)", () => {
+    const run = applyEvent(newRun("all", 0), {
+      event: "summary",
+      results: [resultFields("v19_a"), resultFields("v19_b", { ok: false, exit_code: 1, last_error: "boom" })],
+      skipped_current: [],
+      exit_code: 1,
+    }, 1000);
+    expect(run.order).toEqual(["v19_a", "v19_b"]);
+    expect(run.rows.v19_a.status).toBe("ok");
+    expect(run.rows.v19_b.status).toBe("failed");
+    expect(run.rows.v19_b.lastError).toBe("boom");
+    expect(finishedCount(run)).toBe(2);
+    expect(run.phase).toBe("finished");
+  });
+
+  it("preserves issues when applying summary results", () => {
+    let run = replay(plan, start("v19_a", 1));
+    run = applyEvent(run, { event: "issue", database: "v19_a", level: "WARNING", text: "something" }, 1000);
+    run = applyEvent(run, {
+      event: "summary",
+      results: [resultFields("v19_a", { warnings: 1 }), resultFields("v19_b")],
+      skipped_current: [],
+      exit_code: 0,
+    }, 1000);
+    expect(run.rows.v19_a.issues).toEqual([{ level: "WARNING", text: "something" }]);
+    expect(run.rows.v19_a.status).toBe("ok");
+    expect(run.rows.v19_a.warnings).toBe(1);
+  });
 });
 
 describe("rowStatusFor", () => {

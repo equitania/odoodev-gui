@@ -104,6 +104,18 @@ function interruptRunningRows(run: DbUpdateRun): DbUpdateRun {
   return { ...run, rows };
 }
 
+function applyResultToRow(row: DbUpdateRow, result: DbUpdateResult): DbUpdateRow {
+  return {
+    ...row,
+    status: rowStatusFor(result),
+    durationS: result.duration_s,
+    warnings: result.warnings,
+    errors: result.errors,
+    lastError: result.last_error,
+    log: result.log,
+  };
+}
+
 export function rowStatusFor(result: DbUpdateResult): DbUpdateRowStatus {
   if (result.timed_out) return "timedOut";
   if (!result.ok) return "failed";
@@ -143,17 +155,14 @@ export function applyEvent(run: DbUpdateRun, event: DbUpdateEvent, now: number):
           : { ...row, issues: [...row.issues, { level: event.level, text: event.text }] },
       );
     case "result":
-      return withRow(run, event.database, (row) => ({
-        ...row,
-        status: rowStatusFor(event),
-        durationS: event.duration_s,
-        warnings: event.warnings,
-        errors: event.errors,
-        lastError: event.last_error,
-        log: event.log,
-      }));
-    case "summary":
-      return { ...run, phase: "finished", exitCode: event.exit_code, skippedCurrent: event.skipped_current };
+      return withRow(run, event.database, (row) => applyResultToRow(row, event));
+    case "summary": {
+      let updated = run;
+      for (const result of event.results) {
+        updated = withRow(updated, result.database, (row) => applyResultToRow(row, result));
+      }
+      return { ...updated, phase: "finished", exitCode: event.exit_code, skippedCurrent: event.skipped_current };
+    }
     case "interrupted": {
       const marked = event.database
         ? withRow(run, event.database, (row) => ({ ...row, status: "interrupted" }))
