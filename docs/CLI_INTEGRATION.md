@@ -680,7 +680,7 @@ odoodev db rename 18 -s v18_old -d v18_new -y
 
 ---
 
-### 15. `odoodev db update <VERSION> --output ndjson`
+### 11a. `odoodev db update <VERSION> --output ndjson`
 
 **Purpose:** Module update (`odoo-bin -u`) over many databases with live per-database progress (odoodev ≥ 0.69.0).
 
