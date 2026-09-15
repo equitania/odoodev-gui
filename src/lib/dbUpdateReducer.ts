@@ -44,6 +44,8 @@ export interface DbUpdateRun {
   exitCode: number | null;
   errorMessage: string | null;
   cancelRequestedAt: number | null;
+  /** Set once the run left the running/cancelling phase; null while still active. */
+  finishedAt: number | null;
   /** Server config to start again when the run ends ("stop, update, restart"). */
   restartServer: StartServerArgs | null;
   /** Re-attached after a webview reload — earlier events were not seen. */
@@ -62,6 +64,7 @@ export function newRun(modules: string, startedAt: number, restartServer: StartS
     exitCode: null,
     errorMessage: null,
     cancelRequestedAt: null,
+    finishedAt: null,
     restartServer,
     detailsLost: false,
   };
@@ -161,16 +164,22 @@ export function applyEvent(run: DbUpdateRun, event: DbUpdateEvent, now: number):
       for (const result of event.results) {
         updated = withRow(updated, result.database, (row) => applyResultToRow(row, result));
       }
-      return { ...updated, phase: "finished", exitCode: event.exit_code, skippedCurrent: event.skipped_current };
+      return {
+        ...updated,
+        phase: "finished",
+        exitCode: event.exit_code,
+        skippedCurrent: event.skipped_current,
+        finishedAt: run.finishedAt ?? now,
+      };
     }
     case "interrupted": {
       const marked = event.database
         ? withRow(run, event.database, (row) => ({ ...row, status: "interrupted" }))
         : run;
-      return { ...interruptRunningRows(marked), phase: "interrupted" };
+      return { ...interruptRunningRows(marked), phase: "interrupted", finishedAt: run.finishedAt ?? now };
     }
     case "error":
-      return { ...run, phase: "error", errorMessage: event.message };
+      return { ...run, phase: "error", errorMessage: event.message, finishedAt: run.finishedAt ?? now };
   }
 }
 
@@ -183,16 +192,17 @@ export function markCancelling(run: DbUpdateRun, now: number): DbUpdateRun {
   return isActive(run) ? { ...run, phase: "cancelling", cancelRequestedAt: now } : run;
 }
 
-export function applyExit(run: DbUpdateRun, exitCode: number | null): DbUpdateRun {
-  if (!isActive(run)) return { ...run, exitCode: run.exitCode ?? exitCode };
-  if (exitCode === 0) return { ...run, phase: "finished", exitCode };
+export function applyExit(run: DbUpdateRun, exitCode: number | null, now: number = Date.now()): DbUpdateRun {
+  if (!isActive(run)) return { ...run, exitCode: run.exitCode ?? exitCode, finishedAt: run.finishedAt ?? now };
+  if (exitCode === 0) return { ...run, phase: "finished", exitCode, finishedAt: run.finishedAt ?? now };
   if (exitCode === 130 || run.phase === "cancelling") {
-    return { ...interruptRunningRows(run), phase: "interrupted", exitCode };
+    return { ...interruptRunningRows(run), phase: "interrupted", exitCode, finishedAt: run.finishedAt ?? now };
   }
   return {
     ...interruptRunningRows(run),
     phase: "error",
     exitCode,
     errorMessage: run.errorMessage ?? `odoodev exited with code ${exitCode ?? "unknown"}`,
+    finishedAt: run.finishedAt ?? now,
   };
 }

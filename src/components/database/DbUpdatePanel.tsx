@@ -105,7 +105,8 @@ export function DbUpdatePanel({ version, onOpenLog }: { version: string; onOpenL
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>
-              {t("database.updateProgress", { done, total })} · {formatDuration((now - run.startedAt) / 1000)}
+              {t("database.updateProgress", { done, total })} ·{" "}
+              {formatDuration(((run.finishedAt ?? now) - run.startedAt) / 1000)}
             </span>
             {active ? (
               canForceStop ? (

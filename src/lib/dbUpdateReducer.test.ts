@@ -167,6 +167,23 @@ describe("applyExit", () => {
   });
 });
 
+describe("finishedAt", () => {
+  it("is set by a summary event and is not moved by a later applyExit", () => {
+    const run = applyEvent(replay(plan, start("v19_a", 1)), { event: "summary", results: [], skipped_current: [], exit_code: 0 }, 5000);
+    expect(run.finishedAt).toBe(5000);
+    expect(applyExit(run, 0, 9000).finishedAt).toBe(5000);
+  });
+
+  it("is set by applyExit when no terminal event happened", () => {
+    const run = applyExit(replay(plan, start("v19_a", 1)), 1, 7000);
+    expect(run.finishedAt).toBe(7000);
+  });
+
+  it("is null on a fresh run", () => {
+    expect(newRun("all", 0).finishedAt).toBeNull();
+  });
+});
+
 describe("applyConsoleLine", () => {
   it("keeps the newest lines up to the cap", () => {
     let run = newRun("all", 0);
