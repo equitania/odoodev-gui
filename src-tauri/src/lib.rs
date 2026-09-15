@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod db_update;
 mod docker_check;
 mod installer;
 mod log_parser;
