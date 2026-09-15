@@ -13,6 +13,7 @@ import { RestoreDialog } from "./RestoreDialog";
 import { DropConfirmDialog } from "./DropConfirmDialog";
 import { NameInputDialog } from "./NameInputDialog";
 import { OperationProgress } from "./OperationProgress";
+import { dropMany } from "./bulkDrop";
 import { RefreshCw, RefreshCcw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2, Plus } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { effectivePorts, tagColor } from "../../lib/constants";
@@ -289,18 +290,24 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
 
   const handleBulkDrop = async () => {
     const names = Array.from(selected);
-    const tid = toastLoading(`Dropping ${names.length} database(s)...`);
-    for (const name of names) {
-      try {
-        await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
-        removeDbTags(selectedVersion, name);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    setSelected(new Set());
+    const tid = toastLoading(t("database.bulkDropping", { count: names.length }));
+    const outcome = await dropMany(names, (name) =>
+      invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true }),
+    );
+    outcome.dropped.forEach((name) => removeDbTags(selectedVersion, name));
+    // Keep the failed ones selected so a retry is one click.
+    setSelected(new Set(outcome.failed.map((f) => f.name)));
     await fetchDatabases();
-    toastUpdate(tid, "success", `Dropped ${names.length} database(s)`);
+    if (outcome.failed.length === 0) {
+      toastUpdate(tid, "success", t("database.bulkDropDone", { count: outcome.dropped.length }));
+    } else {
+      toastUpdate(
+        tid,
+        "error",
+        t("database.bulkDropFailed", { failed: outcome.failed.length, total: names.length }),
+        outcome.failed.map((f) => `${f.name}: ${f.error}`).join("\n"),
+      );
+    }
   };
 
   return (
