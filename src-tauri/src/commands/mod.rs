@@ -1,4 +1,5 @@
 pub mod database;
+pub mod db_update;
 pub mod docker;
 pub mod doctor;
 pub mod editor;

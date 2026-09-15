@@ -4,6 +4,7 @@ import type {
   DashboardStatus,
   OdooLogEntry,
   OdoodevInfoDto,
+  OpResult,
   PlatformInfo,
   ServerState,
   ServerStatus,
@@ -16,7 +17,6 @@ import { invokeCmd } from "../lib/tauri";
 import { LOG_BUFFER_CAP } from "../lib/constants";
 
 interface AppState {
-  odoodevVersion: string | null;
   pypiVersion: string | null;
   uvInfo: UvInfoDto | null;
   odoodevInfo: OdoodevInfoDto | null;
@@ -43,7 +43,8 @@ interface AppState {
   checkUvStatus: () => Promise<void>;
   checkOdoodevStatus: () => Promise<void>;
   startServer: (args: StartServerArgs) => Promise<number>;
-  stopServer: (version: string, keepDocker?: boolean, force?: boolean) => Promise<void>;
+  /** Resolves with the backend result — `success: false` means odoodev could not stop the server. */
+  stopServer: (version: string, keepDocker?: boolean, force?: boolean) => Promise<OpResult>;
   appendLog: (version: string, entry: OdooLogEntry) => void;
   clearLog: (version: string) => void;
   setServerStatus: (version: string, status: ServerStatus) => void;
@@ -52,7 +53,6 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  odoodevVersion: null,
   pypiVersion: null,
   uvInfo: null,
   odoodevInfo: null,
@@ -171,7 +171,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   stopServer: async (version: string, keepDocker: boolean = true, force: boolean = false) => {
-    await invokeCmd("stop_server", { version, keepDocker, force });
+    const result = await invokeCmd<OpResult>("stop_server", { version, keepDocker, force });
     set((state) => ({
       servers: {
         ...state.servers,
@@ -181,6 +181,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         },
       },
     }));
+    return result;
   },
 
   appendLog: (version: string, entry: OdooLogEntry) => {

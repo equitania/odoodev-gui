@@ -480,6 +480,42 @@ invoke('rename_db', {
 ```
 CLI: `odoodev db rename 18 -s v18_old -d v18_new -y`
 
+#### `plan_db_update`
+Dry run of `db update`: which databases would be updated and why.
+```typescript
+invoke('plan_db_update', { args: DbUpdateArgs }) → DbUpdatePlan
+```
+CLI: `odoodev db update <version> (-n <db>… | --stale | --all) -u <modules> [--stop-on-error] [--timeout <s>] --dry-run --output ndjson`
+```typescript
+interface DbUpdateArgs { version: string; mode: "names" | "stale" | "all"; names: string[]; modules: string; stopOnError: boolean; timeoutSeconds: number | null }
+interface DbUpdatePlan { version: string; modules: string; targets: { database: string; reason: string | null }[]; skipped_current: string[]; server_running: boolean }
+```
+Errors: the CLI's `error` event message; "odoodev >= 0.69.0 is required …" for older CLIs.
+
+#### `start_db_update`
+Starts the update in the background (one per version) and returns immediately; progress arrives as events.
+```typescript
+invoke('start_db_update', { args: DbUpdateArgs }) → void
+```
+CLI: as `plan_db_update` without `--dry-run`. Errors: invalid args, "An update is already running for v<version>".
+
+#### `cancel_db_update`
+```typescript
+invoke('cancel_db_update', { version: string, force: boolean }) → void
+```
+`force: false` sends SIGTERM (odoodev stops odoo-bin, exits 130). `force: true` kills odoodev only — odoo-bin may keep running. On Windows both kill odoodev. The manager sends SIGTERM at most once per run; repeated graceful cancels are no-ops.
+
+#### `list_db_updates`
+```typescript
+invoke('list_db_updates') → string[]   // versions with a running update
+```
+
+#### `read_update_log`
+```typescript
+invoke('read_update_log', { path: string }) → string
+```
+Only `~/odoodev-logs/update_v*.log` (canonicalized); files over 2 MB return their last 2 MB with a note. Async: reads only the tail, off the main thread.
+
 ---
 
 ### Docker
@@ -589,15 +625,25 @@ to the log buffer. Buffer is NOT cleared.
 Emitted for each stdout line during `odoodev db backup`.
 
 ```typescript
-listen('backup-progress', (event: { line: string }) => { ... })
+listen('backup-progress', (line: string) => { ... })
 ```
+Payload is a plain `string` per line, not `{ line: string }`.
 
 #### `restore-progress`
 Emitted for each stdout line during `odoodev db restore`.
 
 ```typescript
-listen('restore-progress', (event: { line: string }) => { ... })
+listen('restore-progress', (line: string) => { ... })
 ```
+Payload is a plain `string` per line, not `{ line: string }`.
+
+#### `db-update-event`, `db-update-log`, `db-update-exited`
+```typescript
+listen<{ version: string; event: DbUpdateEvent }>('db-update-event')   // plan | start | issue | result | summary | interrupted | error
+listen<{ version: string; line: string }>('db-update-log')             // stderr and non-event stdout lines
+listen<{ version: string; exit_code: number | null }>('db-update-exited')
+```
+Event shapes: see `DbUpdateEvent` in `src/types/index.ts` and `docs/CLI_INTEGRATION.md` (`db update --output ndjson`).
 
 #### `install-progress`
 Emitted for each stdout line during `uv install` or `odoodev install`.

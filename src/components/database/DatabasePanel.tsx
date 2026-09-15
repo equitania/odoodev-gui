@@ -7,17 +7,24 @@ import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
-import type { DbListResponse, OpResult, VersionsResponse } from "../../types";
+import type { DbListResponse, DbUpdateMode, OpResult, VersionsResponse } from "../../types";
 import { BackupDialog } from "./BackupDialog";
 import { RestoreDialog } from "./RestoreDialog";
 import { DropConfirmDialog } from "./DropConfirmDialog";
 import { NameInputDialog } from "./NameInputDialog";
 import { OperationProgress } from "./OperationProgress";
-import { RefreshCw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2, Plus } from "lucide-react";
+import { dropMany } from "./bulkDrop";
+import { RefreshCw, RefreshCcw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2, Plus } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { effectivePorts, tagColor } from "../../lib/constants";
 import { useDbTagStore, dbTagKey } from "../../store/dbTagStore";
 import { TagInput } from "../ui/tag-input";
+import { DbUpdateDialog } from "./DbUpdateDialog";
+import { DbUpdatePanel } from "./DbUpdatePanel";
+import { UpdateLogDialog } from "./UpdateLogDialog";
+import { useDbUpdateStore } from "../../store/dbUpdateStore";
+import { isActive } from "../../lib/dbUpdateReducer";
+import { isAtLeast, MIN_ODOODEV_DB_UPDATE } from "../../lib/version";
 
 export function DatabasePanel({ preselectVersion }: { preselectVersion: string | null }) {
   const { t } = useTranslation();
@@ -55,6 +62,13 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [progressDone, setProgressDone] = useState(false);
   const [progressSuccess, setProgressSuccess] = useState<boolean | null>(null);
   const [progressMessage, setProgressMessage] = useState<string | undefined>(undefined);
+  const [updateDialog, setUpdateDialog] = useState<{ mode: DbUpdateMode; names: string[] } | null>(null);
+  const [logPath, setLogPath] = useState<string | null>(null);
+  const odoodevVersion = useAppStore((s) => s.odoodevInfo?.version ?? null);
+  const updateSupported = isAtLeast(odoodevVersion, MIN_ODOODEV_DB_UPDATE);
+  const updateRun = useDbUpdateStore((s) => s.runs[selectedVersion]);
+  const updateActive = isActive(updateRun);
+  const updatePhase = updateRun?.phase;
 
   useEffect(() => {
     invokeCmd<VersionsResponse>("get_versions")
@@ -110,6 +124,13 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
     // (non-memoized) function, intentionally omitted to avoid a re-fetch loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVersion]);
+
+  // A finished, failed or interrupted update changes the stale markers.
+  useEffect(() => {
+    if (updatePhase && updatePhase !== "running" && updatePhase !== "cancelling") fetchDatabases();
+    // fetchDatabases is a plain function (see above); only the phase change matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updatePhase]);
 
   const setDbAction = (name: string, busy: boolean) => {
     setActionLoading((prev) => ({ ...prev, [name]: busy }));
@@ -231,6 +252,13 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   };
 
   const selectedInfo = versions?.[selectedVersion] ?? null;
+  const stale = dbResp?.stale ?? null;
+  const staleCount = stale ? dbList.filter((d) => stale[d]).length : dbList.length;
+  const updateBlockedReason = !updateSupported
+    ? t("database.updateRequiresVersion", { version: MIN_ODOODEV_DB_UPDATE })
+    : updateActive
+      ? t("database.updateRunningHere")
+      : undefined;
   const sorted = [...dbList].sort((a, b) => sortAsc ? a.localeCompare(b) : b.localeCompare(a));
   const filtered = sorted.filter((d) => {
     if (!d.toLowerCase().includes(search.toLowerCase())) return false;
@@ -262,18 +290,24 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
 
   const handleBulkDrop = async () => {
     const names = Array.from(selected);
-    const tid = toastLoading(`Dropping ${names.length} database(s)...`);
-    for (const name of names) {
-      try {
-        await invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true });
-        removeDbTags(selectedVersion, name);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    setSelected(new Set());
+    const tid = toastLoading(t("database.bulkDropping", { count: names.length }));
+    const outcome = await dropMany(names, (name) =>
+      invokeCmd<OpResult>("drop_db", { version: selectedVersion, name, terminateConnections: true }),
+    );
+    outcome.dropped.forEach((name) => removeDbTags(selectedVersion, name));
+    // Keep the failed ones selected so a retry is one click.
+    setSelected(new Set(outcome.failed.map((f) => f.name)));
     await fetchDatabases();
-    toastUpdate(tid, "success", `Dropped ${names.length} database(s)`);
+    if (outcome.failed.length === 0) {
+      toastUpdate(tid, "success", t("database.bulkDropDone", { count: outcome.dropped.length }));
+    } else {
+      toastUpdate(
+        tid,
+        "error",
+        t("database.bulkDropFailed", { failed: outcome.failed.length, total: names.length }),
+        outcome.failed.map((f) => `${f.name}: ${f.error}`).join("\n"),
+      );
+    }
   };
 
   return (
@@ -298,6 +332,18 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
             <HardDriveUpload className="h-3.5 w-3.5" />
             {t("database.restore")}
           </Button>
+          {dbList.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={updateBlockedReason !== undefined || (stale !== null && staleCount === 0)}
+              title={updateBlockedReason}
+              onClick={() => setUpdateDialog({ mode: "stale", names: [] })}
+            >
+              <RefreshCcw className="h-3.5 w-3.5" />
+              {stale === null ? t("database.updateAll") : t("database.updateStaleCount", { count: staleCount })}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -342,6 +388,8 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
         </Card>
       )}
 
+      {updateRun && <DbUpdatePanel version={selectedVersion} onOpenLog={setLogPath} />}
+
       {dbList.length > 0 && (
         <>
           <div className="flex items-center gap-2">
@@ -355,6 +403,18 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
             <Button size="sm" variant="ghost" onClick={() => setSortAsc(!sortAsc)}>
               {sortAsc ? "A→Z" : "Z→A"}
             </Button>
+            {selected.size > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={updateBlockedReason !== undefined}
+                title={updateBlockedReason}
+                onClick={() => setUpdateDialog({ mode: "names", names: Array.from(selected) })}
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+                {t("database.updateSelectedCount", { count: selected.size })}
+              </Button>
+            )}
             {selected.size > 0 && (
               <Button size="sm" variant="destructive" onClick={handleBulkDrop}>
                 {t("database.dropSelectedCount", { count: selected.size })}
@@ -410,7 +470,17 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                           className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
                         />
                       </td>
-                      <td className="p-2 font-mono">{db}</td>
+                      <td className="p-2">
+                        <span className="font-mono">{db}</span>
+                        {stale?.[db] && (
+                          <span
+                            title={stale[db]}
+                            className="ml-2 rounded-md bg-yellow-500/15 px-1.5 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400"
+                          >
+                            {t("database.staleBadge")}
+                          </span>
+                        )}
+                      </td>
                       <td className="p-2">
                         {editingTagsFor === db ? (
                           <div
@@ -565,6 +635,18 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           onConfirm={(dst) => handleRename(renameTarget, dst)}
         />
       )}
+
+      {updateDialog && (
+        <DbUpdateDialog
+          open
+          onClose={() => setUpdateDialog(null)}
+          version={selectedVersion}
+          mode={updateDialog.mode}
+          names={updateDialog.names}
+        />
+      )}
+
+      {logPath && <UpdateLogDialog key={logPath} path={logPath} onClose={() => setLogPath(null)} />}
 
       <OperationProgress
         open={showProgress}

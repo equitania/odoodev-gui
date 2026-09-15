@@ -93,7 +93,7 @@ The GUI communicates with `odoodev` via these channels:
 | Method | Commands | Format |
 |--------|----------|--------|
 | JSON (serde) | `config versions --json`, `config paths --json` (≥ 0.53.0, mit `env dir`-Fallback), `venv check --json`, `db list --json` | Single-line JSON |
-| NDJSON stream | `run --output json` | One JSON object per line (Phase 2) |
+| NDJSON stream | `run --output json`, `db update --output ndjson` | One JSON object per line |
 | stdout streaming | `start`, `db backup`, `db restore` | Line-by-line text |
 | Exit code | `stop`, `db drop`, `db copy`, `db rename` | 0 = success |
 | Direct (Rust) | Docker status check | `docker ps` / `container ls` (bypasses CLI) |
@@ -151,7 +151,7 @@ pnpm test                 # Frontend tests (vitest, once added)
 - **odoodev CLI:** `/Users/picard/gitbase/PyPi-Projects/odoo-dev` (Python, PyPI package `odoodev-equitania`)
 - **Agent Capability Card:** `usage/AGENT.md` in the odoodev repo — documents every CLI command and flag
 
-## Current Project Status (Stand 26. August 2026, v1.6.3)
+## Current Project Status (Stand 15. September 2026, v1.8.0)
 
 ### Implemented — Phase 0 + Phase 1 + Phase 2
 
@@ -165,8 +165,10 @@ pnpm test                 # Frontend tests (vitest, once added)
 - `docker_check.rs`: runtime detection (config → docker → apple), `container ls --format json` parsing
 - `config.rs`: odoodev YAML config reader (active_versions, container_runtime)
 - `models.rs`: serde structs for all CLI JSON responses
-- `commands/`: 14 command modules (versions, server, database, docker, doctor, editor,
-  env, init, migrate, playbook, repos, venv, system, self_update)
+- `commands/`: 15 command modules (versions, server, database, db_update, docker, doctor,
+  editor, env, init, migrate, playbook, repos, venv, system, self_update)
+- `db_update.rs` + `db_update_manager.rs`: `db update --output ndjson` (odoodev ≥ 0.69.0) —
+  typed events, one run per version, SIGTERM-Abbruch, beim App-Beenden SIGTERM an alle Läufe
 
 **React-Frontend** (fertig):
 - App shell: Sidebar, Header (version + update badge), InstallDialog, ToastContainer
@@ -174,7 +176,9 @@ pnpm test                 # Frontend tests (vitest, once added)
 - Server: alle 4 Version-Tabs sichtbar, ServerConfig (5 Modi + Advanced), Presets, LogViewer
   mit Virtual Scrolling
 - Database: Liste, Tags, Backup (3 Formate), Restore (3-Step Wizard + Dry Run mit vollem
-  CLI-Report), Drop/Copy/Rename, Bulk-Drop
+  CLI-Report), Drop/Copy/Rename, Bulk-Drop (meldet Fehlschläge), Veraltet-Markierung,
+  Update veralteter/ausgewählter Datenbanken mit Live-Fortschritt, Abbrechen und
+  Stoppen-Updaten-Neustarten eines laufenden Servers; Dashboard zeigt veraltete Datenbanken
 - Docker/Bench, Venv, Repos, Env, Init, Migrate, Doctor, Playbook-Runner + Wizard,
   Monaco-Editor für Playbooks/Configs
 - Settings: Version-Info, Update, Reinstall, About
@@ -187,8 +191,8 @@ pnpm test                 # Frontend tests (vitest, once added)
 ### Open — Next Steps
 
 1. **Testabdeckung ausbauen:** vitest ist eingerichtet (`pnpm test`), bisher
-   `restoreArgs.test.ts` und `locales.test.ts`. Nächste Kandidaten: `buildAnswers.ts`,
-   `dotPath.ts`, `errors.ts`.
+   `restoreArgs`, `locales`, `version`, `dbUpdateReducer`, `dbUpdateStore`, `bulkDrop`. Nächste
+   Kandidaten: `buildAnswers.ts`, `dotPath.ts`, `errors.ts`.
 2. **TypeScript 7:** neuer nativer Compiler, eigener Verifikationslauf — nicht huckepack
    mit Patch-Updates.
 3. **Doctor-Panel:** der PyPI-Freshness-Check erscheint nur in Richs Zusammenfassungstabelle,

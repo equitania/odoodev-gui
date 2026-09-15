@@ -122,7 +122,7 @@ pub fn find_uv() -> PathBuf {
     find_binary("uv")
 }
 
-fn build_odoodev_command(args: &[&str]) -> Command {
+pub fn build_odoodev_command(args: &[&str]) -> Command {
     let mut cmd = Command::new(find_odoodev());
     cmd.args(args);
     augment_path(&mut cmd);

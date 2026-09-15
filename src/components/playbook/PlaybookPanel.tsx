@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { logError } from "../../lib/errors";
+import { isAtLeast } from "../../lib/version";
 import { usePlaybookRun } from "../../hooks/usePlaybookRun";
 import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -33,17 +34,6 @@ import type {
   ViewKey,
 } from "../../types";
 
-/** True when an installed version string is older than the required "major.minor.patch". */
-function isOlderThan(installed: string | null, required: string): boolean {
-  if (!installed) return false; // unknown version: don't nag
-  const parse = (v: string) => v.split(".").map((n) => parseInt(n, 10) || 0);
-  const [a, b] = [parse(installed), parse(required)];
-  for (let i = 0; i < 3; i++) {
-    if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0);
-  }
-  return false;
-}
-
 interface PlaybookPanelProps {
   onNavigate?: (view: ViewKey, version?: string, editorPath?: string) => void;
 }
@@ -63,12 +53,13 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [playbookRoots, setPlaybookRoots] = useState<string[]>([]);
 
-  const odoodevVersion = useAppStore((s) => s.odoodevVersion);
+  const odoodevVersion = useAppStore((s) => s.odoodevInfo?.version ?? null);
   const playbookRun = usePlaybookRun();
 
   const devSteps = validSteps.filter((s) => s.mode === "dev").map((s) => s.command);
   const hasServerCapabilities = validSteps.some((s) => s.mode === "server");
-  const legacyStreaming = isOlderThan(odoodevVersion, "0.51.0");
+  // Unknown version: don't nag (same as before) — only a known old CLI is "legacy".
+  const legacyStreaming = odoodevVersion !== null && !isAtLeast(odoodevVersion, "0.51.0");
 
   useEffect(() => {
     invokeCmd<Record<string, VersionInfo>>("get_versions")

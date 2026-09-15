@@ -23,12 +23,15 @@ import { MigratePanel } from "./components/migrate/MigratePanel";
 import { DoctorPanel } from "./components/doctor/DoctorPanel";
 import { useAppStore } from "./store/appStore";
 import { notifyIfAppUpdate } from "./lib/appUpdate";
+import { useDbUpdateEvents } from "./hooks/useDbUpdateEvents";
 import type { ViewKey } from "./types";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [preselectVersion, setPreselectVersion] = useState<string | null>(null);
   const [pendingEditorPath, setPendingEditorPath] = useState<string | null>(null);
+
+  useDbUpdateEvents();
 
   const fetchAllDashboard = useAppStore((s) => s.fetchAllDashboard);
   const fetchPlatformAndRuntime = useAppStore((s) => s.fetchPlatformAndRuntime);
@@ -56,7 +59,10 @@ export default function App() {
     <div className="flex h-screen w-screen overflow-hidden">
       <Sidebar activeView={activeView} onSelect={(view) => handleNavigate(view)} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onSelectSettings={() => setActiveView("settings")} />
+        <Header
+          onSelectSettings={() => setActiveView("settings")}
+          onOpenDatabase={(version) => handleNavigate("database", version)}
+        />
         <main className="flex-1 overflow-auto">
           {activeView === "dashboard" && <Dashboard onNavigate={handleNavigate} />}
           {activeView === "server" && (

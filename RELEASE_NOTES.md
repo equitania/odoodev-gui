@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 1.8.0 (15.09.2026)
+
+### Added
+- **Update databases after a repository sync.** The database list marks databases whose
+  repositories changed since their last full module update ("stale", reason in the tooltip).
+  "Update stale" and "Update selected" run `odoo-bin -u` over them one after another; a dialog
+  shows the plan first (which databases, why, which are skipped as current), the module list
+  (default `all`), stop-at-first-failure and a per-database timeout. Requires odoodev ≥ 0.69.0.
+- **Live progress without blocking the app.** A panel in the database view shows each
+  database's status, duration and warning/error counts; rows expand to Odoo's warnings, errors
+  and tracebacks, and "Open log" shows the full log. The header shows running updates from any
+  view.
+- **Safe cancel.** Cancelling stops the running `odoo-bin` cleanly (the interrupted database is
+  not marked current); if odoodev does not respond within 20 s a forced stop is offered.
+  Closing the app stops running updates first instead of leaving `odoo-bin` behind.
+- **Running server.** If an Odoo server runs on the version, the update can stop it and start it
+  again with the same configuration afterwards.
+- **Dashboard.** Each version card shows how many databases are stale.
+
+### Fixed
+- Dropping several selected databases reported success even when some could not be dropped.
+  Failures are now reported by name and stay selected for a retry.
+- The playbook view's check for old odoodev versions never took effect (it read a version field
+  that was never filled).
+
 ## Version 1.7.0 (26.08.2026)
 
 ### Added
