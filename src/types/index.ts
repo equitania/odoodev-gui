@@ -32,7 +32,56 @@ export interface DbListResponse {
   host: string;
   port: number;
   databases: string[];
+  /** Database → reason it needs `db update`; null until odoodev recorded any update. */
+  stale: Record<string, string> | null;
 }
+
+export type DbUpdateMode = "names" | "stale" | "all";
+
+/** Argument of plan_db_update / start_db_update (camelCase on the wire). */
+export interface DbUpdateArgs {
+  version: string;
+  mode: DbUpdateMode;
+  names: string[];
+  modules: string;
+  stopOnError: boolean;
+  timeoutSeconds: number | null;
+}
+
+export interface DbUpdatePlanTarget {
+  database: string;
+  reason: string | null;
+}
+
+export interface DbUpdatePlan {
+  version: string;
+  modules: string;
+  targets: DbUpdatePlanTarget[];
+  skipped_current: string[];
+  server_running: boolean;
+}
+
+export interface DbUpdateResult {
+  database: string;
+  ok: boolean;
+  exit_code: number;
+  duration_s: number;
+  warnings: number;
+  errors: number;
+  last_error: string | null;
+  timed_out: boolean;
+  log: string;
+}
+
+/** One `db update --output ndjson` event as re-emitted by the backend. */
+export type DbUpdateEvent =
+  | ({ event: "plan" } & DbUpdatePlan)
+  | { event: "start"; database: string; index: number; total: number; log: string }
+  | { event: "issue"; database: string; level: string; text: string }
+  | ({ event: "result" } & DbUpdateResult)
+  | { event: "summary"; results: DbUpdateResult[]; skipped_current: string[]; exit_code: number }
+  | { event: "interrupted"; database: string | null }
+  | { event: "error"; message: string };
 
 export type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL" | "RAW";
 

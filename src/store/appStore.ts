@@ -16,7 +16,6 @@ import { invokeCmd } from "../lib/tauri";
 import { LOG_BUFFER_CAP } from "../lib/constants";
 
 interface AppState {
-  odoodevVersion: string | null;
   pypiVersion: string | null;
   uvInfo: UvInfoDto | null;
   odoodevInfo: OdoodevInfoDto | null;
@@ -52,7 +51,6 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  odoodevVersion: null,
   pypiVersion: null,
   uvInfo: null,
   odoodevInfo: null,
