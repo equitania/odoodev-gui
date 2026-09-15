@@ -14,7 +14,12 @@
   view.
 - **Safe cancel.** Cancelling stops the running `odoo-bin` cleanly (the interrupted database is
   not marked current); if odoodev does not respond within 20 s a forced stop is offered.
-  Closing the app stops running updates first instead of leaving `odoo-bin` behind.
+  Closing the window or quitting with Cmd+Q stops running updates first (waiting at most 10 s)
+  instead of leaving `odoo-bin` behind, and an installed app update does not restart the app
+  while a database update is still running.
+- **Honest results.** Databases that finished with errors in the Odoo log get their own
+  notification instead of "updated", databases not reached after a stop or cancel show as
+  "skipped", and if the running server cannot be stopped the update does not start.
 - **Running server.** If an Odoo server runs on the version, the update can stop it and start it
   again with the same configuration afterwards.
 - **Dashboard.** Each version card shows how many databases are stale.

@@ -83,6 +83,14 @@ Folgezeilen erben das Level ihrer Ursprungszeile), Suche, Auto-Scroll, Copy,
 Syntax-Highlighting, Buffer-Persistenz über Stop/Start, klickbare Server-URL im
 Tab-Header.
 
+**Datenbank-Updates** (neu in 1.8.0, benötigt odoodev ≥ 0.69.0) — veraltete Datenbanken
+sind in der Liste markiert (Grund im Tooltip), „Veraltete aktualisieren“ und „Ausgewählte
+aktualisieren“ führen `odoo-bin -u` nacheinander aus; der Startdialog zeigt vorher den Plan,
+Module, Zeitlimit und stoppt auf Wunsch einen laufenden Server und startet ihn danach neu.
+Ein nicht-blockierendes Panel zeigt den Fortschritt je Datenbank mit Warnungen, Fehlern und
+Log; Abbrechen stoppt `odoo-bin` sauber, auch beim Schließen der App. Das Dashboard zeigt
+die Zahl veralteter Datenbanken je Version.
+
 **Datenbanken** — DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Schritt-Wizard
 mit Dry-Run (benötigt odoodev ≥ 0.61.0; zeigt den vollständigen CLI-Bericht: Backup-Datei
 und -Größe, ob die Ziel-DB überschrieben oder neu angelegt würde, Filestore-Ziel, freier
@@ -218,6 +226,13 @@ default credentials, extra args), LogViewer with virtual scrolling, level filter
 (DEBUG/INFO/WARNING/ERROR/CRITICAL — tracebacks and continuation lines inherit the
 level of their origin line), search, auto-scroll, copy, syntax highlighting,
 buffer persistence across stop/start, clickable server URL in the tab header.
+
+**Database updates** (new in 1.8.0, requires odoodev ≥ 0.69.0) — stale databases are marked
+in the list (reason in the tooltip); "Update stale" and "Update selected" run `odoo-bin -u`
+one after another; the start dialog shows the plan, modules and timeout first and can stop a
+running server and restart it afterwards. A non-blocking panel shows per-database progress
+with warnings, errors and the log; cancelling stops `odoo-bin` cleanly, also when the app is
+closed. The dashboard shows the number of stale databases per version.
 
 **Databases** — DB list, backup (SQL/ZIP/tar.zst with level), restore (3-step wizard with
 dry run (requires odoodev ≥ 0.61.0; shows the CLI's full report: backup file and size,
