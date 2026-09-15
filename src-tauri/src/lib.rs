@@ -1,6 +1,7 @@
 mod commands;
 mod config;
 mod db_update;
+mod db_update_manager;
 mod docker_check;
 mod installer;
 mod log_parser;
@@ -10,6 +11,7 @@ mod pypi;
 mod server_manager;
 
 use commands::database;
+use commands::db_update as db_update_cmd;
 use commands::docker;
 use commands::doctor;
 use commands::editor;
@@ -23,7 +25,9 @@ use commands::server;
 use commands::system;
 use commands::venv;
 use commands::versions;
+use db_update_manager::DbUpdateManager;
 use server_manager::ServerManager;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -36,6 +40,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(ServerManager::new())
+        .manage(DbUpdateManager::new())
         .invoke_handler(tauri::generate_handler![
             // versions / dashboard
             versions::get_versions,
@@ -71,6 +76,12 @@ pub fn run() {
             database::drop_db,
             database::copy_db,
             database::rename_db,
+            // database updates (odoodev >= 0.69.0)
+            db_update_cmd::plan_db_update,
+            db_update_cmd::start_db_update,
+            db_update_cmd::cancel_db_update,
+            db_update_cmd::list_db_updates,
+            db_update_cmd::read_update_log,
             // docker
             docker::docker_up,
             docker::docker_down,
@@ -123,6 +134,24 @@ pub fn run() {
             versions::get_runtime,
             versions::get_runtime_config,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::ExitRequested { api, .. } = &event {
+                let updates = app.state::<DbUpdateManager>().inner().clone();
+                // Closing the GUI must not orphan odoo-bin: SIGTERM every running
+                // update, wait up to 10 s, then exit for real. begin_shutdown() is
+                // one-shot, so the exit triggered below passes straight through.
+                if !updates.versions().is_empty() && updates.begin_shutdown() {
+                    api.prevent_exit();
+                    let handle = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        updates
+                            .terminate_all_and_wait(std::time::Duration::from_secs(10))
+                            .await;
+                        handle.exit(0);
+                    });
+                }
+            }
+        });
 }

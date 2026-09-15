@@ -38,3 +38,6 @@ tauri-plugin-dialog = "2"
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

@@ -53,6 +53,11 @@ pub struct DbListResponse {
     pub host: String,
     pub port: u16,
     pub databases: Vec<String>,
+    /// Database → reason it needs `db update` (odoodev >= 0.68.0). Absent until a
+    /// `db update` state file exists; serialized as null so the GUI can tell
+    /// "nothing recorded yet" from "all current".
+    #[serde(default)]
+    pub stale: Option<HashMap<String, String>>,
 }
 
 // === run --output json (NDJSON, per-line) ===
