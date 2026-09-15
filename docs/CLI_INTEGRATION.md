@@ -10,7 +10,7 @@
 | Channel | Description | Used For |
 |---------|-------------|----------|
 | **JSON (serde)** | Execute CLI, parse stdout as single JSON object | Structured data queries |
-| **NDJSON stream** | Execute CLI, parse stdout line-by-line as JSON objects | Playbook execution |
+| **NDJSON stream** | Execute CLI, parse stdout line-by-line as JSON objects | Playbook execution, database updates (`db update --output ndjson`) |
 | **stdout streaming** | Execute CLI, forward stdout lines as Tauri events | Server logs, backup/restore progress |
 | **Exit code** | Execute CLI, check return code only | Destructive operations |
 | **Direct (Rust)** | Bypass CLI, query system directly | Docker status check |

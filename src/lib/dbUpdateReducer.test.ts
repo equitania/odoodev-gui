@@ -98,6 +98,25 @@ describe("applyEvent", () => {
     expect(applyExit(run, 130).phase).toBe("interrupted");
   });
 
+  it("marks rows still waiting as skipped when the summary arrives (--stop-on-error)", () => {
+    const run = replay(plan, start("v19_a", 1), result("v19_a", { ok: false, exit_code: 1 }), {
+      event: "summary",
+      results: [],
+      skipped_current: [],
+      exit_code: 1,
+    });
+    expect(run.rows.v19_a.status).toBe("failed");
+    expect(run.rows.v19_b.status).toBe("skipped");
+    expect(finishedCount(run)).toBe(2);
+  });
+
+  it("marks rows still waiting as skipped on interrupted", () => {
+    const run = replay(plan, start("v19_a", 1), { event: "interrupted", database: "v19_a" });
+    expect(run.rows.v19_a.status).toBe("interrupted");
+    expect(run.rows.v19_b.status).toBe("skipped");
+    expect(finishedCount(run)).toBe(2);
+  });
+
   it("keeps the CLI's error message", () => {
     const run = applyExit(replay({ event: "error", message: "Development environment not ready" }), 1);
     expect(run.phase).toBe("error");
@@ -159,6 +178,13 @@ describe("applyExit", () => {
     const run = applyExit(markCancelling(replay(plan, start("v19_a", 1)), 5000), null);
     expect(run.phase).toBe("interrupted");
     expect(run.rows.v19_a.status).toBe("interrupted");
+  });
+
+  it("marks rows still waiting as skipped when the process exits mid-run", () => {
+    const run = applyExit(replay(plan, start("v19_a", 1)), 1);
+    expect(run.rows.v19_b.status).toBe("skipped");
+    expect(finishedCount(run)).toBe(2);
+    expect(applyExit(replay(plan), 0).rows.v19_a.status).toBe("skipped");
   });
 
   it("does not override a finished run", () => {

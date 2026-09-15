@@ -136,8 +136,8 @@ pub fn run() {
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app, event| {
-            if let tauri::RunEvent::ExitRequested { api, .. } = &event {
+        .run(|app, event| match &event {
+            tauri::RunEvent::ExitRequested { api, .. } => {
                 let updates = app.state::<DbUpdateManager>().inner().clone();
                 // Closing the GUI must not orphan odoo-bin: SIGTERM every running
                 // update, wait up to 10 s, then exit for real. begin_shutdown() is
@@ -153,5 +153,16 @@ pub fn run() {
                     });
                 }
             }
+            tauri::RunEvent::Exit => {
+                // Cmd+Q on macOS (applicationWillTerminate) and the updater
+                // relaunch reach Exit without a preventable ExitRequested. Block
+                // the main thread here; the owning tasks keep running on the
+                // runtime threads and remove each run as its process exits.
+                // Runs already signalled are skipped, and the deadline is shared
+                // with the window-close wait, so this never exceeds 10 s in total.
+                app.state::<DbUpdateManager>()
+                    .terminate_all_and_wait_blocking(std::time::Duration::from_secs(10));
+            }
+            _ => {}
         });
 }

@@ -277,3 +277,15 @@ and `dashboard.staleDatabases`; `locales.test.ts` keeps parity and key resolutio
   reload converges to the final state.
 - `DbUpdateRun.finishedAt` records when a run left the active phase; the panel's elapsed time
   uses it, so a finished run shows its real duration after the panel remounts.
+- App exit is handled on both `ExitRequested` (window close: graceful async wait) and
+  `RunEvent::Exit` (Cmd+Q on macOS, updater relaunch: blocking wait on the main thread). Both
+  send SIGTERM at most once per run and share one deadline, so exit waits at most 10 s in
+  total. An app-update relaunch is refused while a database update runs; the user restarts the
+  app after the update finished or was cancelled.
+- A plan error in the dialog shows the CLI's error message; stderr lines stay in the console of
+  a started run.
+- Rows still waiting when a run ends (summary after `--stop-on-error`, interrupted, error, or a
+  process exit) become `skipped` and count as finished. A run whose rows finished without
+  failures but with errors in the log ends with a warning toast instead of a success toast.
+- Stopping the server before an update checks the `stop_server` result; a failed stop aborts
+  the start (no run, no restart).

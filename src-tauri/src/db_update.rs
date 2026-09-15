@@ -171,12 +171,33 @@ pub fn tail_text(bytes: &[u8], limit: usize) -> String {
     if bytes.len() <= limit {
         return String::from_utf8_lossy(bytes).into_owned();
     }
-    let tail = &bytes[bytes.len() - limit..];
+    truncated_text(&bytes[bytes.len() - limit..], limit, bytes.len() as u64)
+}
+
+fn truncated_text(tail: &[u8], limit: usize, total: u64) -> String {
     format!(
-        "… (showing the last {limit} bytes of {} — open the file for the rest)\n{}",
-        bytes.len(),
+        "… (showing the last {limit} bytes of {total} — open the file for the rest)\n{}",
         String::from_utf8_lossy(tail)
     )
+}
+
+/// Like `tail_text`, but reads only the last `limit` bytes from disk instead
+/// of the whole file (an `-u all` log can reach tens of MB).
+pub fn read_log_tail(path: &Path, limit: usize) -> Result<String, String> {
+    use std::io::{Read, Seek, SeekFrom};
+
+    let err = |e: std::io::Error| format!("Could not read the log: {e}");
+    let mut file = std::fs::File::open(path).map_err(err)?;
+    let len = file.metadata().map_err(err)?.len();
+    let start = len.saturating_sub(limit as u64);
+    file.seek(SeekFrom::Start(start)).map_err(err)?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).map_err(err)?;
+    if start == 0 {
+        Ok(tail_text(&bytes, limit))
+    } else {
+        Ok(truncated_text(&bytes, limit, len))
+    }
 }
 
 #[cfg(test)]
@@ -383,6 +404,22 @@ mod tests {
         let link = dir.join("update_v19_link.log");
         std::os::unix::fs::symlink(&secret, &link).unwrap();
         assert!(validate_update_log_path(&link, &dir).is_err());
+    }
+
+    #[test]
+    fn read_log_tail_reads_only_the_end_and_matches_tail_text() {
+        let path = std::env::temp_dir().join(format!(
+            "odoodev-gui-tail-{}-{:?}.log",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        std::fs::write(&path, b"0123456789").unwrap();
+        let cut = read_log_tail(&path, 4);
+        let whole = read_log_tail(&path, 100);
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(cut.unwrap(), tail_text(b"0123456789", 4));
+        assert_eq!(whole.unwrap(), "0123456789");
+        assert!(read_log_tail(&path, 4).is_err());
     }
 
     #[test]

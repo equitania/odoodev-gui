@@ -282,6 +282,7 @@
     "updateStatusFailed": "failed",
     "updateStatusTimedOut": "timed out",
     "updateStatusInterrupted": "interrupted",
+    "updateStatusSkipped": "skipped",
     "updateWarnings_one": "{{count}} warning",
     "updateWarnings_other": "{{count}} warnings",
     "updateErrors_one": "{{count}} error",
@@ -291,6 +292,7 @@
     "updateConsole": "Console",
     "updateDetailsLost": "Details from before the reload are unavailable.",
     "updateFinishedOk": "Update finished: {{count}} database(s) updated",
+    "updateFinishedWithErrors": "Update finished: {{count}} database(s) with errors in the log — not marked current",
     "updateFinishedFailed": "Update finished: {{failed}} of {{total}} database(s) failed",
     "updateInterrupted": "Update interrupted",
     "updateFailed": "Update failed",
@@ -525,6 +527,8 @@
     "upToDate": "odoodev-gui is up to date",
     "installing": "Installing GUI update",
     "installed": "Updated — restarting…",
+    "installedRestartBlocked": "GUI update installed",
+    "restartBlockedByDbUpdate": "A database update is running. Wait for it to finish or cancel it, then restart the app.",
     "updateFailed": "GUI update failed"
   },
   "install": {

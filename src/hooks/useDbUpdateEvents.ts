@@ -30,7 +30,10 @@ export function useDbUpdateEvents() {
           const run = store().exited(version, exit_code);
           if (!run) return;
           const failed = run.order.filter((db) => ["failed", "timedOut"].includes(run.rows[db].status)).length;
-          if (run.phase === "finished" && failed === 0) {
+          const withErrors = run.order.filter((db) => run.rows[db].status === "okWithErrors").length;
+          if (run.phase === "finished" && failed === 0 && withErrors > 0) {
+            toast("info", t("database.updateFinishedWithErrors", { count: withErrors }));
+          } else if (run.phase === "finished" && failed === 0) {
             toastSuccess(t("database.updateFinishedOk", { count: finishedCount(run) }));
           } else if (run.phase === "finished") {
             toastError(t("database.updateFinishedFailed", { failed, total: run.order.length }));
@@ -54,7 +57,17 @@ export function useDbUpdateEvents() {
       unlistens = subscriptions;
       // After a webview reload the backend may still be running updates.
       const running = await invokeCmd<string[]>("list_db_updates").catch(() => [] as string[]);
-      if (!disposed) store().attach(running);
+      if (disposed) return;
+      const attached = running.filter((version) => !store().runs[version]);
+      store().attach(running);
+      if (attached.length === 0) return;
+      // A run that exited between subscribing and the reply above had its
+      // `db-update-exited` ignored (unknown version) — ask again and close it.
+      const stillRunning = await invokeCmd<string[]>("list_db_updates").catch(() => null);
+      if (disposed || stillRunning === null) return;
+      for (const version of attached) {
+        if (!stillRunning.includes(version)) store().exited(version, null);
+      }
     })();
 
     return () => {

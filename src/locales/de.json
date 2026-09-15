@@ -282,6 +282,7 @@
     "updateStatusFailed": "fehlgeschlagen",
     "updateStatusTimedOut": "Zeitlimit überschritten",
     "updateStatusInterrupted": "abgebrochen",
+    "updateStatusSkipped": "übersprungen",
     "updateWarnings_one": "{{count}} Warnung",
     "updateWarnings_other": "{{count}} Warnungen",
     "updateErrors_one": "{{count}} Fehler",
@@ -291,6 +292,7 @@
     "updateConsole": "Konsole",
     "updateDetailsLost": "Details von vor dem Neuladen sind nicht verfügbar.",
     "updateFinishedOk": "Update abgeschlossen: {{count}} Datenbank(en) aktualisiert",
+    "updateFinishedWithErrors": "Update abgeschlossen: {{count}} Datenbank(en) mit Fehlern im Log – nicht als aktuell markiert",
     "updateFinishedFailed": "Update abgeschlossen: {{failed}} von {{total}} Datenbank(en) fehlgeschlagen",
     "updateInterrupted": "Update abgebrochen",
     "updateFailed": "Update fehlgeschlagen",
@@ -525,6 +527,8 @@
     "upToDate": "odoodev-gui ist aktuell",
     "installing": "GUI-Update wird installiert",
     "installed": "Aktualisiert — Neustart…",
+    "installedRestartBlocked": "GUI-Update installiert",
+    "restartBlockedByDbUpdate": "Ein Datenbank-Update läuft. Bitte abwarten oder abbrechen und die App danach neu starten.",
     "updateFailed": "GUI-Update fehlgeschlagen"
   },
   "install": {

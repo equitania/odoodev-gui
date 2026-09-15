@@ -10,7 +10,9 @@ export type DbUpdateRowStatus =
   | "okWithErrors"
   | "failed"
   | "timedOut"
-  | "interrupted";
+  | "interrupted"
+  /** Never started: the run ended first (--stop-on-error, cancel, crash). */
+  | "skipped";
 
 export type DbUpdatePhase = "running" | "cancelling" | "finished" | "interrupted" | "error";
 
@@ -107,6 +109,15 @@ function interruptRunningRows(run: DbUpdateRun): DbUpdateRun {
   return { ...run, rows };
 }
 
+/** A run that ends will never start the databases still waiting. */
+function skipPendingRows(run: DbUpdateRun): DbUpdateRun {
+  const rows = { ...run.rows };
+  for (const db of run.order) {
+    if (rows[db].status === "pending") rows[db] = { ...rows[db], status: "skipped" };
+  }
+  return { ...run, rows };
+}
+
 function applyResultToRow(row: DbUpdateRow, result: DbUpdateResult): DbUpdateRow {
   return {
     ...row,
@@ -165,7 +176,7 @@ export function applyEvent(run: DbUpdateRun, event: DbUpdateEvent, now: number):
         updated = withRow(updated, result.database, (row) => applyResultToRow(row, result));
       }
       return {
-        ...updated,
+        ...skipPendingRows(updated),
         phase: "finished",
         exitCode: event.exit_code,
         skippedCurrent: event.skipped_current,
@@ -176,10 +187,19 @@ export function applyEvent(run: DbUpdateRun, event: DbUpdateEvent, now: number):
       const marked = event.database
         ? withRow(run, event.database, (row) => ({ ...row, status: "interrupted" }))
         : run;
-      return { ...interruptRunningRows(marked), phase: "interrupted", finishedAt: run.finishedAt ?? now };
+      return {
+        ...skipPendingRows(interruptRunningRows(marked)),
+        phase: "interrupted",
+        finishedAt: run.finishedAt ?? now,
+      };
     }
     case "error":
-      return { ...run, phase: "error", errorMessage: event.message, finishedAt: run.finishedAt ?? now };
+      return {
+        ...skipPendingRows(run),
+        phase: "error",
+        errorMessage: event.message,
+        finishedAt: run.finishedAt ?? now,
+      };
   }
 }
 
@@ -194,12 +214,13 @@ export function markCancelling(run: DbUpdateRun, now: number): DbUpdateRun {
 
 export function applyExit(run: DbUpdateRun, exitCode: number | null, now: number = Date.now()): DbUpdateRun {
   if (!isActive(run)) return { ...run, exitCode: run.exitCode ?? exitCode, finishedAt: run.finishedAt ?? now };
-  if (exitCode === 0) return { ...run, phase: "finished", exitCode, finishedAt: run.finishedAt ?? now };
+  if (exitCode === 0) return { ...skipPendingRows(run), phase: "finished", exitCode, finishedAt: run.finishedAt ?? now };
+  const closed = skipPendingRows(interruptRunningRows(run));
   if (exitCode === 130 || run.phase === "cancelling") {
-    return { ...interruptRunningRows(run), phase: "interrupted", exitCode, finishedAt: run.finishedAt ?? now };
+    return { ...closed, phase: "interrupted", exitCode, finishedAt: run.finishedAt ?? now };
   }
   return {
-    ...interruptRunningRows(run),
+    ...closed,
     phase: "error",
     exitCode,
     errorMessage: run.errorMessage ?? `odoodev exited with code ${exitCode ?? "unknown"}`,

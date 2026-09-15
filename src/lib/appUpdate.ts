@@ -1,6 +1,8 @@
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { toast, toastLoading, toastUpdate } from "../store/toastStore";
+import { useDbUpdateStore } from "../store/dbUpdateStore";
+import { isActive } from "./dbUpdateReducer";
 import i18n from "i18next";
 
 // GUI *app* self-update via the Tauri updater. This is deliberately separate
@@ -57,6 +59,21 @@ export async function runAppUpdate(): Promise<void> {
   );
   try {
     await update.downloadAndInstall();
+    // A relaunch cannot be held back for a running `db update` (the exit is not
+    // preventable), so leave the restart to the user once the update is done.
+    const updateRunning = Object.values(useDbUpdateStore.getState().runs).some(isActive);
+    if (updateRunning) {
+      toastUpdate(
+        tid,
+        "info",
+        t("gui.installedRestartBlocked", "GUI update installed") + ` ${update.version}`,
+        t(
+          "gui.restartBlockedByDbUpdate",
+          "A database update is running. Wait for it to finish or cancel it, then restart the app.",
+        ),
+      );
+      return;
+    }
     toastUpdate(
       tid,
       "success",

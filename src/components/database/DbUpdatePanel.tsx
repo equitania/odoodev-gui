@@ -33,6 +33,8 @@ function StatusIcon({ status }: { status: DbUpdateRowStatus }) {
       return <Clock className="h-4 w-4 text-red-500" />;
     case "interrupted":
       return <Ban className="h-4 w-4 text-muted-foreground" />;
+    case "skipped":
+      return <Ban className="h-4 w-4 text-muted-foreground opacity-50" />;
     default:
       return <span className="inline-block h-4 w-4 text-center text-muted-foreground">·</span>;
   }
@@ -65,6 +67,7 @@ export function DbUpdatePanel({ version, onOpenLog }: { version: string; onOpenL
     failed: t("database.updateStatusFailed"),
     timedOut: t("database.updateStatusTimedOut"),
     interrupted: t("database.updateStatusInterrupted"),
+    skipped: t("database.updateStatusSkipped"),
   };
   const done = finishedCount(run);
   const total = run.order.length;

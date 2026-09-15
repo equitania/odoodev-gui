@@ -14,7 +14,11 @@ export async function startDbUpdate(args: DbUpdateArgs, serverChoice: ServerChoi
   if (serverChoice === "restart") {
     restart = app.servers[args.version]?.config ?? null;
     // keepDocker must stay true: the update needs PostgreSQL.
-    await app.stopServer(args.version, true);
+    const stopped = await app.stopServer(args.version, true);
+    // Updating against a live server fails and the restart would hit a busy port.
+    if (!stopped.success) {
+      throw new Error(stopped.error || `Could not stop the Odoo server v${args.version}`);
+    }
   }
   updates.begin(args.version, args.modules, restart);
   try {

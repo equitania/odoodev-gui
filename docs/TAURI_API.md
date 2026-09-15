@@ -514,7 +514,7 @@ invoke('list_db_updates') → string[]   // versions with a running update
 ```typescript
 invoke('read_update_log', { path: string }) → string
 ```
-Only `~/odoodev-logs/update_v*.log` (canonicalized); files over 2 MB return their last 2 MB with a note.
+Only `~/odoodev-logs/update_v*.log` (canonicalized); files over 2 MB return their last 2 MB with a note. Async: reads only the tail, off the main thread.
 
 ---
 
