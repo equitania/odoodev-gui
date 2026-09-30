@@ -1,6 +1,8 @@
 # Release Notes
 
-## Unreleased (odoodev 0.71 – 0.74 alignment)
+## Version 1.9.0 (30.09.2026)
+
+Alignment with odoodev 0.71 – 0.74.
 
 ### Added
 - **Playbook log shows where a run is.** The step that is running appears as a live line with
