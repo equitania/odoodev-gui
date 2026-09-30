@@ -1,5 +1,28 @@
 # Release Notes
 
+## Unreleased (odoodev 0.71 – 0.74 alignment)
+
+### Added
+- **Playbook log shows where a run is.** The step that is running appears as a live line with
+  its position (`[2/5]`), name and a running clock; what a long step reports (image build,
+  restore phases) stays above it. Needs odoodev ≥ 0.74.0; older versions behave as before.
+- **Server check before a server playbook.** odoodev 0.72 holds a playbook with `server.restore`
+  or `server.rebuild` against the host first. Findings are listed at the top of the log —
+  errors in red (the run stops before anything is changed), warnings in yellow. A new switch
+  "Skip server check" runs without it. A dry run now fails on such an error, as the CLI does.
+- **Restore without AI tables.** A new option in the restore dialog passes `--without-pgvector`.
+  Without it, restoring a dump that creates the `vector` extension onto a database server that
+  lacks pgvector stops (also with `-y`) and the GUI had no way out. Needs odoodev ≥ 0.71.0.
+- **Playbook assistant, schema version 4.** New questions: save the destination's current
+  database before it is replaced, run the rebuild before or after the restore (after is the
+  default), verify afterwards that Odoo serves the database. Label texts follow the CLI.
+
+### Changed
+- The assistant no longer asks for a rebuild target; the rebuild always belongs to the
+  destination (a rebuild of the source would update the wrong instance).
+- Step durations read `7m 19s` instead of `439393ms`.
+- The result line of a step carries the name the playbook gives it.
+
 ## Version 1.8.0 (15.09.2026)
 
 ### Added

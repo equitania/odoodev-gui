@@ -302,7 +302,10 @@ odoodev run --step docker.up --step pull -V 18 --output json
 **Output Format (NDJSON, one JSON object per line):**
 ```json
 {"event":"playbook_start","playbook":"<inline>","version":"18","dry_run":false}
+{"event":"step_start","index":1,"total":2,"name":"docker.up","command":"docker.up"}
 {"event":"step_done","name":"docker.up","command":"docker.up","status":"ok","message":"","exit_code":0,"duration_ms":1234}
+{"event":"step_start","index":2,"total":2,"name":"pull","command":"pull"}
+{"event":"step_progress","index":2,"total":2,"name":"pull","command":"pull","message":"..."}
 {"event":"step_done","name":"pull","command":"pull","status":"ok","message":"Updated 5 repos","exit_code":0,"duration_ms":5678}
 {"event":"playbook_done","playbook":"<inline>","version":"18","status":"ok","steps_ok":2,"steps_error":0,"total_duration_ms":6912}
 ```
@@ -311,6 +314,24 @@ odoodev run --step docker.up --step pull -V 18 --output json
 ```json
 {"event":"error","message":"Playbook validation error: unknown command 'foo'"}
 ```
+
+**Since odoodev 0.72 – 0.74:**
+
+- `step_start` (`index`, `total`, `name`, `command`) precedes each step and `step_progress`
+  (same fields plus `message`) reports what a long step is doing. Both are absent in
+  `--dry-run`. The GUI shows the announced step as a live line with a clock; the result line
+  replaces it. A receiver must skip events it does not know.
+- `step_done.name` is the step's name **from the playbook** (`Restore backup into test`), not
+  the command; `command` is unchanged. `duration_ms` stays in milliseconds — the GUI formats it.
+- **Preflight (0.72):** a playbook with `server.restore` / `server.rebuild` is held against the
+  host before its first step. Findings arrive as one leading `step_done` with
+  `command: "preflight"`, `name: "Preflight"`, one `[error] …` or `[warning] …` per line in
+  `message`, and `details: {errors, warnings}`. `status` is `error` when any finding is an
+  error; the run then stops before the first step. In `--dry-run` the same checks run, the
+  steps are still listed, and the exit code is 1 on an error. `--no-preflight` skips the checks
+  (Playbook view: "Skip server check", shown only for playbooks with `server.*` steps).
+- New server steps the GUI merely displays: `server.verify`, `server.backup` with
+  `safety: true`. `server.restore` restores into a staging database and swaps afterwards.
 
 **Rust Model:**
 ```rust
@@ -326,6 +347,8 @@ struct PlaybookEvent {
     details: Option<serde_json::Value>,
     playbook: Option<String>,
     version: Option<String>,
+    index: Option<u32>,   // step_start / step_progress (>= 0.74.0)
+    total: Option<u32>,
     steps_ok: Option<u32>,
     steps_error: Option<u32>,
     total_duration_ms: Option<u64>,
@@ -548,6 +571,7 @@ odoodev db restore 18 -n v18_restored -z ~/Downloads/backup.zip \
 -y, --yes                       Skip confirmation
 --keep-temp                     Keep temp files
 --check-space / --no-check-space  Check disk space (default on)
+--without-pgvector              Restore without the AI tables when the DB server lacks pgvector (>= 0.71.0)
 --delete-backup                 Delete original after success
 --keep-backup                   Never delete original
 ```
@@ -569,6 +593,7 @@ odoodev db restore 18 -n v18_restored -z ~/Downloads/backup.zip \
 | Modules to uninstall | `--uninstall-modules TEXT` | — | Omitting it prompts interactively unless `-y` is set |
 | "Recompute" | `--recompute` / `--no-recompute` | **= anonymize** | ⚠ CLI default follows `--anonymize` — always sent explicitly while anonymize is on, omitted while it is off (the CLI skips the step then anyway); the checkbox is disabled without anonymize |
 | "Check disk space" | `--check-space` / `--no-check-space` | on | Only `--no-check-space` is ever sent |
+| "Without AI tables (pgvector)" | `--without-pgvector` | off | Only sent when ticked; the box is hidden for odoodev < 0.71.0. Needed because the CLI stops a restore of a dump that creates the `vector` extension when the database server does not offer it — **`-y` does not skip that stop**. The dry run returns before the check and does not show it. Alternative: `PGVECTOR=true` in the version's `.env`, then `odoodev docker up` |
 | Backup file handling | `--keep-backup` | always on | Never auto-delete the user's original |
 | Skip confirmation | `-y` | always on | GUI IS the confirmation — also suppresses the uninstall-modules prompt |
 
@@ -880,6 +905,9 @@ The GUI must handle different odoodev versions gracefully:
 | 0.48.0+ | `--sanitize` includes `--purge-master-data` | Restore dialog shows warning |
 | 0.49.0+ | Current version | Full feature support |
 | 0.69.0+ | `db update --output ndjson` | Database update view enabled |
+| 0.71.0+ | `db restore --without-pgvector` | Restore dialog offers "Without AI tables" |
+| 0.72.0+ | Preflight for server playbooks, `--no-preflight`; playbook schema v4 (safety backup, rebuild position, `server.verify`) | "Skip server check" switch; wizard sends the v4 blocks |
+| 0.74.0+ | `step_start` / `step_progress` events, step names in `step_done` | Live line with position and clock in the playbook log |
 | Future | May add `--json` to more commands | GUI prefers JSON when available |
 
 **Minimum required version:** 0.49.0. The database update view additionally needs
