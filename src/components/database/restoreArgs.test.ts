@@ -18,6 +18,7 @@ const base: RestoreForm = {
   uninstallModules: "",
   recompute: true,
   checkSpace: true,
+  withoutPgvector: false,
 };
 
 const form = (over: Partial<RestoreForm> = {}): RestoreForm => ({ ...base, ...over });
@@ -132,5 +133,12 @@ describe("module list", () => {
     expect(buildRestoreArgs(form({ uninstallModules: "eq_sale,eq_stock" }), false).uninstall_modules).toBe(
       "eq_sale,eq_stock",
     );
+  });
+});
+
+describe("pgvector", () => {
+  it("sends the flag only when the box is ticked", () => {
+    expect(buildRestoreArgs(form(), false).without_pgvector).toBeUndefined();
+    expect(buildRestoreArgs(form({ withoutPgvector: true }), false).without_pgvector).toBe(true);
   });
 });

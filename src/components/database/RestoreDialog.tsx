@@ -11,6 +11,8 @@ import { invokeCmd } from "../../lib/tauri";
 import { defaultBackupDir, rememberBackupDir } from "../../lib/backupDir";
 import { buildRestoreArgs } from "./restoreArgs";
 import { cn } from "../../lib/utils";
+import { useAppStore } from "../../store/appStore";
+import { isAtLeast, MIN_ODOODEV_PGVECTOR } from "../../lib/version";
 import { CheckCircle2, FolderOpen, TriangleAlert } from "lucide-react";
 
 /** Checkbox with a short explanation of what the CLI flag actually does. */
@@ -64,6 +66,10 @@ export function RestoreDialog({
   const [uninstallModules, setUninstallModules] = useState("");
   const [recompute, setRecompute] = useState(true);
   const [checkSpace, setCheckSpace] = useState(true);
+  // An unknown version is not nagged about; only a known old CLI lacks the flag.
+  const odoodevVersion = useAppStore((s) => s.odoodevInfo?.version ?? null);
+  const offersPgvectorFlag = odoodevVersion === null || isAtLeast(odoodevVersion, MIN_ODOODEV_PGVECTOR);
+  const [withoutPgvector, setWithoutPgvector] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<string | null>(null);
   const [dryRunOk, setDryRunOk] = useState<boolean | null>(null);
   const [running, setRunning] = useState(false);
@@ -131,6 +137,7 @@ export function RestoreDialog({
         uninstallModules,
         recompute,
         checkSpace,
+        withoutPgvector: offersPgvectorFlag && withoutPgvector,
       },
       dry,
     );
@@ -284,6 +291,14 @@ export function RestoreDialog({
             label={t("database.checkSpace")}
             hint={t("database.restoreHelp.checkSpace")}
           />
+          {offersPgvectorFlag && (
+          <OptionRow
+            checked={withoutPgvector}
+            onChange={setWithoutPgvector}
+            label={t("database.withoutPgvector")}
+            hint={t("database.restoreHelp.withoutPgvector")}
+          />
+          )}
 
           {dryRunResult && (
             <div className="space-y-1">

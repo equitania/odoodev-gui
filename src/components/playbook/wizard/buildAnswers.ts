@@ -147,14 +147,32 @@ function buildServerAnswers(
     };
   }
 
-  if (bool(values["recipe.rebuild.enabled"], false)) {
-    recipe.rebuild = {
+  // schema v4 (odoodev >= 0.72): the destination's current database is saved
+  // before the restore replaces it; the block is omitted for older schemas,
+  // where the CLI has no such question.
+  if (schemaVersion >= 4 && bool(values["recipe.safety_backup.enabled"], true)) {
+    recipe.safety_backup = {
       enabled: true,
-      target: str(values["recipe.rebuild.target"]) || destination,
+      backup_dir: str(values["recipe.safety_backup.backup_dir"]) || "/opt/backups/docker",
+    };
+  }
+
+  if (bool(values["recipe.rebuild.enabled"], false)) {
+    const rebuild: Record<string, unknown> = {
+      enabled: true,
+      // Always the destination (odoodev 0.73 dropped the question): a rebuild of
+      // the source would update the wrong instance.
+      target: destination,
       script_path: str(values["recipe.rebuild.script_path"]) || "~/update_docker_odoo.py",
       config: str(values["recipe.rebuild.config"]) || "~/docker2update.yaml",
       timeout: num(values["recipe.rebuild.timeout"], 7200),
     };
+    if (schemaVersion >= 4) {
+      // Without an explicit position the CLI would pick by schema version; sending
+      // it keeps the generated order independent of that rule.
+      rebuild.position = str(values["recipe.rebuild.position"]) || "after_restore";
+    }
+    recipe.rebuild = rebuild;
   }
 
   recipe.stop_before_restore = bool(values["recipe.stop_before_restore"], true);
@@ -197,6 +215,10 @@ function buildServerAnswers(
   } else {
     // v2 schema still has its own recipe.neutralize.enabled confirm field.
     recipe.neutralize = { enabled: bool(values["recipe.neutralize.enabled"], true) };
+  }
+
+  if (schemaVersion >= 4 && bool(values["recipe.verify.enabled"], true)) {
+    recipe.verify = { enabled: true };
   }
 
   if (bool(values["recipe.update_all.enabled"], false)) {

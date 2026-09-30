@@ -224,6 +224,8 @@ export interface PlaybookEvent {
   details?: Record<string, unknown>;
   playbook?: string;
   version?: string;
+  index?: number;
+  total?: number;
   dry_run?: boolean;
   steps_ok?: number;
   steps_error?: number;
@@ -386,6 +388,7 @@ export interface RestoreArgs {
   recompute?: boolean;
   keep_temp?: boolean;
   check_space?: boolean;
+  without_pgvector?: boolean;
   delete_backup?: boolean;
   dry_run?: boolean;
 }

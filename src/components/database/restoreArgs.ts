@@ -17,6 +17,7 @@ export interface RestoreForm {
   uninstallModules: string;
   recompute: boolean;
   checkSpace: boolean;
+  withoutPgvector: boolean;
 }
 
 /** The five options the CLI's `--sanitize` switches on in one go. */
@@ -65,6 +66,7 @@ export function buildRestoreArgs(form: RestoreForm, dry: boolean): RestoreArgs {
     uninstall_modules: form.uninstallModules || undefined,
     recompute: form.anonymize ? form.recompute : undefined,
     check_space: form.checkSpace ? undefined : false,
+    without_pgvector: form.withoutPgvector || undefined,
     dry_run: dry || undefined,
   };
 }

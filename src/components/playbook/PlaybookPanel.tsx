@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { logError } from "../../lib/errors";
-import { isAtLeast } from "../../lib/version";
+import { isAtLeast, MIN_ODOODEV_PREFLIGHT } from "../../lib/version";
 import { usePlaybookRun } from "../../hooks/usePlaybookRun";
 import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
@@ -13,6 +13,7 @@ import { PlaybookWizard } from "./wizard/PlaybookWizard";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Checkbox } from "../ui/checkbox";
 import { Badge } from "../ui/badge";
 import {
   Play,
@@ -55,10 +56,18 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
 
   const odoodevVersion = useAppStore((s) => s.odoodevInfo?.version ?? null);
   const playbookRun = usePlaybookRun();
+  const [noPreflight, setNoPreflight] = useState(false);
 
   const devSteps = validSteps.filter((s) => s.mode === "dev").map((s) => s.command);
   const hasServerCapabilities = validSteps.some((s) => s.mode === "server");
   // Unknown version: don't nag (same as before) — only a known old CLI is "legacy".
+  // The CLI checks a server playbook against the host before its first step
+  // (0.72.0). Only offer the switch where there is something to skip.
+  const hasServerSteps =
+    (odoodevVersion === null || isAtLeast(odoodevVersion, MIN_ODOODEV_PREFLIGHT)) &&
+    [...(selectedPlaybook ? (details?.step_commands ?? []) : selectedSteps)].some((c) =>
+      c.startsWith("server."),
+    );
   const legacyStreaming = odoodevVersion !== null && !isAtLeast(odoodevVersion, "0.51.0");
 
   useEffect(() => {
@@ -131,6 +140,7 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
       selectedVersion || null,
       vars,
       dryRun,
+      noPreflight,
     );
     if (success) {
       toastUpdate(tid, "success", dryRun ? t("playbook.dryRunComplete") : t("playbook.playbookComplete"));
@@ -339,6 +349,17 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
             {t("playbook.dryRun")}
           </Button>
         </div>
+
+        {hasServerSteps && (
+          <div className="space-y-0.5">
+            <Checkbox
+              checked={noPreflight}
+              onChange={setNoPreflight}
+              label={t("playbook.noPreflight")}
+            />
+            <p className="pl-6 text-xs text-muted-foreground">{t("playbook.noPreflightHint")}</p>
+          </div>
+        )}
 
         {legacyStreaming && (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">

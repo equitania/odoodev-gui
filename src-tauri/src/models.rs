@@ -73,6 +73,9 @@ pub struct PlaybookEvent {
     pub details: Option<serde_json::Value>,
     pub playbook: Option<String>,
     pub version: Option<String>,
+    /// Position of the step in `step_start` / `step_progress` (odoodev >= 0.74.0).
+    pub index: Option<u32>,
+    pub total: Option<u32>,
     pub steps_ok: Option<u32>,
     pub steps_error: Option<u32>,
     pub total_duration_ms: Option<u64>,

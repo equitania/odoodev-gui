@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, Terminal, CircleCheckBig, CircleX, CircleAlert } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
 import type { PlaybookEvent } from "../../types";
+import { activeStepIndex, formatDuration, preflightLineLevel } from "./eventModel";
 
 interface EventLogProps {
   events: PlaybookEvent[];
@@ -25,6 +26,18 @@ function statusColor(status?: string) {
   return "text-muted-foreground";
 }
 
+/** Seconds since `startedAt`, re-rendered once a second while `active`. */
+function useElapsed(active: boolean, startedAt: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return Math.max(0, now - startedAt);
+}
+
 export function EventLog({ events, running, onClose }: EventLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +46,14 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [events]);
+
+  const activeIdx = running ? activeStepIndex(events) : -1;
+  // The log has no timestamps, so the clock starts when the announcement is first seen.
+  const [activeSince, setActiveSince] = useState(() => Date.now());
+  useEffect(() => {
+    if (activeIdx >= 0) setActiveSince(Date.now());
+  }, [activeIdx]);
+  const elapsed = useElapsed(activeIdx >= 0, activeSince);
 
   const summary = events.find((e) => e.event === "playbook_done");
   const { t } = useTranslation();
@@ -57,7 +78,7 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
                 error: summary.steps_error ?? 0,
               })}
               {summary.total_duration_ms
-                ? ` · ${(summary.total_duration_ms / 1000).toFixed(1)}s`
+                ? ` · ${formatDuration(summary.total_duration_ms)}`
                 : ""}
             </span>
           )}
@@ -99,16 +120,60 @@ export function EventLog({ events, running, onClose }: EventLogProps) {
                 </div>
               );
             }
+            if (e.event === "step_start") {
+              // Replaced by the result line as soon as the step is over.
+              if (i !== activeIdx) return null;
+              return (
+                <div key={i} className="flex items-center gap-2 text-gray-300">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span className="text-gray-500">
+                    [{e.index}/{e.total}]
+                  </span>
+                  <span className="text-cyan-400">{e.name}</span>
+                  <span className="text-gray-500">{formatDuration(elapsed)}</span>
+                </div>
+              );
+            }
+            if (e.event === "step_progress") {
+              return (
+                <div key={i} className="pl-6 text-gray-500">
+                  {e.message}
+                </div>
+              );
+            }
+            if (e.event === "step_done" && e.command === "preflight") {
+              return (
+                <div key={i} className="mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className={statusColor(e.status)}>
+                      {e.status === "error" ? statusIcon("error") : <CircleAlert className="h-3.5 w-3.5 text-yellow-500" />}
+                    </span>
+                    <span className="text-cyan-400">{t("playbook.preflight")}</span>
+                  </div>
+                  {(e.message ?? "").split("\n").filter(Boolean).map((line, j) => (
+                    <div
+                      key={j}
+                      className={cn(
+                        "pl-6 whitespace-pre-wrap",
+                        preflightLineLevel(line) === "error" ? "text-red-400" : "text-yellow-400",
+                      )}
+                    >
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              );
+            }
             if (e.event === "step_done") {
               return (
                 <div key={i} className="flex items-start gap-2 text-gray-300">
                   <span className={statusColor(e.status)}>{statusIcon(e.status)}</span>
                   <span className="text-cyan-400">{e.name}</span>
                   {e.duration_ms !== undefined && e.duration_ms > 0 && (
-                    <span className="text-gray-500">({e.duration_ms}ms)</span>
+                    <span className="text-gray-500">({formatDuration(e.duration_ms)})</span>
                   )}
                   {e.message && (
-                    <span className="text-gray-400"> — {e.message}</span>
+                    <span className="whitespace-pre-wrap text-gray-400"> — {e.message}</span>
                   )}
                 </div>
               );

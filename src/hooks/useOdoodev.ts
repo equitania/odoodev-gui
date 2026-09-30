@@ -92,8 +92,9 @@ export function useOdoodev() {
       version: string | null,
       vars: string[],
       dryRun: boolean,
+      noPreflight = false,
     ) =>
-      invokeCmd<OpResult>("playbook_run", { playbook, steps, version, vars, dryRun }),
+      invokeCmd<OpResult>("playbook_run", { playbook, steps, version, vars, dryRun, noPreflight }),
     initVersion: (version: string, skipRepos: boolean, skipDocker: boolean) =>
       invokeCmd<OpResult>("init_version", { version, skipRepos, skipDocker }),
     setupConfig: (reset: boolean) =>

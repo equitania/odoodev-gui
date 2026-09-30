@@ -43,6 +43,7 @@ export function resolveChoiceLabel(
     const modeKey = { fresh_backup: "fresh", existing_file: "file", newest_in_dir: "newest" }[choice];
     if (modeKey) candidates.push(`playbook.server.source.${modeKey}`);
   }
+  if (fieldKey === "recipe.rebuild.position") candidates.push(`playbook.choice.rebuild_${choice}`);
   if (fieldKey.endsWith("on_error")) candidates.push(`playbook.choice.on_error_${choice}`);
   if (fieldKey.endsWith("select_by")) {
     candidates.push(

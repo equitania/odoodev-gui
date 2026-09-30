@@ -154,6 +154,7 @@ pub struct RestoreArgs {
     pub recompute: Option<bool>,
     pub keep_temp: Option<bool>,
     pub check_space: Option<bool>,
+    pub without_pgvector: Option<bool>,
     pub delete_backup: Option<bool>,
     pub dry_run: Option<bool>,
 }
@@ -235,6 +236,9 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
         } else {
             cli.push("--no-check-space".into());
         }
+    }
+    if args.without_pgvector.unwrap_or(false) {
+        cli.push("--without-pgvector".into());
     }
     if args.delete_backup.unwrap_or(false) {
         cli.push("--delete-backup".into());

@@ -11,6 +11,7 @@ export interface PlaybookRunState {
     version: string | null,
     vars: string[],
     dryRun: boolean,
+    noPreflight: boolean,
   ) => Promise<boolean>;
   clear: () => void;
 }
@@ -29,6 +30,7 @@ export function usePlaybookRun(): PlaybookRunState {
       version: string | null,
       vars: string[],
       dryRun: boolean,
+      noPreflight: boolean,
     ): Promise<boolean> => {
       setEvents([]);
       setRunning(true);
@@ -42,7 +44,7 @@ export function usePlaybookRun(): PlaybookRunState {
       try {
         const result = await invokeCmd<{ success: boolean; error: string | null }>(
           "playbook_run",
-          { playbook, steps, version, vars, dryRun },
+          { playbook, steps, version, vars, dryRun, noPreflight },
         );
         return result.success;
       } catch (e) {

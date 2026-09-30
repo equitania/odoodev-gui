@@ -205,6 +205,7 @@ pub async fn playbook_run(
     version: Option<String>,
     vars: Vec<String>,
     dry_run: bool,
+    no_preflight: Option<bool>,
     window: tauri::Window,
 ) -> Result<OpResult, String> {
     let mut args = vec!["run".to_string()];
@@ -230,6 +231,10 @@ pub async fn playbook_run(
 
     if dry_run {
         args.push("--dry-run".to_string());
+    }
+
+    if no_preflight.unwrap_or(false) {
+        args.push("--no-preflight".to_string());
     }
 
     args.push("--output".to_string());
