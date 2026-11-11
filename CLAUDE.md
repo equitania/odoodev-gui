@@ -92,7 +92,7 @@ The GUI communicates with `odoodev` via these channels:
 
 | Method | Commands | Format |
 |--------|----------|--------|
-| JSON (serde) | `config versions --json`, `config paths --json` (≥ 0.53.0, mit `env dir`-Fallback), `venv check --json`, `db list --json` | Single-line JSON |
+| JSON (serde) | `config versions --json`, `config paths --json` (≥ 0.53.0, mit `env dir`-Fallback), `venv check --json`, `db list --json`, `export modules --json` | Single-line JSON |
 | NDJSON stream | `run --output json`, `db update --output ndjson` | One JSON object per line |
 | stdout streaming | `start`, `db backup`, `db restore` | Line-by-line text |
 | Exit code | `stop`, `db drop`, `db copy`, `db rename` | 0 = success |
@@ -122,7 +122,7 @@ pnpm test                 # Frontend tests (vitest, once added)
 
 ## Build Prerequisites
 
-- **Rust** 1.75+ (rustc/cargo)
+- **Rust** 1.80+ (rustc/cargo)
 - **Node.js** 20+
 - **pnpm** (package manager)
 - **Tauri v2 CLI:** `cargo install tauri-cli --version "^2"`
@@ -134,7 +134,14 @@ pnpm test                 # Frontend tests (vitest, once added)
 ## Security
 
 - No secrets in frontend; DB passwords stay in `.env` (managed by odoodev)
-- Tauri permissions: only `shell` (subprocess) and `updater` enabled
+- Tauri capabilities are minimal (`opener`, `dialog:allow-open`, clipboard write, `updater`,
+  `process:allow-restart`); there is no shell or fs plugin — subprocesses are spawned by the
+  Rust backend only
+- File access of the editor is limited to an allowlist computed and held in Rust; the frontend
+  cannot extend it
+- uv is never installed by a status probe — only after the click in the install dialog
+- Frontend-supplied values are validated before they become CLI arguments
+  (`odoodev::validate_version`, `validate_name`, `reject_flag_like`)
 - `--allow-default-credentials` shows a warning in the GUI
 - odoodev is never auto-updated without explicit user click
 
@@ -148,10 +155,10 @@ pnpm test                 # Frontend tests (vitest, once added)
 
 ## Related Repository
 
-- **odoodev CLI:** `/Users/picard/gitbase/PyPi-Projects/odoo-dev` (Python, PyPI package `odoodev-equitania`)
+- **odoodev CLI:** `~/gitbase/PyPi-Projects/odoo-dev` (Python, PyPI package `odoodev-equitania`)
 - **Agent Capability Card:** `usage/AGENT.md` in the odoodev repo — documents every CLI command and flag
 
-## Current Project Status (Stand 15. September 2026, v1.8.0)
+## Current Project Status (Stand 11. November 2026, v1.10.0)
 
 ### Implemented — Phase 0 + Phase 1 + Phase 2
 
@@ -165,8 +172,8 @@ pnpm test                 # Frontend tests (vitest, once added)
 - `docker_check.rs`: runtime detection (config → docker → apple), `container ls --format json` parsing
 - `config.rs`: odoodev YAML config reader (active_versions, container_runtime)
 - `models.rs`: serde structs for all CLI JSON responses
-- `commands/`: 15 command modules (versions, server, database, db_update, docker, doctor,
-  editor, env, init, migrate, playbook, repos, venv, system, self_update)
+- `commands/`: 16 command modules (versions, server, database, db_update, docker, doctor,
+  editor, env, export, init, migrate, playbook, repos, venv, system, self_update)
 - `db_update.rs` + `db_update_manager.rs`: `db update --output ndjson` (odoodev ≥ 0.69.0) —
   typed events, one run per version, SIGTERM-Abbruch, beim App-Beenden SIGTERM an alle Läufe
 
@@ -176,13 +183,17 @@ pnpm test                 # Frontend tests (vitest, once added)
 - Server: alle 4 Version-Tabs sichtbar, ServerConfig (5 Modi + Advanced), Presets, LogViewer
   mit Virtual Scrolling
 - Database: Liste, Tags, Backup (3 Formate), Restore (3-Step Wizard + Dry Run mit vollem
-  CLI-Report), Drop/Copy/Rename, Bulk-Drop (meldet Fehlschläge), Veraltet-Markierung,
+  CLI-Report, optional `--allow-psql-meta` ab odoodev 0.77.0 für vertrauenswürdige Backups),
+  Drop/Copy/Rename, Bulk-Drop (meldet Fehlschläge), Veraltet-Markierung,
   Update veralteter/ausgewählter Datenbanken mit Live-Fortschritt, Abbrechen und
-  Stoppen-Updaten-Neustarten eines laufenden Servers; Dashboard zeigt veraltete Datenbanken
-- Docker/Bench, Venv, Repos, Env, Init, Migrate, Doctor, Playbook-Runner + Wizard,
-  Monaco-Editor für Playbooks/Configs
+  Stoppen-Updaten-Neustarten eines laufenden Servers; Dashboard zeigt veraltete Datenbanken;
+  Export der Modulliste als CSV (`export modules`, ab odoodev 0.76.0 auch ohne Odoo-Login; ab 0.77.0 ist die Shell Standard,
+  das Häkchen sendet `--via-shell` bzw. `--via-rpc`)
+- Docker/Bench (Start mit optionalem `--allow-default-credentials` ab odoodev 0.77.0), Venv, Repos, Env, Init, Migrate, Doctor, Playbook-Runner + Wizard,
+  Monaco-Editor für Playbooks/Configs; neue Playbooks und ihre Secrets-`.env` nur in den Playbook-Verzeichnissen (Secrets zusätzlich in `~/.config/odoodev`)
+  (`playbook_create` prüft gegen die Backend-Roots; Versionsverzeichnis zuerst, `./playbooks` zuletzt)
 - Settings: Version-Info, Update, Reinstall, About
-- i18n (de/en) über i18next — vollständig: 692 Keys je Sprache, alle 49 textführenden
+- i18n (de/en) über i18next — vollständig: 817 Keys je Sprache, alle 50 textführenden
   Komponenten verdrahtet (die übrigen 5 sind reine Präsentationskomponenten ohne
   eigene Texte). `src/locales/locales.test.ts` sichert Sprachparität, gleiche
   Interpolations-Platzhalter und die Auflösbarkeit jedes im Code benutzten Keys ab
@@ -190,15 +201,24 @@ pnpm test                 # Frontend tests (vitest, once added)
 
 ### Open — Next Steps
 
-1. **Testabdeckung ausbauen:** vitest ist eingerichtet (`pnpm test`), bisher
-   `restoreArgs`, `locales`, `version`, `dbUpdateReducer`, `dbUpdateStore`, `bulkDrop`. Nächste
-   Kandidaten: `buildAnswers.ts`, `dotPath.ts`, `errors.ts`.
+1. **Testabdeckung ausbauen:** vitest deckt die reinen Module ab (Argument-Builder, Reducer,
+   Wizard-Antworten, Sprachdateien), Rust die Parser und Pfadprüfungen. Ohne Tests sind
+   weiterhin Komponenten und Hooks sowie `installer.rs` und `server_manager.rs`.
 2. **TypeScript 7:** neuer nativer Compiler, eigener Verifikationslauf — nicht huckepack
    mit Patch-Updates.
 3. **Doctor-Panel:** der PyPI-Freshness-Check erscheint nur in Richs Zusammenfassungstabelle,
    nie als `[OK]`/`[WARN]`-Zeile — `doctor.rs::parse_detail_line` sieht ihn deshalb nicht.
 4. **CLI-Feature-Lücken:** `db cleanup`, `db users`, `db drop --multi/--all/--filter`,
-   `export modules`, `venv setup --python-version`, `docker logs --follow`.
+   `venv setup --python-version`, `docker logs --follow`. Der Playbook-Schritt
+   `server.uninstall` (odoodev ≥ 0.75.7) wird angezeigt, der Assistent kann ihn aber erst
+   anlegen, wenn das Wizard-Schema der CLI ihn kennt.
+5. **Monaco 0.57:** geänderte Import-Pfade (`exports`-Map), der Worker-Import in
+   `src/monaco.ts` muss umgestellt und der Editor von Hand geprüft werden.
+6. **tauri-action v1:** der Release-Workflow bleibt auf v0.6.2 (per SHA gepinnt); der Sprung
+   auf v1 braucht einen Test-Release.
+7. **Fehlertyp der Tauri-Befehle:** alle geben `Result<_, String>` zurück; ein kleines
+   `thiserror`-Enum würde dem Frontend die Unterscheidung nach Fehlerart erlauben.
+8. **`DatabasePanel.tsx`** in Hooks und Unterkomponenten zerlegen.
 
 ### Key Architecture Decisions
 

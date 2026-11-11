@@ -73,6 +73,9 @@ fn extract_check_name(message: &str) -> String {
 
 #[tauri::command]
 pub async fn doctor_run(version: Option<String>) -> Result<DoctorResult, String> {
+    if let Some(v) = &version {
+        odoodev::validate_version("version", v)?;
+    }
     let args: Vec<&str> = match &version {
         Some(v) => vec!["doctor", v],
         None => vec!["doctor"],
@@ -142,4 +145,72 @@ pub async fn doctor_all_versions() -> Result<Vec<DoctorResult>, String> {
 #[tauri::command]
 pub async fn doctor_general() -> Result<DoctorResult, String> {
     doctor_run(None).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ok_line() {
+        let c = parse_detail_line("  [OK] uv 0.9.0 found").unwrap();
+        assert_eq!(c.status, "ok");
+        assert_eq!(c.name, "uv");
+        assert_eq!(c.message, "uv 0.9.0 found");
+    }
+
+    #[test]
+    fn warn_line() {
+        let c = parse_detail_line("[WARN] Docker daemon not running").unwrap();
+        assert_eq!(c.status, "warn");
+        assert_eq!(c.name, "docker");
+    }
+
+    #[test]
+    fn fail_and_error_prefixes_map_to_fail() {
+        assert_eq!(
+            parse_detail_line("[FAIL] wkhtmltopdf missing")
+                .unwrap()
+                .status,
+            "fail"
+        );
+        let e = parse_detail_line("[ERROR] PostgreSQL not accessible on localhost:18432").unwrap();
+        assert_eq!(e.status, "fail");
+        assert_eq!(e.name, "postgres");
+    }
+
+    #[test]
+    fn unrelated_lines_are_not_checks() {
+        assert!(parse_detail_line("").is_none());
+        assert!(parse_detail_line("[INFO] Inspect containers: container ls -a").is_none());
+        assert!(parse_detail_line("Doctor summary").is_none());
+        assert!(parse_detail_line("OK uv").is_none());
+    }
+
+    #[test]
+    fn prefix_without_message_does_not_panic() {
+        let c = parse_detail_line("[OK]").unwrap();
+        assert_eq!(c.message, "");
+        assert_eq!(c.name, "unknown");
+    }
+
+    #[test]
+    fn check_name_mapping() {
+        let cases = [
+            ("Apple Container 1.2 available", "apple_container"),
+            ("wkhtmltopdf 0.12.6", "wkhtmltopdf"),
+            ("PostgreSQL tools (pg_dump) found", "pg_tools"),
+            ("Node.js packages installed", "node_packages"),
+            ("Node.js v22", "node"),
+            ("System libraries present", "system_libs"),
+            ("7-Zip available", "7zip"),
+            ("zstd available", "zstd"),
+            ("Python packages up to date", "python_packages"),
+            ("PyPI version current", "pypi"),
+            ("Something else entirely", "Something"),
+        ];
+        for (msg, want) in cases {
+            assert_eq!(extract_check_name(msg), want, "message: {msg}");
+        }
+    }
 }

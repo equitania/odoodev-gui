@@ -221,6 +221,45 @@ pub struct OpResult {
     pub error: Option<String>,
 }
 
+/// Result line of `odoodev export modules --json`. `path` is `None` for an
+/// empty module list (`count` 0, nothing written); `updated`/`cleaned` are
+/// `None` when the respective flag was not given.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ExportModulesResult {
+    pub version: String,
+    pub database: String,
+    pub scope: String,
+    pub path: Option<String>,
+    pub count: u32,
+    pub updated: Option<i64>,
+    pub cleaned: Option<i64>,
+}
+
+#[cfg(test)]
+mod export_modules_result_tests {
+    use super::ExportModulesResult;
+
+    #[test]
+    fn parses_a_full_result() {
+        let line = r#"{"version":"18","database":"v18_exam","scope":"all","path":"/x/modules_v18_exam_all_20261111_101500.csv","count":2,"updated":3,"cleaned":5}"#;
+        let r: ExportModulesResult = serde_json::from_str(line).unwrap();
+        assert_eq!(r.version, "18");
+        assert_eq!(r.database, "v18_exam");
+        assert_eq!(r.count, 2);
+        assert_eq!(r.updated, Some(3));
+        assert_eq!(r.cleaned, Some(5));
+        assert!(r.path.unwrap().ends_with("101500.csv"));
+    }
+
+    #[test]
+    fn parses_the_empty_result() {
+        let line = r#"{"version":"18","database":"d","scope":"installed","path":null,"count":0,"updated":null,"cleaned":null}"#;
+        let r: ExportModulesResult = serde_json::from_str(line).unwrap();
+        assert_eq!(r.count, 0);
+        assert!(r.path.is_none() && r.updated.is_none() && r.cleaned.is_none());
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct EnvCheckResult {
     pub exists: bool,
@@ -263,4 +302,108 @@ pub struct DoctorResult {
     pub overall: String,
     pub all_ok: bool,
     pub raw_output: String,
+}
+
+#[cfg(test)]
+mod cli_json_tests {
+    use super::*;
+
+    // Scrubbed `odoodev config versions --json`.
+    const VERSIONS: &str = r#"{
+      "18": {"python": "3.13", "postgres": "16.11-alpine",
+             "ports": {"db": 18432, "odoo": 18069, "gevent": 18072, "mailpit": 18025},
+             "effective_ports": {"db": 28432, "odoo": 28069, "gevent": 28072, "mailpit": 28025},
+             "base": "~/gitbase/v18"},
+      "19": {"python": "3.13", "postgres": "17.4-alpine",
+             "ports": {"db": 19432, "odoo": 19069, "gevent": 19072, "mailpit": 19025},
+             "base": "~/gitbase/v19", "future_field": true}
+    }"#;
+
+    #[test]
+    fn versions_parse_and_effective_ports_win() {
+        let v: VersionsResponse = serde_json::from_str(VERSIONS).unwrap();
+        assert_eq!(v.len(), 2);
+        assert_eq!(v["18"].python, "3.13");
+        assert_eq!(v["18"].db_port(), 28432);
+    }
+
+    #[test]
+    fn versions_without_effective_ports_use_registry_ports_and_ignore_unknown_fields() {
+        let v: VersionsResponse = serde_json::from_str(VERSIONS).unwrap();
+        assert!(v["19"].effective_ports.is_none());
+        assert_eq!(v["19"].db_port(), 19432);
+    }
+
+    #[test]
+    fn versions_empty_object_and_malformed_input() {
+        assert!(serde_json::from_str::<VersionsResponse>("{}")
+            .unwrap()
+            .is_empty());
+        assert!(serde_json::from_str::<VersionsResponse>("[]").is_err());
+        assert!(serde_json::from_str::<VersionsResponse>(r#"{"18": {"python": "3.13"}}"#).is_err());
+        assert!(serde_json::from_str::<VersionsResponse>("").is_err());
+    }
+
+    #[test]
+    fn venv_status_full_and_minimal() {
+        // `python_pin*` keys are not modelled and must be ignored.
+        let full = r#"{"version": "18", "venv_dir": "/home/user/v18/.venv", "exists": true,
+            "is_symlink": false, "python_version": "3.13.1", "python_matches": true,
+            "python_pin": "3.13.1", "python_pin_source": "file", "requirements_current": true}"#;
+        let s: VenvStatus = serde_json::from_str(full).unwrap();
+        assert!(s.exists && !s.is_symlink);
+        assert_eq!(s.python_version.as_deref(), Some("3.13.1"));
+        assert_eq!(s.requirements_current, Some(true));
+
+        let minimal = r#"{"version": "17", "venv_dir": "/home/user/v17/.venv",
+            "exists": false, "is_symlink": false}"#;
+        let s: VenvStatus = serde_json::from_str(minimal).unwrap();
+        assert!(!s.exists);
+        assert!(s.python_version.is_none() && s.python_matches.is_none());
+    }
+
+    #[test]
+    fn venv_status_missing_required_field_is_error() {
+        assert!(serde_json::from_str::<VenvStatus>(r#"{"version": "18"}"#).is_err());
+    }
+
+    #[test]
+    fn db_list_with_and_without_stale() {
+        let with = r#"{"version": "18", "host": "localhost", "port": 18432,
+            "databases": ["demo_db", "demo_db_copy"], "stale": {"demo_db": "new migration"}}"#;
+        let r: DbListResponse = serde_json::from_str(with).unwrap();
+        assert_eq!(r.databases, vec!["demo_db", "demo_db_copy"]);
+        assert_eq!(r.stale.unwrap()["demo_db"], "new migration");
+
+        // Older CLI: key absent. Newer CLI before first update: explicit null.
+        let absent = r#"{"version": "18", "host": "localhost", "port": 18432, "databases": []}"#;
+        let r: DbListResponse = serde_json::from_str(absent).unwrap();
+        assert!(r.databases.is_empty() && r.stale.is_none());
+        let null = r#"{"version": "18", "host": "localhost", "port": 18432, "databases": [], "stale": null}"#;
+        assert!(serde_json::from_str::<DbListResponse>(null)
+            .unwrap()
+            .stale
+            .is_none());
+    }
+
+    #[test]
+    fn db_list_rejects_plain_text_error_output() {
+        // When PostgreSQL is down the CLI prints log lines instead of JSON.
+        let text = "[ERROR] PostgreSQL not accessible on localhost:18432";
+        assert!(serde_json::from_str::<DbListResponse>(text).is_err());
+    }
+
+    #[test]
+    fn playbook_event_minimal_and_progress() {
+        let start: PlaybookEvent = serde_json::from_str(r#"{"event": "step_start"}"#).unwrap();
+        assert_eq!(start.event, "step_start");
+        assert!(start.index.is_none() && start.name.is_none());
+
+        let progress: PlaybookEvent = serde_json::from_str(
+            r#"{"event": "step_progress", "name": "restore", "index": 2, "total": 5, "unknown": 1}"#,
+        )
+        .unwrap();
+        assert_eq!((progress.index, progress.total), (Some(2), Some(5)));
+        assert!(serde_json::from_str::<PlaybookEvent>(r#"{"name": "x"}"#).is_err());
+    }
 }

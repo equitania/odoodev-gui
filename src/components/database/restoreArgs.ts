@@ -18,6 +18,8 @@ export interface RestoreForm {
   recompute: boolean;
   checkSpace: boolean;
   withoutPgvector: boolean;
+  /** Skip the CLI's dump check for psql backslash commands (trusted backups only). */
+  allowPsqlMeta: boolean;
 }
 
 /** The five options the CLI's `--sanitize` switches on in one go. */
@@ -67,6 +69,7 @@ export function buildRestoreArgs(form: RestoreForm, dry: boolean): RestoreArgs {
     recompute: form.anonymize ? form.recompute : undefined,
     check_space: form.checkSpace ? undefined : false,
     without_pgvector: form.withoutPgvector || undefined,
+    allow_psql_meta: form.allowPsqlMeta || undefined,
     dry_run: dry || undefined,
   };
 }

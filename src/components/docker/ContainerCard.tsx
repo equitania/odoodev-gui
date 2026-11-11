@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { Checkbox } from "../ui/checkbox";
 import { RuntimeDot } from "./RuntimeBanner";
 import { ArrowUp, ArrowDown, FileCog, FileText, Gauge, Loader2 } from "lucide-react";
 import { versionColor, versionBg, effectivePorts } from "../../lib/constants";
@@ -14,6 +15,10 @@ interface ContainerCardProps {
   container: ContainerInfo | null;
   busy: boolean;
   onUp: () => void;
+  /** Show the "allow default credentials" option next to Start (odoodev >= 0.77.0 or unknown). */
+  offersDefaultCreds: boolean;
+  allowDefaultCreds: boolean;
+  onAllowDefaultCredsChange: (v: boolean) => void;
   onDown: () => void;
   onLogs: () => void;
   /** Benchmark is macOS + Apple Container only (Docker vs Apple comparison). */
@@ -31,6 +36,9 @@ export function ContainerCard({
   container,
   busy,
   onUp,
+  offersDefaultCreds,
+  allowDefaultCreds,
+  onAllowDefaultCredsChange,
   onDown,
   onLogs,
   benchAvailable,
@@ -138,6 +146,19 @@ export function ContainerCard({
             </Button>
           )}
         </div>
+        {!running && offersDefaultCreds && (
+          <div className="space-y-1">
+            <Checkbox
+              checked={allowDefaultCreds}
+              onChange={onAllowDefaultCredsChange}
+              label={t("docker.allowDefaultCredentials")}
+              disabled={busy}
+            />
+            {allowDefaultCreds && (
+              <p className="text-xs text-orange-500">{t("server.allowDefaultCredentialsWarning")}</p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

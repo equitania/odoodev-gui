@@ -1,5 +1,87 @@
 # Release Notes
 
+## Version 1.10.0 (11.11.2026)
+
+Alignment with odoodev 0.75 – 0.77.0, plus the fixes from a security and dependency audit.
+
+### Added
+- **Export the module list of a database.** A new button per database writes the module list
+  as CSV to the Downloads folder (`odoodev export modules`): all modules, all without
+  Enterprise, or only the installed ones. Optionally the module list is updated or cleaned up
+  first. With odoodev ≥ 0.76.0 the export can run without an Odoo login (through
+  `odoo-bin shell`), which also works for demo databases without an admin user and with the
+  server stopped; the box "Without Odoo login" is ticked by default. odoodev 0.77.0 made the shell
+  its own default, so the dialog now sends `--via-rpc` when the box is unticked — the box does
+  what it says on every version. If the export with login fails, one click repeats it without.
+- **Restore: allow psql commands in the backup.** odoodev 0.77.0 refuses a backup that
+  contains psql backslash commands and names the line; the failure message is shown as is. A new
+  option "Allow psql commands in the backup" (off, with a warning) restores such a backup
+  anyway. Use it only for backups from a source you trust. The dry run does not read the dump
+  and cannot show the refusal, and an existing database of the same name is already dropped when
+  the refusal comes.
+- **Docker: allow default credentials.** odoodev 0.77.0 refuses to start the PostgreSQL
+  container while the `.env` still holds the placeholder password. The Docker view has an option
+  "Allow default credentials" next to Start (off, not remembered, with the usual warning). The
+  dashboard's Start button stays without it and shows the CLI's message.
+- The Linux install script checks the downloaded package against the SHA-256 checksum GitHub
+  holds for the release and refuses a version string that is not a plain version number.
+
+### Security
+- **uv is no longer installed without asking.** Until now the check "is uv installed?" ran the
+  uv installer on its own when uv was missing — at every app start. The check is read-only now;
+  uv is downloaded only after the click in the install dialog, which says so. The download is
+  restricted to HTTPS and a failed installer is reported instead of counted as success.
+- **The editor decides in the backend which files it may open.** The list of allowed
+  directories used to be passed in by the user interface with every read and write. It is now
+  computed and held in the Rust backend; the user interface can no longer extend it.
+- **New playbooks and their secrets file can only be written into the playbook directories.**
+  The output path in the assistant used to be any `.yml`/`.yaml` path, and the path of the
+  secrets `.env` file (which holds the entered passwords) was not checked at all. Both must now
+  lie inside a version's `scripts/playbooks` directory or the project's `./playbooks`; the
+  secrets file may also go into odoodev's config directory `~/.config/odoodev`, where the CLI
+  keeps the secrets of server playbooks by default (subfolders and the file name stay free,
+  missing folders are created; the secrets file name must end in `.env`). `~` is expanded, `..` through a folder that does not exist yet is
+  refused and symlinks pointing out of the directory are followed before the check. The
+  assistant suggests a default for both (server playbooks: the config directory, dev
+  playbooks: the playbook directory), lists the allowed directories under the fields and
+  explains a rejection.
+- Playbook commands accept only `.yml`/`.yaml` files; values coming from the user interface
+  (versions, database names, step names) are validated before they become CLI arguments.
+- The temporary file holding the assistant's answers (which may contain secrets) is created
+  with owner-only permissions from the start.
+- Stricter Content Security Policy (`object-src`, `base-uri`, `form-action`).
+- Dependencies updated: all vulnerabilities reported by `cargo audit` (rustls, rustls-webpki,
+  quinn-proto, zip) and the DOMPurify advisories in the editor component are resolved.
+
+### Fixed
+- **The assistant's default target in the installed app.** The first entry of the playbook
+  directories was `./playbooks` relative to the app's working directory, which for an app
+  started from the Finder or a launcher is not the project (typically `/playbooks`). The
+  version's own `scripts/playbooks` directory now comes first, the assistant defaults to the
+  directory of the version being worked on, and a `./playbooks` directly below the filesystem
+  root is no longer offered or accepted as a place for new playbooks.
+- A refused `docker up` showed a generic or misleading line (the last progress line) as the
+  reason, and the Server and Database views reported such a failure as success. They now show
+  the CLI's own message.
+- Output of a CLI command containing bytes that are not valid UTF-8 no longer stops the log
+  and stalls the command.
+- Server view: after jumping in from the dashboard, switching to another version tab snapped
+  back to the preselected one.
+- The PyPI update check gives up after ten seconds instead of waiting indefinitely.
+- Failed loads in the Env, Venv and Migrate views are written to the log instead of vanishing.
+
+### Changed
+- odoodev 0.77.0 also publishes the development PostgreSQL container on `127.0.0.1` only
+  (`DB_BIND=0.0.0.0` in the version's `.env` restores the old behaviour; an existing container
+  keeps its binding until it is created again) and refuses plaintext logins to remote hosts in
+  `rpc.execute` of server playbooks. The GUI's port detection is not affected.
+- Tauri 2.12, React 19.3, i18next 27 / react-i18next 18, Vite 8.3 and the remaining
+  dependencies brought up to date. Minimum Rust version is 1.80.
+- CI runs the frontend and Rust tests, clippy and the format check on all three platforms and
+  audits the dependencies; GitHub Actions are pinned to commit SHAs; Dependabot is configured.
+- With odoodev ≥ 0.75.7 the new server step `server.uninstall` appears in the step list of a
+  playbook. The assistant cannot create it yet.
+
 ## Version 1.9.0 (30.09.2026)
 
 Alignment with odoodev 0.71 – 0.74.

@@ -16,6 +16,7 @@ use commands::docker;
 use commands::doctor;
 use commands::editor;
 use commands::env;
+use commands::export;
 use commands::init_cmd;
 use commands::migrate;
 use commands::playbook;
@@ -41,6 +42,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(ServerManager::new())
         .manage(DbUpdateManager::new())
+        .manage(editor::EditorRoots::new())
         .invoke_handler(tauri::generate_handler![
             // versions / dashboard
             versions::get_versions,
@@ -76,6 +78,8 @@ pub fn run() {
             database::drop_db,
             database::copy_db,
             database::rename_db,
+            // module list export (odoodev >= 0.59.0, --via-shell >= 0.76.0)
+            export::export_modules,
             // database updates (odoodev >= 0.69.0)
             db_update_cmd::plan_db_update,
             db_update_cmd::start_db_update,
@@ -109,6 +113,8 @@ pub fn run() {
             playbook::playbook_run,
             playbook::playbook_schema,
             playbook::playbook_create,
+            playbook::playbook_check_output,
+            playbook::playbook_env_dirs,
             playbook::playbook_validate,
             // editor (curated files)
             editor::curated_files,

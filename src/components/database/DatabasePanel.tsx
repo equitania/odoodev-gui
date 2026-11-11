@@ -9,12 +9,13 @@ import { useAppStore } from "../../store/appStore";
 import { toastLoading, toastUpdate } from "../../store/toastStore";
 import type { DbListResponse, DbUpdateMode, OpResult, VersionsResponse } from "../../types";
 import { BackupDialog } from "./BackupDialog";
+import { ExportModulesDialog } from "./ExportModulesDialog";
 import { RestoreDialog } from "./RestoreDialog";
 import { DropConfirmDialog } from "./DropConfirmDialog";
 import { NameInputDialog } from "./NameInputDialog";
 import { OperationProgress } from "./OperationProgress";
 import { dropMany } from "./bulkDrop";
-import { RefreshCw, RefreshCcw, HardDriveDownload, HardDriveUpload, Trash2, Copy, Pencil, Loader2, Plus } from "lucide-react";
+import { RefreshCw, RefreshCcw, HardDriveDownload, HardDriveUpload, FileSpreadsheet, Trash2, Copy, Pencil, Loader2, Plus } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { effectivePorts, tagColor } from "../../lib/constants";
 import { useDbTagStore, dbTagKey } from "../../store/dbTagStore";
@@ -52,6 +53,7 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const [backupTarget, setBackupTarget] = useState<string | null>(null);
+  const [exportTarget, setExportTarget] = useState<string | null>(null);
   const [showRestore, setShowRestore] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [duplicateTarget, setDuplicateTarget] = useState<string | null>(null);
@@ -142,7 +144,14 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
   const handleStartPostgres = async () => {
     const tid = toastLoading("Starting PostgreSQL...");
     try {
-      await invokeCmd("docker_up", { version: selectedVersion, runtime });
+      // A refused start (for example the placeholder password, odoodev 0.77.0)
+      // resolves with success=false and the CLI's reason — show it instead of
+      // polling a container that was never started.
+      const up = await invokeCmd<OpResult>("docker_up", { version: selectedVersion, runtime });
+      if (!up.success) {
+        toastUpdate(tid, "error", "Failed to start PostgreSQL", up.error ?? "");
+        return;
+      }
     } catch (e) {
       toastUpdate(tid, "error", "Failed to start PostgreSQL", String(e));
       return;
@@ -537,6 +546,16 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => setExportTarget(db)}
+                            title={t("exportModules.action")}
+                            disabled={isBusy}
+                            className="h-7 w-7 p-0 hover:bg-purple-500/10 hover:text-purple-500"
+                          >
+                            <FileSpreadsheet className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => setDuplicateTarget(db)}
                             title={t("database.duplicateTitle")}
                             disabled={isBusy}
@@ -588,6 +607,15 @@ export function DatabasePanel({ preselectVersion }: { preselectVersion: string |
           dbName={backupTarget}
           onProgress={handleProgress}
           onFinished={handleProgressFinished}
+        />
+      )}
+
+      {exportTarget && (
+        <ExportModulesDialog
+          open={!!exportTarget}
+          onClose={() => setExportTarget(null)}
+          version={selectedVersion}
+          dbName={exportTarget}
         />
       )}
 

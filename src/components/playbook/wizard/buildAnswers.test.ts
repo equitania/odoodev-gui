@@ -63,3 +63,33 @@ describe("older schemas", () => {
     expect(r.rebuild.position).toBeUndefined();
   });
 });
+
+describe("suggested env-file path", () => {
+  const envValues = (extra: Record<string, unknown>) => ({
+    playbook_type: "dev",
+    name: "demo",
+    version: "18",
+    "env_file.generate": true,
+    "env_file.path": "/pb/demo.env",
+    ...extra,
+  });
+
+  it("is dropped, and nothing is generated, while there are no secrets", () => {
+    const { answers } = buildAnswers(schema(4), envValues({}), "/pb/demo.env");
+    expect(answers.env_file).toEqual({ generate: false });
+  });
+
+  it("is used once secrets exist", () => {
+    const { answers } = buildAnswers(
+      schema(4),
+      envValues({ "env_file.secrets": [{ key: "API_KEY", value: "x" }] }),
+      "/pb/demo.env",
+    );
+    expect(answers.env_file).toMatchObject({ generate: true, path: "/pb/demo.env" });
+  });
+
+  it("keeps a path the user typed themselves", () => {
+    const { answers } = buildAnswers(schema(4), envValues({ "env_file.path": "/pb/mine.env" }), "/pb/demo.env");
+    expect(answers.env_file).toMatchObject({ path: "/pb/mine.env" });
+  });
+});

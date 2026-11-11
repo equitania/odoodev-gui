@@ -10,6 +10,8 @@ import { Checkbox } from "../../ui/checkbox";
 import { SchemaForm, isFieldVisible } from "./SchemaForm";
 import { RepeatableSection, type RepeatableItem } from "./RepeatableSection";
 import { buildAnswers } from "./buildAnswers";
+import { parsePathError } from "./outputPathError";
+import { pickDefaultRoot, pickEnvDir } from "./defaultRoot";
 import {
   Check,
   ChevronLeft,
@@ -70,16 +72,41 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** The directories a new file may be saved in, shown under a path field. */
+function AllowedDirs({ roots, text }: { roots: string[]; text: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="text-xs text-muted-foreground">
+      <p>{text}</p>
+      {roots.length > 0 ? (
+        <ul className="mt-0.5 space-y-0.5">
+          {roots.map((dir) => (
+            <li key={dir}>
+              <code className="break-all rounded bg-muted px-1">{dir}</code>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>{t("playbookWizard.gui.outputAllowedUnknown")}</p>
+      )}
+    </div>
+  );
+}
+
 export function PlaybookWizard({
   open,
   onClose,
   playbookRoots,
+  versionRoots = {},
   onOpenInEditor,
   onCreated,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Directories where playbooks may be written, in the backend's priority order. */
   playbookRoots: string[];
+  /** Version -> that version's own playbook directory (subset of `playbookRoots`). */
+  versionRoots?: Record<string, string>;
   onOpenInEditor?: (path: string) => void;
   /** Called after successful creation, e.g. to refresh the playbook list / preselect for run. */
   onCreated?: (path: string) => void;
@@ -94,6 +121,13 @@ export function PlaybookWizard({
   const [force, setForce] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  // Result of the backend's output-path check: the translated reason, or null when fine.
+  const [outputProblem, setOutputProblem] = useState<string | null>(null);
+  // Where the secrets file may go (backend): allowed directories + odoodev's config dir.
+  const [envDirs, setEnvDirs] = useState<{ dirs: string[]; config_dir: string } | null>(null);
+  const [envProblem, setEnvProblem] = useState<string | null>(null);
+  // The env-file path the wizard suggested itself (so it can tell it from user input).
+  const [envSuggestion, setEnvSuggestion] = useState("");
   const [createdPath, setCreatedPath] = useState<string | null>(null);
   const [validation, setValidation] = useState<{ valid: boolean; steps?: number; error?: string } | null>(null);
 
@@ -107,6 +141,11 @@ export function PlaybookWizard({
     setValidation(null);
     setForce(false);
     setOutputTouched(false);
+    setEnvSuggestion("");
+    setEnvProblem(null);
+    invokeCmd<{ dirs: string[]; config_dir: string }>("playbook_env_dirs")
+      .then(setEnvDirs)
+      .catch(logError("PlaybookWizard: env dirs"));
     invokeCmd<WizardSchema>("playbook_schema")
       .then((s) => {
         setSchema(s);
@@ -133,15 +172,80 @@ export function PlaybookWizard({
       .filter(Boolean);
   }, [values]);
 
-  // Default output path follows the CLI convention ./playbooks/<slug>.yaml,
-  // but rooted in a known playbook root so the GUI never depends on the
-  // subprocess working directory.
+  // Defaults follow the CLI convention <dir>/<slug>.yaml (and <slug>.env for the
+  // secrets file), rooted in a playbook directory the backend allows — the one of
+  // the version being worked on, else the first. The wizard never depends on the
+  // subprocess working directory, and a default always passes the backend check.
   const name = (values["name"] as string) ?? "";
+  const wizardVersion = (values["version"] as string) ?? "";
+  const defaultRoot = pickDefaultRoot(playbookRoots, versionRoots, wizardVersion);
+  const slug = slugify(name);
   useEffect(() => {
-    if (outputTouched || !name.trim()) return;
-    const root = playbookRoots[0] ?? "playbooks";
-    setOutputPath(`${root}/${slugify(name)}.yaml`);
-  }, [name, playbookRoots, outputTouched]);
+    if (outputTouched || !slug || !defaultRoot) return;
+    setOutputPath(`${defaultRoot}/${slug}.yaml`);
+  }, [slug, defaultRoot, outputTouched]);
+
+  // Secrets file: suggest <dir>/<slug>.env until the user types their own path.
+  const envPathValue = String(values["env_file.path"] ?? "");
+  useEffect(() => {
+    const envDir = pickEnvDir(playbookType, defaultRoot, envDirs?.config_dir ?? null);
+    if (!slug || !envDir) return;
+    const suggestion = `${envDir}/${slug}.env`;
+    if (envPathValue !== "" && envPathValue !== envSuggestion) return; // user's own path
+    if (envPathValue !== suggestion) setValues((prev) => ({ ...prev, "env_file.path": suggestion }));
+    if (envSuggestion !== suggestion) setEnvSuggestion(suggestion);
+  }, [slug, defaultRoot, envDirs, playbookType, envPathValue, envSuggestion]);
+
+  const pathProblem = (e: unknown): string => {
+    const err = parsePathError(e);
+    if (!err) return String(e);
+    return t(
+      err.field === "env_file"
+        ? `playbookWizard.gui.envFileError.${err.code}`
+        : `playbookWizard.gui.outputError.${err.code}`,
+    );
+  };
+
+  // Ask the backend (same check as on submit) shortly after the user stops typing.
+  // The backend alone knows the real playbook directories and resolves symlinks.
+  const wantsOutputCheck = open && !!outputPath.trim() && !createdPath;
+  useEffect(() => {
+    if (!wantsOutputCheck) {
+      setOutputProblem(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      invokeCmd<string>("playbook_check_output", { outputPath })
+        .then(() => !cancelled && setOutputProblem(null))
+        .catch((e) => !cancelled && setOutputProblem(pathProblem(e)));
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outputPath, wantsOutputCheck, t]);
+
+  // Same for the secrets file, while the wizard is going to write one.
+  const envWanted = open && !createdPath && values["env_file.generate"] !== false;
+  useEffect(() => {
+    if (!envWanted || !envPathValue.trim()) {
+      setEnvProblem(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      invokeCmd<string>("playbook_check_output", { outputPath: envPathValue, kind: "env_file" })
+        .then(() => !cancelled && setEnvProblem(null))
+        .catch((e) => !cancelled && setEnvProblem(pathProblem(e)));
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [envPathValue, envWanted, t]);
 
   const currentStep = steps[stepIndex];
   const isSummary = currentStep?.key === SUMMARY_STEP;
@@ -181,8 +285,8 @@ export function PlaybookWizard({
   );
 
   const { answers, problems } = useMemo(
-    () => (schema ? buildAnswers(schema, values) : { answers: {}, problems: [] }),
-    [schema, values],
+    () => (schema ? buildAnswers(schema, values, envSuggestion) : { answers: {}, problems: [] }),
+    [schema, values, envSuggestion],
   );
 
   const handleCreate = async () => {
@@ -207,7 +311,7 @@ export function PlaybookWizard({
         setValidation({ valid: false, error: String(e) });
       }
     } catch (e) {
-      setCreateError(String(e));
+      setCreateError(pathProblem(e));
     } finally {
       setCreating(false);
     }
@@ -284,6 +388,14 @@ export function PlaybookWizard({
                 onChange={setValue}
                 schema={schema}
                 targetNames={targetNames}
+                fieldExtras={{
+                  "env_file.path": (
+                    <div className="space-y-1">
+                      {envProblem && <p className="text-xs text-destructive">{envProblem}</p>}
+                      <AllowedDirs roots={envDirs?.dirs ?? playbookRoots} text={t("playbookWizard.gui.envFileAllowed")} />
+                    </div>
+                  ),
+                }}
               />
             )}
             {isSummary && (
@@ -298,6 +410,10 @@ export function PlaybookWizard({
                     }}
                     className="font-mono text-sm"
                   />
+                  {outputProblem ? (
+                    <p className="text-xs text-destructive">{outputProblem}</p>
+                  ) : null}
+                  <AllowedDirs roots={playbookRoots} text={t("playbookWizard.gui.outputAllowed")} />
                 </div>
                 <Checkbox
                   checked={force}
@@ -354,7 +470,7 @@ export function PlaybookWizard({
               </Button>
             )}
             {isSummary && !createdPath && (
-              <Button onClick={handleCreate} disabled={creating || !outputPath.trim() || problems.length > 0}>
+              <Button onClick={handleCreate} disabled={creating || !outputPath.trim() || problems.length > 0 || !!outputProblem || !!envProblem}>
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {creating ? t("playbookWizard.gui.creating") : t("playbookWizard.gui.createButton")}
               </Button>

@@ -15,7 +15,7 @@ import { effectivePorts, tagColor } from "../../lib/constants";
 import { cn } from "../../lib/utils";
 import { PresetSaveDialog } from "./PresetSaveDialog";
 import { ConfirmDialog } from "../ui/confirm-dialog";
-import type { DbListResponse, StartServerArgs } from "../../types";
+import type { DbListResponse, OpResult, StartServerArgs } from "../../types";
 import { ChevronDown, ChevronUp, Play, Square, RotateCcw, Loader2 } from "lucide-react";
 
 /** Preset dirty-check ignores environment-derived fields — port and runtime
@@ -40,6 +40,15 @@ export function ServerConfig({
   onRestart: (args: StartServerArgs) => void;
 }) {
   const { t } = useTranslation();
+
+  // `docker_up` resolves with success=false and the CLI's reason when it refuses
+  // (for example the placeholder password, odoodev 0.77.0) — surface that too.
+  const startPostgres = () =>
+    invokeCmd<OpResult>("docker_up", { version, runtime })
+      .then((r) => {
+        if (!r.success) reportError(t("toast.postgresqlStartFailed"))(r.error ?? "");
+      })
+      .catch(reportError(t("toast.postgresqlStartFailed")));
   const [mode, setMode] = useState("normal");
   const [database, setDatabase] = useState("");
   const [databases, setDatabases] = useState<string[]>([]);
@@ -218,7 +227,7 @@ export function ServerConfig({
           {dbError ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-destructive">{t("server.postgresNotAccessible")}</span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime }).catch(reportError(t("toast.postgresqlStartFailed")))}>
+              <Button size="sm" variant="outline" onClick={startPostgres}>
                 {runtime === "apple" ? t("server.startContainer") : t("server.startDocker")}
               </Button>
             </div>
@@ -229,7 +238,7 @@ export function ServerConfig({
                   ? t("server.pgUnreachableShort", { port: dbUnreachablePort })
                   : t("server.noDatabases")}
               </span>
-              <Button size="sm" variant="outline" onClick={() => invokeCmd("docker_up", { version, runtime }).catch(reportError(t("toast.postgresqlStartFailed")))}>
+              <Button size="sm" variant="outline" onClick={startPostgres}>
                 {runtime === "apple" ? t("common.start") : t("dashboard.dockerUp")}
               </Button>
             </div>

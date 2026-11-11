@@ -1,5 +1,5 @@
 use tauri::Emitter;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
 use tokio::process::Command;
 
 use crate::models::OpResult;
@@ -26,16 +26,16 @@ async fn run_streaming_to_completion(
     let win_err = window.clone();
     let err_event = event_name.to_string();
     tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             let _ = win_err.emit(&err_event, &line);
         }
     });
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
+    let mut reader = BufReader::new(stdout);
+    let mut buf = Vec::new();
     let mut last = String::new();
-    while let Ok(Some(line)) = lines.next_line().await {
+    while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
         let _ = window.emit(event_name, &line);
         last = line;
     }
@@ -52,6 +52,7 @@ pub async fn repos_run(
     config_only: bool,
     window: tauri::Window,
 ) -> Result<OpResult, String> {
+    odoodev::validate_version("version", &version)?;
     let mut args = vec!["repos".to_string()];
     if config_only {
         args.push("--config-only".to_string());
@@ -68,6 +69,7 @@ pub async fn repos_pull(
     no_config: bool,
     window: tauri::Window,
 ) -> Result<OpResult, String> {
+    odoodev::validate_version("version", &version)?;
     let mut args = vec!["pull".to_string()];
     if no_config {
         args.push("--no-config".to_string());

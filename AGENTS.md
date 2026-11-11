@@ -47,7 +47,7 @@ Two crates share one workspace root:
 
 The GUI is a **pure presentation layer**: it shells out to the `odoodev` Python
 CLI and parses JSON/NDJSON/stdout. Never duplicate `odoodev` logic in Rust or TS.
-The related CLI repo is `/Users/picard/gitbase/PyPi-Projects/odoo-dev`.
+The related CLI repo is `~/gitbase/PyPi-Projects/odoo-dev`.
 
 ### PATH augmentation (non-obvious)
 

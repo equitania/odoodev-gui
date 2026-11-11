@@ -1,5 +1,5 @@
 use tauri::Emitter;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
 use tokio::process::Command;
 
 use crate::models::OpResult;
@@ -26,16 +26,16 @@ async fn run_streaming(
     let win_err = window.clone();
     let err_event = event_name.to_string();
     tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             let _ = win_err.emit(&err_event, &line);
         }
     });
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
+    let mut reader = BufReader::new(stdout);
+    let mut buf = Vec::new();
     let mut last = String::new();
-    while let Ok(Some(line)) = lines.next_line().await {
+    while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
         let _ = window.emit(event_name, &line);
         last = line;
     }
@@ -53,6 +53,7 @@ pub async fn init_version(
     skip_docker: bool,
     window: tauri::Window,
 ) -> Result<OpResult, String> {
+    odoodev::validate_version("version", &version)?;
     let mut args = vec!["init".to_string()];
     args.push("--non-interactive".to_string());
     if skip_repos {

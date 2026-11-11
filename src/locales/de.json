@@ -227,10 +227,13 @@
       "uninstallModules": "Kommagetrennte technische Modulnamen, die vor den Bereinigungsschritten deinstalliert werden.",
       "withoutPgvector": "Nötig, wenn der Dump die Erweiterung „vector“ anlegt, der Datenbankserver sie aber nicht bietet — der Restore bricht sonst ab (der Dry Run erkennt das nicht). Die KI-Tabellen fehlen danach; alternativ PGVECTOR=true in der .env setzen und Docker neu starten.",
       "checkSpace": "Prüft vor dem Entpacken, ob genug Platz frei ist. Abschalten nur, wenn die Prüfung fälschlich blockiert.",
+      "allowPsqlMeta": "Seit odoodev 0.77 verweigert ein Restore einen Dump mit psql-Befehlen (zum Beispiel \\! oder \\copy … program) und nennt die Zeile. Der Dry Run liest den Dump nicht und zeigt das daher nicht an; die Verweigerung erscheint erst beim echten Restore, nachdem eine gleichnamige vorhandene Datenbank bereits gelöscht wurde.",
+      "allowPsqlMetaWarning": "Ein solcher Befehl im Backup läuft beim Restore auf diesem Rechner mit Ihren Benutzerrechten. Nur für Backups aus einer vertrauenswürdigen Quelle verwenden.",
       "recomputeNeedsAnonymize": "Wirkt nur zusammen mit „Anonymisieren“ — die CLI überspringt den Schritt sonst."
     },
     "checkSpace": "Freien Speicherplatz prüfen",
     "withoutPgvector": "Ohne KI-Tabellen (pgvector) wiederherstellen",
+    "allowPsqlMeta": "psql-Befehle im Backup zulassen",
     "nameRuleHint": "Nur Buchstaben, Ziffern und Unterstrich; darf nicht mit einer Ziffer beginnen.",
     "nameExists": "Eine Datenbank mit diesem Namen existiert bereits.",
     "backupTitle": "Datenbank sichern",
@@ -304,6 +307,7 @@
     "updateRunningIndicator": "Update v{{version}} läuft ({{done}}/{{total}})"
   },
   "docker": {
+    "allowDefaultCredentials": "Standard-Anmeldedaten erlauben",
     "title": "Docker / Container",
     "overview": "Übersicht",
     "logs": "Logs",
@@ -542,7 +546,7 @@
     "installNow": "Jetzt installieren",
     "skip": "Überspringen",
     "uvNotInstalled": "uv ist nicht installiert",
-    "uvNotInstalledText": "uv ist der Python Package Manager, der zum Installieren und Aktualisieren von odoodev benötigt wird.",
+    "uvNotInstalledText": "uv ist der Python Package Manager, der zum Installieren und Aktualisieren von odoodev benötigt wird. Bis zum Klick auf die Schaltfläche wird nichts heruntergeladen: Danach wird uv von astral.sh heruntergeladen und installiert, anschließend odoodev.",
     "installUvNow": "uv jetzt installieren",
     "installing": "Wird installiert..."
   },
@@ -828,6 +832,30 @@
       "runNow": "Jetzt ausführen",
       "summary": "Zusammenfassung",
       "outputPath": "Ausgabepfad",
+      "outputAllowed": "Neue Playbooks können in diesen Verzeichnissen gespeichert werden (Unterordner und Dateiname sind frei):",
+      "outputAllowedUnknown": "Die Playbook-Verzeichnisse konnten nicht ermittelt werden.",
+      "envFileAllowed": "Die Secrets-Datei kann in diesen Verzeichnissen gespeichert werden (der Dateiname muss auf .env enden):",
+      "envFileError": {
+        "flag_like": "Der Pfad darf nicht mit einem Bindestrich beginnen.",
+        "empty": "Bitte einen Pfad für die Secrets-Datei angeben.",
+        "bad_tilde": "Unterstützt werden nur ~ und ~/…; ~name für ein anderes Konto nicht.",
+        "bad_extension": "Der Dateiname der Secrets-Datei muss auf .env enden.",
+        "parent_escape": "Der Pfad enthält „..“ in einem Ordner, der noch nicht existiert. Bitte den Pfad ohne „..“ angeben.",
+        "unresolvable": "Der Pfad lässt sich nicht auflösen (defekter Link oder kein Zugriff).",
+        "outside_roots": "Dieser Speicherort ist für die Secrets-Datei nicht erlaubt. Bitte einen Pfad innerhalb eines der unten genannten Playbook-Verzeichnisse wählen.",
+        "not_a_file": "Das Ziel existiert, ist aber keine reguläre Datei.",
+        "malformed": "Die Einstellungen der Secrets-Datei sind fehlerhaft."
+      },
+      "outputError": {
+        "flag_like": "Der Pfad darf nicht mit einem Bindestrich beginnen.",
+        "empty": "Bitte einen Ausgabepfad angeben.",
+        "bad_tilde": "Unterstützt werden nur ~ und ~/…; ~name für ein anderes Konto nicht.",
+        "bad_extension": "Der Dateiname muss auf .yml oder .yaml enden.",
+        "parent_escape": "Der Pfad enthält „..“ in einem Ordner, der noch nicht existiert. Bitte den Pfad ohne „..“ angeben.",
+        "unresolvable": "Der Pfad lässt sich nicht auflösen (defekter Link oder kein Zugriff).",
+        "outside_roots": "Dieser Speicherort ist nicht erlaubt. Bitte einen Pfad innerhalb eines der unten genannten Playbook-Verzeichnisse wählen.",
+        "not_a_file": "Das Ziel existiert, ist aber keine reguläre Datei."
+      },
       "overwriteExisting": "Bestehende Dateien überschreiben (--force)",
       "loadFailed": "Wizard-Schema konnte nicht geladen werden (odoodev >= 0.55 erforderlich)",
       "sourceTarget": "Quell-Target (Backup von)",
@@ -858,5 +886,34 @@
         "summary": "Zusammenfassung"
       }
     }
+  },
+  "exportModules": {
+    "title": "Modulliste exportieren",
+    "description": "Die Module von <0>{{name}}</0> (v{{version}}) als CSV-Datei exportieren",
+    "scope": "Umfang",
+    "scopeAll": "Alle Module",
+    "scopeNoEnterprise": "Alle ohne Enterprise",
+    "scopeInstalled": "Nur installierte",
+    "updateList": "Modulliste zuerst aktualisieren",
+    "updateListHint": "Durchsucht die Addons-Pfade und registriert neue Module vor dem Export (Apps-Liste aktualisieren).",
+    "cleanup": "Modulliste zuerst bereinigen",
+    "cleanupHint": "Entfernt Modul-Einträge, die nicht installiert sind, aus der Modulliste der Datenbank; installierte Module bleiben unberührt.",
+    "viaShell": "Ohne Odoo-Login",
+    "viaShellHint": "Liest die Module direkt über odoo-bin shell; der Server muss nicht laufen. Ausgeschaltet läuft der Export über XML-RPC und braucht einen laufenden Server sowie den gespeicherten Odoo-Login.",
+    "outputHint": "Die CSV-Datei wird in den Downloads-Ordner geschrieben.",
+    "export": "Exportieren",
+    "runningShort": "Exportiere...",
+    "running": "Module von {{name}} werden exportiert...",
+    "doneToast": "{{count}} Module aus {{name}} exportiert",
+    "emptyToast": "Keine Module in {{name}} gefunden",
+    "failedToast": "Modulexport für {{name}} fehlgeschlagen",
+    "done": "{{count}} Module exportiert",
+    "empty": "Keine Module gefunden, es wurde nichts geschrieben.",
+    "copyPath": "Pfad kopieren",
+    "copied": "Kopiert",
+    "cleanedCount": "{{count}} Modul-Einträge entfernt",
+    "updatedCount": "{{count}} Module zum Katalog hinzugefügt",
+    "retryWithoutLogin": "Ohne Odoo-Login erneut versuchen",
+    "action": "Modulliste exportieren"
   }
 }

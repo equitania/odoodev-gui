@@ -142,7 +142,7 @@ export function DoctorPanel() {
   useEffect(() => {
     runDoctor();
     // Run the health check once on mount; runDoctor is intentionally not a dep.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run-once mount effect; runDoctor is recreated every render
   }, []);
 
   const sortedResults = [...results].sort((a, b) => {

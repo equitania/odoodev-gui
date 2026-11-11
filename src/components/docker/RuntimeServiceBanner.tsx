@@ -22,6 +22,7 @@ export function RuntimeServiceBanner() {
   const refresh = useCallback(() => {
     invokeCmd<RuntimeInfo>("get_runtime_info")
       .then(setInfo)
+      // polled and re-run after actions: stay silent, a down daemon would spam the console (see lib/errors.ts)
       .catch(() => {});
   }, []);
 

@@ -91,6 +91,11 @@ Ein nicht-blockierendes Panel zeigt den Fortschritt je Datenbank mit Warnungen, 
 Log; Abbrechen stoppt `odoo-bin` sauber, auch beim Schließen der App. Das Dashboard zeigt
 die Zahl veralteter Datenbanken je Version.
 
+**Modul-Export** (neu in 1.10.0) — je Datenbank die Modulliste als CSV in den
+Downloads-Ordner schreiben: alle Module, alle ohne Enterprise oder nur die installierten,
+auf Wunsch mit vorherigem Aktualisieren oder Bereinigen der Modulliste. Ab odoodev ≥ 0.76.0
+läuft der Export ohne Odoo-Login und auch bei gestopptem Server.
+
 **Datenbanken** — DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Schritt-Wizard
 mit Dry-Run (benötigt odoodev ≥ 0.61.0; zeigt den vollständigen CLI-Bericht: Backup-Datei
 und -Größe, ob die Ziel-DB überschrieben oder neu angelegt würde, Filestore-Ziel, freier
@@ -135,7 +140,7 @@ pnpm install                    # Frontend-Abhängigkeiten installieren
 ~/.cargo/bin/cargo-tauri build  # Produktions-Build
 ```
 
-**Voraussetzungen:** Rust 1.75+, Node.js 20+, pnpm, Tauri CLI v2
+**Voraussetzungen:** Rust 1.80+, Node.js 20+, pnpm, Tauri CLI v2
 (`cargo install tauri-cli --version "^2"`), `odoodev` installiert
 (`uv tool install odoodev-equitania`).
 
@@ -276,7 +281,7 @@ pnpm install                    # install frontend deps
 ~/.cargo/bin/cargo-tauri build  # production build
 ```
 
-**Prerequisites:** Rust 1.75+, Node.js 20+, pnpm, Tauri CLI v2
+**Prerequisites:** Rust 1.80+, Node.js 20+, pnpm, Tauri CLI v2
 (`cargo install tauri-cli --version "^2"`), `odoodev` installed
 (`uv tool install odoodev-equitania`).
 

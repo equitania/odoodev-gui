@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use tauri::{Emitter, State};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
 use tokio::process::Command;
 
 use crate::log_parser;
@@ -126,7 +126,7 @@ pub async fn start_server(
         return Err(format!("Server {} is already running", args.version));
     }
 
-    odoodev::reject_flag_like("version", &args.version)?;
+    odoodev::validate_version("version", &args.version)?;
     for (field, val) in [
         ("database", &args.database),
         ("update_modules", &args.update_modules),
@@ -156,12 +156,12 @@ pub async fn start_server(
     let version = args.version.clone();
     let win_out = window.clone();
     tokio::spawn(async move {
-        let reader = BufReader::new(stdout);
-        let mut lines = reader.lines();
+        let mut reader = BufReader::new(stdout);
+        let mut buf = Vec::new();
         // Continuation lines (tracebacks etc.) stay on the same stream as
         // their origin log line, so per-stream state is sufficient.
         let mut last_level = log_parser::LogLevel::Info;
-        while let Ok(Some(line)) = lines.next_line().await {
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             let entry = log_parser::parse_line_with_level(&line, last_level);
             if entry.level != log_parser::LogLevel::Raw {
                 last_level = entry.level;
@@ -173,10 +173,10 @@ pub async fn start_server(
     let version_err = args.version.clone();
     let win_err = window.clone();
     tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
         let mut last_level = log_parser::LogLevel::Info;
-        while let Ok(Some(line)) = lines.next_line().await {
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             let entry = log_parser::parse_line_with_level(&line, last_level);
             if entry.level != log_parser::LogLevel::Raw {
                 last_level = entry.level;
@@ -220,6 +220,7 @@ pub async fn stop_server(
     window: tauri::Window,
     manager: State<'_, ServerManager>,
 ) -> Result<OpResult, String> {
+    odoodev::validate_version("version", &version)?;
     let mut args = vec!["stop".to_string(), version.clone()];
     if keep_docker.unwrap_or(true) {
         args.push("--keep-docker".to_string());

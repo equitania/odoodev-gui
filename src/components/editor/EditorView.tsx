@@ -12,7 +12,6 @@ interface EditorViewProps {
   path: string;
   initialContent: string;
   language: EditorLanguage;
-  extraRoots: string[];
   onDirtyChange: (dirty: boolean) => void;
   onContentChange: (content: string) => void;
   onSaved: () => void;
@@ -26,7 +25,6 @@ export function EditorView({
   path,
   initialContent,
   language,
-  extraRoots,
   onDirtyChange,
   onContentChange,
   onSaved,
@@ -60,7 +58,6 @@ export function EditorView({
         path,
         content,
         allowCreate: false,
-        extraRoots,
       })
         .then(() => {
           savedContent = content;
@@ -86,7 +83,7 @@ export function EditorView({
       editor.dispose();
     };
     // Recreate the editor only when a different file is opened.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- editor is recreated only when the file path changes; callbacks are read via closure
   }, [path]);
 
   // Apply syntax-validation markers from the backend.

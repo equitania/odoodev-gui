@@ -10,6 +10,7 @@ import { StepList } from "./StepList";
 import { EventLog } from "./EventLog";
 import { PlaybookDetailsCard } from "./PlaybookDetailsCard";
 import { PlaybookWizard } from "./wizard/PlaybookWizard";
+import { versionRootsOf } from "./wizard/defaultRoot";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -53,6 +54,7 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
   const [showResults, setShowResults] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [playbookRoots, setPlaybookRoots] = useState<string[]>([]);
+  const [versionRoots, setVersionRoots] = useState<Record<string, string>>({});
 
   const odoodevVersion = useAppStore((s) => s.odoodevInfo?.version ?? null);
   const playbookRun = usePlaybookRun();
@@ -85,7 +87,10 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
       .then(setPlaybooks)
       .catch(logError("PlaybookPanel: load"));
     invokeCmd<CuratedFiles>("curated_files")
-      .then((f) => setPlaybookRoots(f.playbook_roots))
+      .then((f) => {
+        setPlaybookRoots(f.playbook_roots);
+        setVersionRoots(versionRootsOf(f.version_groups, f.playbook_roots));
+      })
       .catch(logError("PlaybookPanel: load"));
   }, []);
 
@@ -170,6 +175,7 @@ export function PlaybookPanel({ onNavigate }: PlaybookPanelProps) {
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
         playbookRoots={playbookRoots}
+        versionRoots={versionRoots}
         onOpenInEditor={
           onNavigate ? (path) => onNavigate("editor", undefined, path) : undefined
         }

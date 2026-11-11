@@ -61,7 +61,8 @@ export function useOdoodev() {
       invokeCmd<OpResult>("copy_db", { version, src, dst, terminateConnections }),
     renameDb: (version: string, src: string, dst: string, terminateConnections: boolean = true) =>
       invokeCmd<OpResult>("rename_db", { version, src, dst, terminateConnections }),
-    dockerUp: (version: string, runtime?: string) => invokeCmd<OpResult>("docker_up", { version, runtime }),
+    dockerUp: (version: string, runtime?: string, allowDefaultCredentials?: boolean) =>
+      invokeCmd<OpResult>("docker_up", { version, runtime, allowDefaultCredentials }),
     dockerDown: (version: string, runtime?: string) => invokeCmd<OpResult>("docker_down", { version, runtime }),
     dockerStatus: (version: string, versions: VersionsResponse) =>
       invokeCmd<DockerStatus>("docker_status", { version, versions }),

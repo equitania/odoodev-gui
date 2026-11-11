@@ -38,7 +38,7 @@ export function VenvPanel() {
         .then((s) => {
           setVenvStatuses((prev) => ({ ...prev, [version]: s }));
         })
-        .catch(() => {});
+        .catch(logError("VenvPanel: get_venv_status"));
     },
     [],
   );

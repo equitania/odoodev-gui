@@ -4,8 +4,10 @@ use std::sync::{Arc, Mutex};
 use tokio::process::Child;
 
 pub struct OdooProcess {
-    #[allow(dead_code)]
-    pub child: Option<Child>,
+    /// Held only to own the process handle for the lifetime of the entry (never read).
+    /// Spawned with `kill_on_drop(false)`, so dropping it does not kill the server, but
+    /// the entry owning it keeps the handle's reaping tied to `remove`.
+    _child: Option<Child>,
     pub pid: u32,
     pub started_at: chrono::DateTime<Utc>,
     pub port: u16,
@@ -60,7 +62,7 @@ impl ServerManager {
         self.processes.lock().unwrap().insert(
             version,
             OdooProcess {
-                child: Some(child),
+                _child: Some(child),
                 pid,
                 started_at: Utc::now(),
                 port,

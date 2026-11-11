@@ -9,8 +9,10 @@
 //! same trust level as `~/.config/odoodev`.
 
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use serde::Serialize;
+use tauri::State;
 use tokio::process::Command;
 
 use crate::models::PlaybookInfo;
@@ -66,9 +68,6 @@ pub struct CuratedFiles {
     pub playbooks: Vec<PlaybookInfo>,
     /// Directories where new playbooks may be created.
     pub playbook_roots: Vec<String>,
-    /// Union of playbook roots and version directories; the allowlist roots
-    /// the frontend passes to fs_read_file / fs_write_file.
-    pub extra_roots: Vec<String>,
     /// False when the installed odoodev CLI lacks `config paths --json`
     /// (reduced file list, template/generated confs unavailable).
     pub paths_command_available: bool,
@@ -218,8 +217,23 @@ pub struct SemanticValidation {
     pub message: Option<String>,
 }
 
-fn config_dir() -> PathBuf {
+/// odoodev's configuration directory. The CLI uses `Path.home() / ".config" /
+/// "odoodev"` on every platform (`get_config_dir` in `core/global_config.py`),
+/// which is exactly this; `config.rs` reads `config.yaml` from the same place.
+pub(crate) fn config_dir() -> PathBuf {
     odoodev::home_dir().join(".config/odoodev")
+}
+
+/// Where the wizard's secrets `.env` file may be written: the playbook
+/// directories plus odoodev's config dir (the CLI's own default for server
+/// playbooks is `~/.config/odoodev/<slug>.env`). Single place for that rule.
+pub(crate) fn env_file_dirs(playbook_dirs: &[PathBuf]) -> Vec<PathBuf> {
+    let mut dirs = playbook_dirs.to_vec();
+    let cfg = config_dir();
+    if !dirs.contains(&cfg) {
+        dirs.push(cfg);
+    }
+    dirs
 }
 
 /// Built-in allowlist roots (always permitted): the odoodev config dir and
@@ -244,20 +258,130 @@ fn canonical_for_check(path: &Path) -> Option<PathBuf> {
     parent.canonicalize().ok().map(|p| p.join(name))
 }
 
-fn is_allowed(path: &Path, extra_roots: &[String]) -> bool {
+/// Server-side allowlist roots (playbook dirs plus each version's
+/// directories), computed in Rust by `curated_files` and held in Tauri managed
+/// state. The webview never supplies roots — it can only ask for paths, which
+/// are then checked against this list.
+///
+/// `playbook` is the subset where *new playbooks* may be written (`./playbooks`
+/// and each version's `<native_dir>/scripts/playbooks`) — narrower than the
+/// editor roots, which also cover the config directories.
+#[derive(Default)]
+pub struct EditorRoots {
+    all: Mutex<Vec<PathBuf>>,
+    playbook: Mutex<Vec<PathBuf>>,
+}
+
+impl EditorRoots {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn set(&self, roots: Vec<PathBuf>) {
+        *self.all.lock().unwrap_or_else(|e| e.into_inner()) = roots;
+    }
+
+    fn set_playbook(&self, roots: Vec<PathBuf>) {
+        *self.playbook.lock().unwrap_or_else(|e| e.into_inner()) = roots;
+    }
+
+    fn snapshot(&self) -> Vec<PathBuf> {
+        self.all.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    fn playbook_snapshot(&self) -> Vec<PathBuf> {
+        self.playbook
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
+    /// Store both lists from one `build_curated` run, so they never disagree.
+    fn set_from(&self, files: &CuratedFiles, roots: Vec<PathBuf>) {
+        self.set(roots);
+        self.set_playbook(files.playbook_roots.iter().map(PathBuf::from).collect());
+    }
+
+    /// Current roots; computed on demand when `curated_files` has not run yet.
+    async fn get_or_compute(&self) -> Vec<PathBuf> {
+        let current = self.snapshot();
+        if !current.is_empty() {
+            return current;
+        }
+        let (files, roots) = build_curated().await;
+        self.set_from(&files, roots.clone());
+        roots
+    }
+
+    /// Directories where a new playbook may be written; computed on demand
+    /// from the same run as the editor roots.
+    pub async fn playbook_dirs(&self) -> Vec<PathBuf> {
+        let current = self.playbook_snapshot();
+        if !current.is_empty() {
+            return current;
+        }
+        let (files, roots) = build_curated().await;
+        self.set_from(&files, roots);
+        self.playbook_snapshot()
+    }
+}
+
+/// Resolve an absolute `path` to its real location when the tail may not exist
+/// yet (a new playbook in a directory that is still to be created).
+///
+/// The longest existing prefix is canonicalized (symlinks and `..` inside it
+/// resolve physically), the remaining components are appended. A `..` in the
+/// non-existing remainder is rejected: it cannot be resolved without the
+/// directory, and the CLI's `mkdir -p` would follow it. A dangling symlink is
+/// an error, not "missing" — writing through it would create its target.
+pub(crate) fn resolve_lenient(path: &Path) -> Result<PathBuf, String> {
+    use std::path::Component;
+    if !path.is_absolute() {
+        return Err(format!("not an absolute path: {}", path.display()));
+    }
+    let comps: Vec<Component> = path.components().collect();
+    for n in (1..=comps.len()).rev() {
+        let prefix: PathBuf = comps[..n].iter().collect();
+        match std::fs::symlink_metadata(&prefix) {
+            Ok(_) => {
+                let mut base = prefix
+                    .canonicalize()
+                    .map_err(|e| format!("{}: {e}", prefix.display()))?;
+                for c in &comps[n..] {
+                    match c {
+                        Component::Normal(name) => base.push(name),
+                        Component::CurDir => {}
+                        _ => {
+                            return Err(format!(
+                                "'..' in a directory that does not exist yet: {}",
+                                path.display()
+                            ))
+                        }
+                    }
+                }
+                return Ok(base);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(format!("{}: {e}", prefix.display())),
+        }
+    }
+    Err(format!("cannot resolve {}", path.display()))
+}
+
+fn is_allowed(path: &Path, extra_roots: &[PathBuf]) -> bool {
     let Some(canon) = canonical_for_check(path) else {
         return false;
     };
     builtin_roots()
         .into_iter()
-        .chain(extra_roots.iter().map(PathBuf::from))
+        .chain(extra_roots.iter().cloned())
         .any(|root| match root.canonicalize() {
             Ok(root_canon) => canon.starts_with(&root_canon),
             Err(_) => false,
         })
 }
 
-fn check_allowed(path: &Path, extra_roots: &[String]) -> Result<(), String> {
+fn check_allowed(path: &Path, extra_roots: &[PathBuf]) -> Result<(), String> {
     if is_allowed(path, extra_roots) {
         Ok(())
     } else {
@@ -268,9 +392,52 @@ fn check_allowed(path: &Path, extra_roots: &[String]) -> Result<(), String> {
     }
 }
 
-/// Assemble the three curated sections shown in the editor's file list.
+/// True for a path directly below a filesystem root (`/playbooks`, `C:\\playbooks`).
+fn is_root_level(path: &Path) -> bool {
+    path.parent().is_some_and(|p| p.parent().is_none())
+}
+
+/// The single place that decides which playbook directories exist and which of
+/// them may receive new files. Returns `(all, writable)`, both in priority order:
+/// each version's `<native_dir>/scripts/playbooks` first, `<cwd>/playbooks` last.
+///
+/// The working directory is only the project in a dev checkout; an installed
+/// app launched from Finder or a desktop launcher gets whatever the launcher
+/// sets (on macOS typically `/`), which turns `./playbooks` into `/playbooks`.
+/// Such a root-level directory stays in `all` (reading, listing, editing keep
+/// working) but is never a `writable` target nor an offered default.
+pub(crate) fn playbook_dirs_for(
+    native_dirs: &[String],
+    cwd: Option<&Path>,
+) -> (Vec<PathBuf>, Vec<PathBuf>) {
+    let mut all: Vec<PathBuf> = native_dirs
+        .iter()
+        .map(|d| Path::new(d).join("scripts/playbooks"))
+        .collect();
+    if let Some(cwd) = cwd {
+        all.push(cwd.join("playbooks"));
+    }
+    let mut seen = Vec::new();
+    all.retain(|p| {
+        let dup = seen.contains(p);
+        seen.push(p.clone());
+        !dup
+    });
+    let writable = all.iter().filter(|p| !is_root_level(p)).cloned().collect();
+    (all, writable)
+}
+
+/// Assemble the three curated sections shown in the editor's file list and
+/// refresh the server-side allowlist.
 #[tauri::command]
-pub async fn curated_files() -> Result<CuratedFiles, String> {
+pub async fn curated_files(roots: State<'_, EditorRoots>) -> Result<CuratedFiles, String> {
+    let (files, allow_roots) = build_curated().await;
+    roots.set_from(&files, allow_roots);
+    Ok(files)
+}
+
+/// Compute the curated file list together with the allowlist roots.
+async fn build_curated() -> (CuratedFiles, Vec<PathBuf>) {
     let dir = config_dir();
     let yaml = dir.join("config.yaml");
     let yml = dir.join("config.yml");
@@ -303,23 +470,23 @@ pub async fn curated_files() -> Result<CuratedFiles, String> {
     // The CLI reports all registry versions; limit to the active ones.
     groups.retain(|g| versions.contains(&g.version));
 
-    let mut playbook_roots = Vec::new();
-    if let Ok(cwd) = std::env::current_dir() {
-        playbook_roots.push(cwd.join("playbooks").to_string_lossy().to_string());
-    }
-    for group in &groups {
-        playbook_roots.push(
-            Path::new(&group.native_dir)
-                .join("scripts/playbooks")
-                .to_string_lossy()
-                .to_string(),
-        );
-    }
+    let native_dirs: Vec<String> = groups.iter().map(|g| g.native_dir.clone()).collect();
+    let cwd = std::env::current_dir().ok();
+    let (all_playbook_dirs, writable_dirs) = playbook_dirs_for(&native_dirs, cwd.as_deref());
+    let playbook_roots: Vec<String> = writable_dirs
+        .iter()
+        .map(|p| p.to_string_lossy().to_string())
+        .collect();
 
     // Allowlist roots: playbook dirs plus each version's directories. Parent
     // dirs of template/generated confs are added separately because repos.yaml
     // overrides may place them outside conf_dir/myconfs_dir.
-    let mut extra_roots: Vec<String> = playbook_roots.clone();
+    // (Editing may still reach `./playbooks` when it is the project's, even if
+    // it is not offered as a place for new playbooks.)
+    let mut extra_roots: Vec<String> = all_playbook_dirs
+        .iter()
+        .map(|p| p.to_string_lossy().to_string())
+        .collect();
     for group in &groups {
         extra_roots.push(group.native_dir.clone());
         extra_roots.extend(group.conf_dir.clone());
@@ -332,23 +499,34 @@ pub async fn curated_files() -> Result<CuratedFiles, String> {
     }
     extra_roots.sort();
     extra_roots.dedup();
+    let extra_roots: Vec<PathBuf> = extra_roots.into_iter().map(PathBuf::from).collect();
 
     let playbooks = super::playbook::playbook_list().await.unwrap_or_default();
 
-    Ok(CuratedFiles {
-        config: config_entry,
-        version_groups: groups,
-        playbooks,
-        playbook_roots,
+    (
+        CuratedFiles {
+            config: config_entry,
+            version_groups: groups,
+            playbooks,
+            playbook_roots,
+            paths_command_available,
+        },
         extra_roots,
-        paths_command_available,
-    })
+    )
 }
 
 #[tauri::command]
-pub fn fs_read_file(path: String, extra_roots: Vec<String>) -> Result<FileContent, String> {
-    let path = Path::new(&path);
-    check_allowed(path, &extra_roots)?;
+pub async fn fs_read_file(
+    path: String,
+    roots: State<'_, EditorRoots>,
+) -> Result<FileContent, String> {
+    let allow_roots = roots.get_or_compute().await;
+    read_file_checked(&path, &allow_roots)
+}
+
+fn read_file_checked(path: &str, extra_roots: &[PathBuf]) -> Result<FileContent, String> {
+    let path = Path::new(path);
+    check_allowed(path, extra_roots)?;
 
     let meta = std::fs::metadata(path).map_err(|e| format!("{}: {e}", path.display()))?;
     if !meta.is_file() {
@@ -368,14 +546,24 @@ pub fn fs_read_file(path: String, extra_roots: Vec<String>) -> Result<FileConten
 }
 
 #[tauri::command]
-pub fn fs_write_file(
+pub async fn fs_write_file(
     path: String,
     content: String,
     allow_create: bool,
-    extra_roots: Vec<String>,
+    roots: State<'_, EditorRoots>,
 ) -> Result<(), String> {
-    let path = Path::new(&path);
-    check_allowed(path, &extra_roots)?;
+    let allow_roots = roots.get_or_compute().await;
+    write_file_checked(&path, &content, allow_create, &allow_roots)
+}
+
+fn write_file_checked(
+    path: &str,
+    content: &str,
+    allow_create: bool,
+    extra_roots: &[PathBuf],
+) -> Result<(), String> {
+    let path = Path::new(path);
+    check_allowed(path, extra_roots)?;
 
     match std::fs::metadata(path) {
         Ok(meta) if !meta.is_file() => {
@@ -422,9 +610,10 @@ pub fn validate_yaml(content: String) -> Option<YamlError> {
 #[tauri::command]
 pub async fn playbook_validate_semantic(
     path: String,
-    extra_roots: Vec<String>,
+    roots: State<'_, EditorRoots>,
 ) -> Result<SemanticValidation, String> {
-    check_allowed(Path::new(&path), &extra_roots)?;
+    let allow_roots = roots.get_or_compute().await;
+    check_allowed(Path::new(&path), &allow_roots)?;
 
     let mut cmd = Command::new(odoodev::find_odoodev());
     cmd.args(["run", &path, "--dry-run", "--output", "json"]);
@@ -475,6 +664,33 @@ mod tests {
         dir
     }
 
+    fn roots_of(root: &Path) -> Vec<PathBuf> {
+        vec![root.to_path_buf()]
+    }
+
+    #[test]
+    fn playbook_dirs_put_versions_first_and_cwd_last() {
+        let natives = vec!["/work/v18".to_string(), "/work/v19".to_string()];
+        let (all, writable) = playbook_dirs_for(&natives, Some(Path::new("/home/dev/project")));
+        let expect: Vec<PathBuf> = vec![
+            "/work/v18/scripts/playbooks".into(),
+            "/work/v19/scripts/playbooks".into(),
+            "/home/dev/project/playbooks".into(),
+        ];
+        assert_eq!(all, expect);
+        assert_eq!(writable, expect);
+    }
+
+    #[test]
+    fn root_level_cwd_playbooks_is_never_writable() {
+        let natives = vec!["/work/v18".to_string()];
+        let (all, writable) = playbook_dirs_for(&natives, Some(Path::new("/")));
+        assert_eq!(all.last().unwrap(), Path::new("/playbooks"));
+        assert_eq!(writable, vec![PathBuf::from("/work/v18/scripts/playbooks")]);
+        // no cwd at all, no versions: nothing to offer
+        assert!(playbook_dirs_for(&[], None).1.is_empty());
+    }
+
     #[test]
     fn rejects_paths_outside_all_roots() {
         assert!(!is_allowed(Path::new("/etc/passwd"), &[]));
@@ -484,7 +700,54 @@ mod tests {
     fn rejects_traversal_out_of_extra_root() {
         let root = temp_root("traverse");
         let sneaky = root.join("../../etc/passwd");
-        assert!(!is_allowed(&sneaky, &[root.to_string_lossy().to_string()]));
+        assert!(!is_allowed(&sneaky, &roots_of(&root)));
+    }
+
+    #[test]
+    fn rejects_path_outside_server_side_roots() {
+        let root = temp_root("outside-root");
+        let other = temp_root("outside-other");
+        let file = other.join("secret.yaml");
+        std::fs::write(&file, "x: 1\n").unwrap();
+        let roots = roots_of(&root);
+        assert!(!is_allowed(&file, &roots));
+        assert!(read_file_checked(&file.to_string_lossy(), &roots).is_err());
+        assert!(write_file_checked(&file.to_string_lossy(), "y: 2\n", true, &roots).is_err());
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), "x: 1\n");
+    }
+
+    #[test]
+    fn rejects_root_slash_only_when_not_server_side() {
+        // A caller-supplied "/" no longer exists as an input; with no
+        // server-side roots, an arbitrary path is refused.
+        assert!(read_file_checked("/etc/hosts", &[]).is_err());
+        assert!(write_file_checked("/tmp/odoodev-gui-nope.yaml", "a: 1\n", true, &[]).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn rejects_symlink_escaping_the_root() {
+        let root = temp_root("symlink-root");
+        let outside = temp_root("symlink-target");
+        let secret = outside.join("secret.txt");
+        std::fs::write(&secret, "top secret\n").unwrap();
+        let link = root.join("link.txt");
+        std::fs::remove_file(&link).ok();
+        std::os::unix::fs::symlink(&secret, &link).unwrap();
+        let roots = roots_of(&root);
+        assert!(!is_allowed(&link, &roots));
+        assert!(read_file_checked(&link.to_string_lossy(), &roots).is_err());
+        assert!(write_file_checked(&link.to_string_lossy(), "x", false, &roots).is_err());
+        assert_eq!(std::fs::read_to_string(&secret).unwrap(), "top secret\n");
+
+        // A symlinked directory pointing out is refused for new files too.
+        let dir_link = root.join("dirlink");
+        std::fs::remove_file(&dir_link).ok();
+        std::os::unix::fs::symlink(&outside, &dir_link).unwrap();
+        let new_file = dir_link.join("new.yaml");
+        assert!(!is_allowed(&new_file, &roots));
+        assert!(write_file_checked(&new_file.to_string_lossy(), "a: 1\n", true, &roots).is_err());
+        assert!(!outside.join("new.yaml").exists());
     }
 
     #[test]
@@ -492,14 +755,14 @@ mod tests {
         let root = temp_root("allow");
         let file = root.join("pb.yaml");
         std::fs::write(&file, "x: 1\n").unwrap();
-        assert!(is_allowed(&file, &[root.to_string_lossy().to_string()]));
+        assert!(is_allowed(&file, &roots_of(&root)));
     }
 
     #[test]
     fn allows_nonexistent_file_under_extra_root() {
         let root = temp_root("allow-new");
         let file = root.join("new-playbook.yaml");
-        assert!(is_allowed(&file, &[root.to_string_lossy().to_string()]));
+        assert!(is_allowed(&file, &roots_of(&root)));
     }
 
     #[test]
@@ -507,12 +770,7 @@ mod tests {
         let root = temp_root("no-create");
         let file = root.join("missing.yaml");
         std::fs::remove_file(&file).ok();
-        let result = fs_write_file(
-            file.to_string_lossy().to_string(),
-            "a: 1\n".to_string(),
-            false,
-            vec![root.to_string_lossy().to_string()],
-        );
+        let result = write_file_checked(&file.to_string_lossy(), "a: 1\n", false, &roots_of(&root));
         assert!(result.is_err());
         assert!(!file.exists());
     }
@@ -522,13 +780,7 @@ mod tests {
         let root = temp_root("create");
         let file = root.join("fresh.yaml");
         std::fs::remove_file(&file).ok();
-        fs_write_file(
-            file.to_string_lossy().to_string(),
-            "a: 1\n".to_string(),
-            true,
-            vec![root.to_string_lossy().to_string()],
-        )
-        .unwrap();
+        write_file_checked(&file.to_string_lossy(), "a: 1\n", true, &roots_of(&root)).unwrap();
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "a: 1\n");
         std::fs::remove_file(&file).ok();
     }
@@ -538,8 +790,7 @@ mod tests {
         let root = temp_root("read");
         let file = root.join("small.yaml");
         std::fs::write(&file, "hello: world\n").unwrap();
-        let roots = vec![root.to_string_lossy().to_string()];
-        match fs_read_file(file.to_string_lossy().to_string(), roots).unwrap() {
+        match read_file_checked(&file.to_string_lossy(), &roots_of(&root)).unwrap() {
             FileContent::Text { content } => assert_eq!(content, "hello: world\n"),
             other => panic!("expected text, got {other:?}"),
         }
@@ -552,7 +803,15 @@ mod tests {
         std::fs::create_dir_all(&nested).unwrap();
         let file = nested.join("odoo18_template.conf");
         std::fs::write(&file, "[options]\n").unwrap();
-        assert!(is_allowed(&file, &[root.to_string_lossy().to_string()]));
+        assert!(is_allowed(&file, &roots_of(&root)));
+    }
+
+    #[test]
+    fn roots_state_roundtrip() {
+        let state = EditorRoots::new();
+        assert!(state.snapshot().is_empty());
+        state.set(vec![PathBuf::from("/a")]);
+        assert_eq!(state.snapshot(), vec![PathBuf::from("/a")]);
     }
 
     #[test]

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { FieldControl } from "./FieldControl";
 import type { WizardField, WizardSchema, WizardValues } from "../../../types/playbookSchema";
 
@@ -20,26 +21,31 @@ export function SchemaForm({
   onChange,
   schema,
   targetNames,
+  fieldExtras,
 }: {
   fields: WizardField[];
   values: WizardValues;
   onChange: (key: string, value: unknown) => void;
   schema: WizardSchema;
   targetNames: string[];
+  /** Extra content rendered under a field, by field key. */
+  fieldExtras?: Record<string, ReactNode>;
 }) {
   return (
     <div className="space-y-4">
       {fields
         .filter((f) => isFieldVisible(f, values))
         .map((f) => (
-          <FieldControl
-            key={f.key}
-            field={f}
-            value={values[f.key]}
-            onChange={(v) => onChange(f.key, v)}
-            schema={schema}
-            targetNames={targetNames}
-          />
+          <div key={f.key} className="space-y-1.5">
+            <FieldControl
+              field={f}
+              value={values[f.key]}
+              onChange={(v) => onChange(f.key, v)}
+              schema={schema}
+              targetNames={targetNames}
+            />
+            {fieldExtras?.[f.key]}
+          </div>
         ))}
     </div>
   );

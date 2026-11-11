@@ -54,6 +54,7 @@ export function VersionCard({
     () => {
       invokeCmd<VenvStatus>("get_venv_status", { version })
         .then(setVenvStatus)
+        // polling: stay silent (see lib/errors.ts)
         .catch(() => {});
     },
     POLL_INTERVALS.venv,
@@ -64,6 +65,7 @@ export function VersionCard({
     () => {
       invokeCmd<DockerStatus>("get_docker_status", { version, versions: { [version]: info } })
         .then(setDockerStatus)
+        // polling: stay silent (see lib/errors.ts)
         .catch(() => {});
     },
     POLL_INTERVALS.docker,
@@ -74,6 +76,7 @@ export function VersionCard({
     () => {
       invokeCmd<ServerStatus>("get_server_status", { version })
         .then(setServerStatus)
+        // polling: stay silent (see lib/errors.ts)
         .catch(() => {});
     },
     POLL_INTERVALS.server,

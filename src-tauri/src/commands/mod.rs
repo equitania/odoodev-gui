@@ -4,6 +4,7 @@ pub mod docker;
 pub mod doctor;
 pub mod editor;
 pub mod env;
+pub mod export;
 pub mod init_cmd;
 pub mod migrate;
 pub mod playbook;

@@ -162,6 +162,20 @@ export interface BackupResult {
   error: string | null;
 }
 
+export type ExportScope = "all" | "no-enterprise" | "installed";
+
+/** Result of `export_modules` (`odoodev export modules --json`). `path` is null
+ *  for an empty module list; `updated`/`cleaned` are null when not requested. */
+export interface ExportModulesResult {
+  version: string;
+  database: string;
+  scope: ExportScope;
+  path: string | null;
+  count: number;
+  updated: number | null;
+  cleaned: number | null;
+}
+
 export interface RestoreResult {
   success: boolean;
   error: string | null;
@@ -296,8 +310,6 @@ export interface CuratedFiles {
   version_groups: VersionFileGroup[];
   playbooks: PlaybookInfo[];
   playbook_roots: string[];
-  /** Allowlist roots for fs_read_file / fs_write_file */
-  extra_roots: string[];
   /** false → installed odoodev lacks `config paths --json` (reduced list) */
   paths_command_available: boolean;
 }
@@ -389,6 +401,7 @@ export interface RestoreArgs {
   keep_temp?: boolean;
   check_space?: boolean;
   without_pgvector?: boolean;
+  allow_psql_meta?: boolean;
   delete_backup?: boolean;
   dry_run?: boolean;
 }

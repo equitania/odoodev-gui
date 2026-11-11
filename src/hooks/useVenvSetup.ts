@@ -49,7 +49,7 @@ export function useVenvSetup(): VenvSetupState {
     return () => {
       // Intentional: unlisten every listener `start` accumulated over the
       // component's lifetime, not a stale mount-time snapshot of the ref.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup must read ref.current at unmount to catch listeners added after mount
       unlistensRef.current.forEach((u) => u());
     };
   }, []);

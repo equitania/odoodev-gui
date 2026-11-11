@@ -17,6 +17,8 @@ import type { RepeatableItem } from "./RepeatableSection";
 export function buildAnswers(
   schema: WizardSchema,
   values: WizardValues,
+  /** An env-file path that is only the wizard's suggestion (not typed by the user). */
+  suggestedEnvPath?: string,
 ): { answers: Record<string, unknown>; problems: string[] } {
   const problems: string[] = [];
   const playbookType = str(values["playbook_type"]) || "server";
@@ -42,8 +44,15 @@ export function buildAnswers(
   // The CLI rejects generate:true without a path. Without secrets that combo
   // is harmless intent — quietly disable; with secrets the path is genuinely
   // missing and the user must fix it.
-  const envPath = str(values["env_file.path"]);
   const secrets = mapRowsToObject(values["env_file.secrets"]);
+  // A suggested path counts only when secrets are written to it: otherwise it would
+  // put an `env_file:` reference to a file nobody creates into every playbook (and
+  // `generate: true` would write a header-only file).
+  const rawEnvPath = str(values["env_file.path"]);
+  const envPath =
+    suggestedEnvPath && rawEnvPath === suggestedEnvPath && Object.keys(secrets).length === 0
+      ? ""
+      : rawEnvPath;
   let envGenerate = bool(values["env_file.generate"], true);
   if (envGenerate && !envPath) {
     if (Object.keys(secrets).length > 0) {

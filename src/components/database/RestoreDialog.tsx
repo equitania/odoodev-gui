@@ -12,7 +12,7 @@ import { defaultBackupDir, rememberBackupDir } from "../../lib/backupDir";
 import { buildRestoreArgs } from "./restoreArgs";
 import { cn } from "../../lib/utils";
 import { useAppStore } from "../../store/appStore";
-import { isAtLeast, MIN_ODOODEV_PGVECTOR } from "../../lib/version";
+import { isAtLeast, MIN_ODOODEV_PGVECTOR, MIN_ODOODEV_PSQL_META } from "../../lib/version";
 import { CheckCircle2, FolderOpen, TriangleAlert } from "lucide-react";
 
 /** Checkbox with a short explanation of what the CLI flag actually does. */
@@ -70,6 +70,9 @@ export function RestoreDialog({
   const odoodevVersion = useAppStore((s) => s.odoodevInfo?.version ?? null);
   const offersPgvectorFlag = odoodevVersion === null || isAtLeast(odoodevVersion, MIN_ODOODEV_PGVECTOR);
   const [withoutPgvector, setWithoutPgvector] = useState(false);
+  // Unknown version -> show the option (same rule as pgvector above).
+  const offersPsqlMeta = odoodevVersion === null || isAtLeast(odoodevVersion, MIN_ODOODEV_PSQL_META);
+  const [allowPsqlMeta, setAllowPsqlMeta] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<string | null>(null);
   const [dryRunOk, setDryRunOk] = useState<boolean | null>(null);
   const [running, setRunning] = useState(false);
@@ -102,6 +105,7 @@ export function RestoreDialog({
     setUninstallModules("");
     setRecompute(true);
     setCheckSpace(true);
+    setAllowPsqlMeta(false); // never carry a trust decision over to the next backup
     setDryRunResult(null);
     setDryRunOk(null);
   };
@@ -138,6 +142,7 @@ export function RestoreDialog({
         recompute,
         checkSpace,
         withoutPgvector: offersPgvectorFlag && withoutPgvector,
+        allowPsqlMeta: offersPsqlMeta && allowPsqlMeta,
       },
       dry,
     );
@@ -298,6 +303,22 @@ export function RestoreDialog({
             label={t("database.withoutPgvector")}
             hint={t("database.restoreHelp.withoutPgvector")}
           />
+          )}
+          {offersPsqlMeta && (
+            <div className="space-y-1">
+              <OptionRow
+                checked={allowPsqlMeta}
+                onChange={setAllowPsqlMeta}
+                label={t("database.allowPsqlMeta")}
+                hint={t("database.restoreHelp.allowPsqlMeta")}
+              />
+              {allowPsqlMeta && (
+                <div className="ml-6 flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-2 text-xs">
+                  <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-yellow-600" />
+                  <span>{t("database.restoreHelp.allowPsqlMetaWarning")}</span>
+                </div>
+              )}
+            </div>
           )}
 
           {dryRunResult && (

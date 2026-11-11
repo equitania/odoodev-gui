@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invokeCmd } from "../../lib/tauri";
 import { logError, reportError } from "../../lib/errors";
@@ -47,8 +47,6 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const consumedInitialRef = useRef(false);
 
-  const extraRoots = useMemo(() => files?.extra_roots ?? [], [files]);
-
   const refreshFiles = useCallback(async (): Promise<CuratedFiles | null> => {
     try {
       const result = await invokeCmd<CuratedFiles>("curated_files");
@@ -65,8 +63,8 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
   }, [refreshFiles]);
 
   const openFileDirect = useCallback(
-    (path: string, roots: string[]) => {
-      invokeCmd<FileContent>("fs_read_file", { path, extraRoots: roots })
+    (path: string) => {
+      invokeCmd<FileContent>("fs_read_file", { path })
         .then((content) => {
           if (content.kind !== "text") {
             toastError(t("editor.loadFailed"), path);
@@ -90,16 +88,16 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
         setPendingPath(path);
         return;
       }
-      openFileDirect(path, extraRoots);
+      openFileDirect(path);
     },
-    [selectedPath, dirty, openFileDirect, extraRoots],
+    [selectedPath, dirty, openFileDirect],
   );
 
   // Open the file requested via cross-view navigation once the list is loaded.
   useEffect(() => {
     if (!initialFilePath || !files || consumedInitialRef.current) return;
     consumedInitialRef.current = true;
-    openFileDirect(initialFilePath, files.extra_roots);
+    openFileDirect(initialFilePath);
   }, [initialFilePath, files, openFileDirect]);
 
   const language: EditorLanguage = selectedPath ? languageFor(selectedPath) : "plaintext";
@@ -131,7 +129,6 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
     setValidating(true);
     invokeCmd<SemanticValidation>("playbook_validate_semantic", {
       path: selectedPath,
-      extraRoots,
     })
       .then(setSemantic)
       .catch(reportError(t("editor.validateFailed")))
@@ -144,12 +141,11 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
       path,
       content: PLAYBOOK_TEMPLATE,
       allowCreate: true,
-      extraRoots,
     })
       .then(async () => {
         toastSuccess(t("editor.playbookCreated"));
-        const refreshed = await refreshFiles();
-        openFileDirect(path, refreshed ? refreshed.extra_roots : extraRoots);
+        await refreshFiles();
+        openFileDirect(path);
       })
       .catch(reportError(t("editor.createFailed")));
   };
@@ -223,7 +219,6 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
                   path={selectedPath}
                   initialContent={initialContent}
                   language={language}
-                  extraRoots={extraRoots}
                   onDirtyChange={setDirty}
                   onContentChange={handleContentChange}
                   onSaved={() => toastSuccess(t("editor.saved"))}
@@ -261,11 +256,11 @@ export function EditorPanel({ initialFilePath }: EditorPanelProps) {
         open={pendingPath !== null}
         onSave={() => {
           saveRef.current?.();
-          if (pendingPath) openFileDirect(pendingPath, extraRoots);
+          if (pendingPath) openFileDirect(pendingPath);
           setPendingPath(null);
         }}
         onDiscard={() => {
-          if (pendingPath) openFileDirect(pendingPath, extraRoots);
+          if (pendingPath) openFileDirect(pendingPath);
           setPendingPath(null);
         }}
         onCancel={() => setPendingPath(null)}

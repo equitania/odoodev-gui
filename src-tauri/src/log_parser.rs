@@ -1,6 +1,6 @@
-use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Serialize;
+use std::sync::LazyLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "UPPERCASE")]
@@ -42,7 +42,7 @@ pub struct OdooLogEntry {
     pub raw: String,
 }
 
-static LOG_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static LOG_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(\d+)\s+(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+(\S+)\s+(\S+?):\s*(.*)",
     )

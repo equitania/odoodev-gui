@@ -19,6 +19,7 @@ const base: RestoreForm = {
   recompute: true,
   checkSpace: true,
   withoutPgvector: false,
+  allowPsqlMeta: false,
 };
 
 const form = (over: Partial<RestoreForm> = {}): RestoreForm => ({ ...base, ...over });
@@ -140,5 +141,16 @@ describe("pgvector", () => {
   it("sends the flag only when the box is ticked", () => {
     expect(buildRestoreArgs(form(), false).without_pgvector).toBeUndefined();
     expect(buildRestoreArgs(form({ withoutPgvector: true }), false).without_pgvector).toBe(true);
+  });
+});
+
+describe("allow psql meta", () => {
+  it("is only sent when ticked", () => {
+    expect(buildRestoreArgs(form(), false).allow_psql_meta).toBeUndefined();
+    expect(buildRestoreArgs(form({ allowPsqlMeta: true }), false).allow_psql_meta).toBe(true);
+  });
+
+  it("is independent of the dry-run flag", () => {
+    expect(buildRestoreArgs(form({ allowPsqlMeta: true }), true).allow_psql_meta).toBe(true);
   });
 });

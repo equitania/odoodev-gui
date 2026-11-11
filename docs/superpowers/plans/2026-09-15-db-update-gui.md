@@ -8,11 +8,11 @@
 
 **Tech Stack:** Tauri v2, Rust (tokio, serde, `libc` on unix), React 19 + TypeScript, zustand, i18next, vitest, lucide-react, Tailwind v4.
 
-**Spec:** `docs/superpowers/specs/2026-09-15-db-update-gui-design.md`. CLI side: `/Users/picard/gitbase/PyPi-Projects/odoo-dev/docs/superpowers/plans/2026-09-15-db-update-ndjson.md` (must be released first).
+**Spec:** `docs/superpowers/specs/2026-09-15-db-update-gui-design.md`. CLI side: `~/gitbase/PyPi-Projects/odoo-dev/docs/superpowers/plans/2026-09-15-db-update-ndjson.md` (must be released first).
 
 ## Global Constraints
 
-- Repository `/Users/picard/gitbase/odoodev-gui`, branch `feat/db-update`. Package manager **pnpm**; Rust commands run in `src-tauri/`.
+- Repository `~/gitbase/odoodev-gui`, branch `feat/db-update`. Package manager **pnpm**; Rust commands run in `src-tauri/`.
 - Requires **odoodev ≥ 0.69.0** for every update feature: constant `MIN_ODOODEV_DB_UPDATE = "0.69.0"`; below it the buttons are disabled with the hint.
 - CLI invocation always ends with `--output ndjson`; database names and modules pass `reject_flag_like`.
 - Tauri command struct args deserialize camelCase (`#[serde(rename_all = "camelCase")]`); event payloads keep the CLI's snake_case keys.
@@ -3135,7 +3135,7 @@ After all steps pass, **ask for release approval**. With an explicit yes:
 ```bash
 bash <<'SCRIPT'
 set -euo pipefail
-cd /Users/picard/gitbase/odoodev-gui
+cd ~/gitbase/odoodev-gui
 HITS=$(git log -p origin/main..HEAD | grep -E '^\+' | grep -v '^+++' \
   | grep -Ei '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[a-z]{2,}|ownerp\.io|intra\.|/Users/' | grep -v 'noreply@anthropic.com' || true)
 [ -z "$HITS" ] && echo "data scan clean" || { echo "$HITS"; exit 1; }

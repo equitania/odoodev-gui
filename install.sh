@@ -9,6 +9,7 @@ INSTALLER_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main
 RELEASES_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest"
 DOWNLOAD_BASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download"
 LATEST_JSON_URL="${DOWNLOAD_BASE_URL}/latest.json"
+RELEASE_API_URL="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
 ICON_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/src-tauri/icons/128x128.png"
 
 APP_NAME="odoodev-gui"
@@ -158,7 +159,45 @@ get_latest_version() {
     | grep -m1 '"version"' \
     | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"v?([^"]+)".*/\1/')" || true
   [[ -n "$version" ]] || fail "Unable to determine the latest release version from ${LATEST_JSON_URL}"
+  # The version ends up in a download URL and a file name, so it must be a
+  # plain dotted number — anything else (slashes, "..") is refused.
+  [[ "$version" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]] || fail "Unexpected version string in ${LATEST_JSON_URL}: '${version}'"
   printf '%s\n' "$version"
+}
+
+# Prints the SHA-256 that GitHub recorded for a release asset, or nothing if it
+# cannot be determined (API unreachable, rate limit, asset without a digest).
+get_asset_sha256() {
+  local asset_name="$1"
+  curl_get "$RELEASE_API_URL" 2>/dev/null \
+    | awk -v name="$asset_name" '
+        /"name":/   { current = ($0 ~ "\"" name "\"") }
+        /"digest":/ && current {
+          if (match($0, /sha256:[0-9a-f]+/)) { print substr($0, RSTART + 7, RLENGTH - 7); exit }
+        }' || true
+}
+
+# Compares a downloaded file with the checksum GitHub holds for the asset.
+# A mismatch aborts the install. A checksum that cannot be fetched only warns:
+# the download itself came over verified HTTPS from the same release.
+verify_download() {
+  local file="$1"
+  local asset_name="$2"
+  local expected actual
+
+  expected="$(get_asset_sha256 "$asset_name")"
+  if [[ ! "$expected" =~ ^[0-9a-f]{64}$ ]]; then
+    log_warn "No checksum available for ${asset_name} — integrity check skipped."
+    return 0
+  fi
+  if ! command -v sha256sum >/dev/null 2>&1; then
+    log_warn "sha256sum not found — integrity check skipped."
+    return 0
+  fi
+  actual="$(sha256sum "$file" | cut -d' ' -f1)"
+  [[ "$actual" == "$expected" ]] || fail \
+    "Checksum mismatch for ${asset_name} (expected ${expected}, got ${actual}). Nothing was installed."
+  log_info "Checksum verified (SHA-256)"
 }
 
 get_installed_version_deb() {
@@ -189,6 +228,7 @@ install_via_apt() {
   section "Installing ${APP_NAME} ${version} (.deb via apt-get)"
   log_info "Downloading ${deb_name}"
   download_file "$deb_url" "${TMP_DIR}/${deb_name}"
+  verify_download "${TMP_DIR}/${deb_name}" "$deb_name"
 
   log_info "Installing with apt-get (resolves runtime dependencies automatically)"
   "${apt_prefix[@]}" apt-get install -y "${TMP_DIR}/${deb_name}"
@@ -247,6 +287,7 @@ install_appimage() {
 
   log_info "Downloading ${appimage_name}"
   download_file "$appimage_url" "${TMP_DIR}/${appimage_name}"
+  verify_download "${TMP_DIR}/${appimage_name}" "$appimage_name"
   install -m 755 "${TMP_DIR}/${appimage_name}" "${APPIMAGE_INSTALL_DIR}/${APP_NAME}"
 
   # Icon is cosmetic — never block the install on it

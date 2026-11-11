@@ -813,7 +813,7 @@ odoodev-gui/
 name = "odoodev-gui"
 version = "1.0.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.80"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -917,7 +917,7 @@ Instead of parsing `odoodev docker status` text output, the Rust backend checks 
 1. `which("docker")` → not found → DockerStatus::NotInstalled
 2. `docker ps --format "{{.Names}}\t{{.Status}}"` → parse output → find expected container
 3. Apple Container: `which("container")` → `container ls` → parse
-4. Container name from `versions.yaml` pattern: `picard-dev-db-XX-native`
+4. Container name from `versions.yaml` pattern: `<user>-dev-db-XX-native`
 
 ### Webview Dependencies
 

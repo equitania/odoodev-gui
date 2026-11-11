@@ -42,12 +42,12 @@ export function EnvPanel({ onNavigate }: EnvPanelProps) {
       .then((dir) => {
         setEnvDirs((prev) => ({ ...prev, [version]: dir.trim() }));
       })
-      .catch(() => {});
+      .catch(logError("EnvPanel: env_dir"));
     invokeCmd<EnvCheckResult>("env_check", { version })
       .then((check) => {
         setEnvChecks((prev) => ({ ...prev, [version]: check }));
       })
-      .catch(() => {});
+      .catch(logError("EnvPanel: env_check"));
   }, []);
 
   const refreshAll = useCallback(() => {

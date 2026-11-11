@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::Deserialize;
 use tauri::Emitter;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
 use tokio::process::Command;
 
 use crate::models::{BackupResult, DbListResponse, OpResult, RestoreResult};
@@ -10,6 +10,7 @@ use crate::odoodev;
 
 #[tauri::command]
 pub async fn get_databases(version: String) -> Result<DbListResponse, String> {
+    odoodev::validate_version("version", &version)?;
     let val = odoodev::run_odoodev_json(&["db", "list", &version, "--json"]).await?;
     let resp: DbListResponse =
         serde_json::from_value(val).map_err(|e| format!("Failed to parse db list: {e}"))?;
@@ -36,8 +37,19 @@ pub struct BackupArgs {
 
 #[tauri::command]
 pub async fn backup_db(args: BackupArgs, window: tauri::Window) -> Result<BackupResult, String> {
-    odoodev::reject_flag_like("version", &args.version)?;
-    odoodev::reject_flag_like("name", &args.name)?;
+    odoodev::validate_version("version", &args.version)?;
+    odoodev::validate_name("name", &args.name)?;
+    if !matches!(args.backup_type.as_str(), "sql" | "zip" | "tar.zst") {
+        return Err(format!(
+            "Invalid type: expected sql, zip or tar.zst, got {:?}",
+            args.backup_type
+        ));
+    }
+    if let Some(lvl) = args.level {
+        if !(1..=22).contains(&lvl) {
+            return Err(format!("Invalid level: {lvl} (expected 1-22)"));
+        }
+    }
     if let Some(dir) = &args.output_dir {
         if !dir.is_empty() {
             odoodev::reject_flag_like("output_dir", dir)?;
@@ -79,17 +91,17 @@ pub async fn backup_db(args: BackupArgs, window: tauri::Window) -> Result<Backup
 
     let win_err = window.clone();
     tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             let _ = win_err.emit("backup-progress", &line);
         }
     });
 
     let mut last_line = String::new();
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
-    while let Ok(Some(line)) = lines.next_line().await {
+    let mut reader = BufReader::new(stdout);
+    let mut buf = Vec::new();
+    while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
         let _ = window.emit("backup-progress", &line);
         last_line = line;
     }
@@ -155,14 +167,17 @@ pub struct RestoreArgs {
     pub keep_temp: Option<bool>,
     pub check_space: Option<bool>,
     pub without_pgvector: Option<bool>,
+    /// `--allow-psql-meta` (odoodev >= 0.77.0): skip the dump check for psql
+    /// backslash commands. Only for a backup from a trusted source.
+    pub allow_psql_meta: Option<bool>,
     pub delete_backup: Option<bool>,
     pub dry_run: Option<bool>,
 }
 
 #[tauri::command]
 pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<RestoreResult, String> {
-    odoodev::reject_flag_like("version", &args.version)?;
-    odoodev::reject_flag_like("name", &args.name)?;
+    odoodev::validate_version("version", &args.version)?;
+    odoodev::validate_name("name", &args.name)?;
     odoodev::reject_flag_like("backup_file", &args.backup_file)?;
     if let Some(m) = &args.uninstall_modules {
         if !m.is_empty() {
@@ -240,6 +255,9 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
     if args.without_pgvector.unwrap_or(false) {
         cli.push("--without-pgvector".into());
     }
+    if args.allow_psql_meta.unwrap_or(false) {
+        cli.push("--allow-psql-meta".into());
+    }
     if args.delete_backup.unwrap_or(false) {
         cli.push("--delete-backup".into());
     } else {
@@ -272,9 +290,9 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
     let win_err = window.clone();
     let err_lines = Arc::clone(&collected);
     let stderr_task = tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             let _ = win_err.emit("restore-progress", &line);
             if !line.trim().is_empty() {
                 err_lines.lock().unwrap().push(line);
@@ -282,9 +300,9 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
         }
     });
 
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
-    while let Ok(Some(line)) = lines.next_line().await {
+    let mut reader = BufReader::new(stdout);
+    let mut buf = Vec::new();
+    while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
         let _ = window.emit("restore-progress", &line);
         if !line.trim().is_empty() {
             collected.lock().unwrap().push(line);
@@ -318,7 +336,19 @@ pub async fn restore_db(args: RestoreArgs, window: tauri::Window) -> Result<Rest
 /// space) sits in an earlier `[ERROR]` line. Taking the last line of either
 /// stream would surface a harmless `[INFO]` as the failure reason, so prefer
 /// the first specific `[ERROR]`, then any error line, and only then the tail.
+///
+/// The dump check of odoodev 0.77.0 is the exception: it reports through the
+/// Python logger, so its line arrives bare ("Refusing to restore: the dump
+/// contains the psql command …", no `[ERROR]` prefix) and the only `[ERROR]`
+/// line after it is the generic "Database restore failed". That bare line is
+/// the real reason and wins.
 fn pick_failure_reason(output: &[String]) -> String {
+    if let Some(refusal) = output
+        .iter()
+        .find(|l| l.trim_start().starts_with("Refusing to restore"))
+    {
+        return refusal.trim().to_string();
+    }
     let errors: Vec<&String> = output
         .iter()
         .filter(|l| l.contains("[ERROR]") || l.contains("[FAIL]"))
@@ -344,13 +374,13 @@ pub async fn drop_db(
     name: String,
     terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
-    for (f, v) in [("version", &version), ("name", &name)] {
-        if let Err(e) = odoodev::reject_flag_like(f, v) {
-            return Ok(OpResult {
-                success: false,
-                error: Some(e),
-            });
-        }
+    if let Err(e) = odoodev::validate_version("version", &version)
+        .and_then(|_| odoodev::validate_name("name", &name))
+    {
+        return Ok(OpResult {
+            success: false,
+            error: Some(e),
+        });
     }
     let mut args = vec!["db", "drop", &version, "-n", &name, "-y"];
     if terminate_connections.unwrap_or(false) {
@@ -375,13 +405,14 @@ pub async fn copy_db(
     dst: String,
     terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
-    for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
-        if let Err(e) = odoodev::reject_flag_like(f, v) {
-            return Ok(OpResult {
-                success: false,
-                error: Some(e),
-            });
-        }
+    if let Err(e) = odoodev::validate_version("version", &version)
+        .and_then(|_| odoodev::validate_name("src", &src))
+        .and_then(|_| odoodev::validate_name("dst", &dst))
+    {
+        return Ok(OpResult {
+            success: false,
+            error: Some(e),
+        });
     }
     // `db copy` duplicates the database AND its filestore (CLI-side).
     let mut args = vec!["db", "copy", &version, "-s", &src, "-d", &dst, "-y"];
@@ -407,13 +438,14 @@ pub async fn rename_db(
     dst: String,
     terminate_connections: Option<bool>,
 ) -> Result<OpResult, String> {
-    for (f, v) in [("version", &version), ("src", &src), ("dst", &dst)] {
-        if let Err(e) = odoodev::reject_flag_like(f, v) {
-            return Ok(OpResult {
-                success: false,
-                error: Some(e),
-            });
-        }
+    if let Err(e) = odoodev::validate_version("version", &version)
+        .and_then(|_| odoodev::validate_name("src", &src))
+        .and_then(|_| odoodev::validate_name("dst", &dst))
+    {
+        return Ok(OpResult {
+            success: false,
+            error: Some(e),
+        });
     }
     // `db rename` also moves the filestore (CLI-side).
     let mut args = vec!["db", "rename", &version, "-s", &src, "-d", &dst, "-y"];
@@ -450,6 +482,18 @@ mod tests {
         .iter()
         .map(|s| s.to_string())
         .collect()
+    }
+
+    #[test]
+    fn psql_meta_refusal_beats_the_generic_restore_error() {
+        let out = vec![
+            "[INFO] Restoring database (this may take a while)...".to_string(),
+            "Refusing to restore: the dump contains the psql command '\\!' at line 2. A backup must only hold SQL; pass --allow-psql-meta (playbook: allow_psql_meta: true) only for a backup you trust".to_string(),
+            "[ERROR] Database restore failed".to_string(),
+        ];
+        let reason = pick_failure_reason(&out);
+        assert!(reason.starts_with("Refusing to restore: the dump contains the psql command"));
+        assert!(reason.contains("line 2"));
     }
 
     #[test]

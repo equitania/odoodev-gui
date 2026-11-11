@@ -1,6 +1,6 @@
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
-use tokio::io::{AsyncBufRead, AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
 
 use crate::db_update::{
     build_db_update_args, parse_event, read_log_tail, update_log_dir, validate_update_log_path,
@@ -55,26 +55,6 @@ pub(crate) fn plan_from_output(stdout: &str, stderr: &str) -> Result<DbUpdatePla
     Err(tail.trim().to_string())
 }
 
-/// Decode one output line lossily — `lines()` would stop on the first invalid
-/// UTF-8 byte and leave the pipe undrained, which can block the child.
-fn decode_line(buf: &[u8]) -> String {
-    let line = buf.strip_suffix(b"\n").unwrap_or(buf);
-    let line = line.strip_suffix(b"\r").unwrap_or(line);
-    String::from_utf8_lossy(line).into_owned()
-}
-
-/// The next line of a child pipe, or `None` at EOF (or on a read error).
-async fn next_lossy_line<R>(reader: &mut R, buf: &mut Vec<u8>) -> Option<String>
-where
-    R: AsyncBufRead + Unpin,
-{
-    buf.clear();
-    match reader.read_until(b'\n', buf).await {
-        Ok(0) | Err(_) => None,
-        Ok(_) => Some(decode_line(buf)),
-    }
-}
-
 #[tauri::command]
 pub async fn plan_db_update(args: DbUpdateArgs) -> Result<DbUpdatePlan, String> {
     let cli = build_db_update_args(&args, true)?;
@@ -125,7 +105,7 @@ pub async fn start_db_update(
     let stdout_task = tokio::spawn(async move {
         let mut reader = BufReader::new(stdout);
         let mut buf = Vec::new();
-        while let Some(line) = next_lossy_line(&mut reader, &mut buf).await {
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             if let Some(event) = parse_event(&line) {
                 let _ = app_out.emit(
                     "db-update-event",
@@ -150,7 +130,7 @@ pub async fn start_db_update(
     let stderr_task = tokio::spawn(async move {
         let mut reader = BufReader::new(stderr);
         let mut buf = Vec::new();
-        while let Some(line) = next_lossy_line(&mut reader, &mut buf).await {
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             if !line.trim().is_empty() {
                 let _ = app_err.emit(
                     "db-update-log",
@@ -213,28 +193,8 @@ pub async fn read_update_log(path: String) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{decode_line, next_lossy_line, plan_from_output};
+    use super::plan_from_output;
     use crate::models::DbListResponse;
-
-    #[test]
-    fn decode_line_trims_line_endings_and_replaces_invalid_utf8() {
-        assert_eq!(decode_line(b"abc\n"), "abc");
-        assert_eq!(decode_line(b"abc\r\n"), "abc");
-        assert_eq!(decode_line(b"no newline"), "no newline");
-        assert_eq!(decode_line(b"bad \xff byte\n"), "bad \u{FFFD} byte");
-    }
-
-    #[tokio::test]
-    async fn reading_continues_past_an_invalid_utf8_line() {
-        let data: &[u8] = b"first\nbad \xff\r\nlast";
-        let mut reader = tokio::io::BufReader::new(data);
-        let mut buf = Vec::new();
-        let mut lines = Vec::new();
-        while let Some(line) = next_lossy_line(&mut reader, &mut buf).await {
-            lines.push(line);
-        }
-        assert_eq!(lines, vec!["first", "bad \u{FFFD}", "last"]);
-    }
 
     #[test]
     fn plan_is_taken_from_the_plan_event() {

@@ -22,6 +22,8 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
   const initServerTab = useAppStore((s) => s.initServerTab);
 
   const versionKeys = versions ? Object.keys(versions).sort() : [];
+  // Stable primitive for the effect below: `versionKeys` is a fresh array every render.
+  const versionKeysSignature = versionKeys.join(",");
 
   const [activeTab, setActiveTab] = useState<string>("");
   const [serverBusy, setServerBusy] = useState(false);
@@ -33,10 +35,11 @@ export function ServerPanel({ preselectVersion }: { preselectVersion: string | n
     } else if (versionKeys.length > 0 && !versionKeys.includes(activeTab)) {
       setActiveTab(versionKeys[0]);
     }
-    // Reconcile the active tab only when preselect/versionKeys change; reading
-    // the current activeTab and calling the stable store action are intentional.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preselectVersion, versionKeys]);
+    // Reconcile only when preselect or the version set changes (not on every render, which
+    // would snap a manually chosen tab back to preselectVersion); reading the current
+    // activeTab and the stable store action is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run on preselect/version-set change only; activeTab is read, not tracked
+  }, [preselectVersion, versionKeysSignature]);
 
   const activeVersion = activeTab || versionKeys[0] || "";
   useLogStream(activeVersion);

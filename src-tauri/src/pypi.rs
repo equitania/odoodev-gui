@@ -1,10 +1,14 @@
 use tokio::net::TcpStream;
 
-use crate::installer::ensure_uv;
+use crate::installer::find_uv;
 use crate::models::{PypiResponse, UpdateCheckResult, UvInfoDto};
 
 pub async fn get_pypi_version() -> Option<String> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .ok()?;
     let resp = client
         .get("https://pypi.org/pypi/odoodev-equitania/json")
         .send()
@@ -53,13 +57,13 @@ pub async fn check_odoodev_update() -> UpdateCheckResult {
 }
 
 pub async fn check_uv_status() -> UvInfoDto {
-    match ensure_uv().await {
-        Ok(info) => UvInfoDto {
+    match find_uv().await {
+        Some(info) => UvInfoDto {
             installed: true,
             path: Some(info.path.to_string_lossy().to_string()),
             version: Some(info.version),
         },
-        Err(_) => UvInfoDto {
+        None => UvInfoDto {
             installed: false,
             path: None,
             version: None,

@@ -9,7 +9,7 @@
 
 | Channel | Description | Used For |
 |---------|-------------|----------|
-| **JSON (serde)** | Execute CLI, parse stdout as single JSON object | Structured data queries |
+| **JSON (serde)** | Execute CLI, parse stdout as single JSON object | Structured data queries, module list export (`export modules --json`) |
 | **NDJSON stream** | Execute CLI, parse stdout line-by-line as JSON objects | Playbook execution, database updates (`db update --output ndjson`) |
 | **stdout streaming** | Execute CLI, forward stdout lines as Tauri events | Server logs, backup/restore progress |
 | **Exit code** | Execute CLI, check return code only | Destructive operations |
@@ -167,7 +167,7 @@ odoodev venv check 18 --json
 ```json
 {
   "version": "18",
-  "venv_dir": "/Users/picard/gitbase/v18/v18-dev/dev18_native/.venv",
+  "venv_dir": "/Users/<user>/gitbase/v18/v18-dev/dev18_native/.venv",
   "exists": true,
   "is_symlink": false,
   "python_version": "3.13.12",
@@ -180,7 +180,7 @@ odoodev venv check 18 --json
 ```json
 {
   "version": "16",
-  "venv_dir": "/Users/picard/gitbase/v16/v16-dev/dev16_native/.venv",
+  "venv_dir": "/Users/<user>/gitbase/v16/v16-dev/dev16_native/.venv",
   "exists": false,
   "is_symlink": false,
   "python_version": null,
@@ -572,6 +572,7 @@ odoodev db restore 18 -n v18_restored -z ~/Downloads/backup.zip \
 --keep-temp                     Keep temp files
 --check-space / --no-check-space  Check disk space (default on)
 --without-pgvector              Restore without the AI tables when the DB server lacks pgvector (>= 0.71.0)
+--allow-psql-meta               Do not refuse a dump that contains psql backslash commands (>= 0.77.0)
 --delete-backup                 Delete original after success
 --keep-backup                   Never delete original
 ```
@@ -594,6 +595,7 @@ odoodev db restore 18 -n v18_restored -z ~/Downloads/backup.zip \
 | "Recompute" | `--recompute` / `--no-recompute` | **= anonymize** | ⚠ CLI default follows `--anonymize` — always sent explicitly while anonymize is on, omitted while it is off (the CLI skips the step then anyway); the checkbox is disabled without anonymize |
 | "Check disk space" | `--check-space` / `--no-check-space` | on | Only `--no-check-space` is ever sent |
 | "Without AI tables (pgvector)" | `--without-pgvector` | off | Only sent when ticked; the box is hidden for odoodev < 0.71.0. Needed because the CLI stops a restore of a dump that creates the `vector` extension when the database server does not offer it — **`-y` does not skip that stop**. The dry run returns before the check and does not show it. Alternative: `PGVECTOR=true` in the version's `.env`, then `odoodev docker up` |
+| "Allow psql commands in the backup" | `--allow-psql-meta` | off | Only sent when ticked; the box is hidden for odoodev < 0.77.0 and shows a warning when ticked. Since 0.77.0 `restore_database_report` scans the dump before psql sees it and refuses it, naming the line, if it holds anything pg_dump does not write itself (`\!`, `\o \|cmd`, `\copy … program`; `\connect`, `\restrict`, `\unrestrict` pass). The scan runs only in the real restore — the dry run returns before extraction and does not show it — and **after** `--drop` has dropped an existing database and the empty one was created. The refusal is logged through Python's logger, so it arrives on stderr as a bare line (`Refusing to restore: the dump contains the psql command …`) without an `[ERROR]` tag, followed by the generic `[ERROR] Database restore failed`; the Rust failure picker prefers the bare line. In a playbook the step argument is `allow_psql_meta: true` (`server.restore`, `db.restore`); the wizard does not author it (schema version stays 4) |
 | Backup file handling | `--keep-backup` | always on | Never auto-delete the user's original |
 | Skip confirmation | `-y` | always on | GUI IS the confirmation — also suppresses the uninstall-modules prompt |
 
@@ -731,6 +733,42 @@ odoodev db update 19 -n v19_a -n v19_b -u eq_base --stop-on-error --timeout 1800
 
 ---
 
+### 11b. `odoodev export modules <VERSION> -d <DB> --json`
+
+**Purpose:** Export the module list of a database as Releasemanager-compatible CSV (odoodev ≥ 0.59.0; `--via-shell` ≥ 0.76.0; `--via-rpc` ≥ 0.77.0). Used by the "Export module list" dialog in the Database view.
+
+**CLI Command:**
+```bash
+odoodev export modules 18 -d v18_exam --scope all --json
+odoodev export modules 18 -d v18_exam --scope installed --via-shell --json
+odoodev export modules 18 -d v18_exam --scope installed --via-rpc --json     # 0.77.0+, XML-RPC with a login
+odoodev export modules 18 -d v18_exam --cleanup --update-list --json
+```
+
+**Contract:**
+
+- The GUI runs the CLI with stdin closed, so `-d` and `--json` are always sent (`--json` implies `--yes`; without `-d` the CLI exits 2). `--output` is never sent: the CLI writes to `~/Downloads/modules_<db>_<scope>_<timestamp>.csv` and reports the path.
+- `--scope` is `all` (default), `no-enterprise` or `installed`; the Rust command rejects anything else.
+- `--cleanup` (removes module records that are not installed) runs first, then `--update-list`, then the export.
+- **The CLI default flipped in 0.77.0.** Up to 0.76.x the export used XML-RPC (running Odoo and a login from the CLI's stored configuration, fallback admin/admin) unless `--via-shell` was given. Since 0.77.0 it reads through `odoo-bin shell --no-http` as superuser by default — no login, the server need not run. XML-RPC is used only with `--via-rpc` (or `--user/--password/--host/--port`), or automatically, with a notice, when the machine has no odoo-bin environment for the version. `--via-shell` forces the shell without that fallback; `--via-shell` together with `--via-rpc` is a usage error (exit 2). The GUI has no credential fields and never puts a password on the command line.
+- **Mapping of the "Without Odoo login" checkbox** (ticked by default; `buildExportArgs` in `exportArgs.ts`, `via_shell` / `via_rpc` in the Rust command, which rejects both set):
+
+  | odoodev | ticked | unticked |
+  |---------|--------|----------|
+  | ≥ 0.77.0 | `--via-shell` | `--via-rpc` |
+  | 0.76.x | `--via-shell` | no flag (XML-RPC is that version's default) |
+  | < 0.76.0 | control hidden, no flag | — |
+  | unknown | `--via-shell` | no flag — `--via-rpc` sent to an older CLI is a usage error; on a 0.77+ CLI the unticked box then falls back to the shell |
+
+- Success: stdout is exactly one JSON line, exit 0:
+  `{"version": "18", "database": "v18_exam", "scope": "all", "path": "/…/modules_v18_exam_all_20261111_101500.csv", "count": 2, "updated": 3, "cleaned": 5}`
+  `updated` / `cleaned` are integers or `null` (flag not given). An empty module list is a soft outcome: `count: 0`, `path: null`, exit 0 — the GUI shows "no modules found, nothing written".
+- Failure: exit 1, reason on stderr as `[ERROR] Module export failed: …`, followed by `[INFO]` hints ("Is Odoo v18 running? …"; 0.76.x: "… Retry with --via-shell", since 0.77.0: "No usable Odoo login? Without --via-rpc/--user/--host the export needs none (odoo-bin shell)") or `[ERROR] odoo-bin shell not available for v18 …`. The Rust command returns the first `[ERROR]` line (prefix stripped), not the trailing hint. After a failed run that used the login path (box unticked at that run) the dialog offers a one-click retry without login (only when odoodev ≥ 0.76.0). Verified against 0.77.0: `--via-rpc` without a running server exits 1 with `[ERROR] Module export failed: Cannot connect to Odoo at http://localhost:19069: [Errno 61] Connection refused` on stderr and the two hints on stdout.
+
+**Rust type:** `ExportModulesResult` in `models.rs`; Tauri command `export_modules` (see `TAURI_API.md`).
+
+---
+
 ## Direct (Rust-Native, Bypassing CLI)
 
 ### 12. Docker Status Check
@@ -750,7 +788,7 @@ async fn check_docker_status(version: &str, version_info: &VersionInfo) -> Docke
             .output().await;
         if let Ok(out) = output {
             let stdout = String::from_utf8_lossy(&out.stdout);
-            // Expected container name pattern: picard-dev-db-XX-native
+            // Expected container name pattern: <user>-dev-db-XX-native
             // But the actual name depends on the .env file — better to check
             // if ANY container publishes the expected DB port
             let expected_port = version_info.ports.db;
@@ -877,7 +915,7 @@ These commands have no `--json` flag. The GUI uses text parsing or exit-code-onl
 | `odoodev db drop` | exit code only | Simple |
 | `odoodev db copy` | exit code only | Simple |
 | `odoodev db rename` | exit code only | Simple |
-| `odoodev docker up` | stdout streaming + exit code | Progress text |
+| `odoodev docker up` | stdout streaming + exit code | Progress text; `--allow-default-credentials` since 0.77.0 (see version notes). On failure the first `[ERROR]` line (stderr) is the reason |
 | `odoodev docker down` | exit code only | Simple |
 | `odoodev docker status` | **bypassed — Rust direct check** | More reliable than text parsing |
 | `odoodev docker logs` | stdout streaming (Phase 2) | Optional `-f` follow |
@@ -908,7 +946,32 @@ The GUI must handle different odoodev versions gracefully:
 | 0.71.0+ | `db restore --without-pgvector` | Restore dialog offers "Without AI tables" |
 | 0.72.0+ | Preflight for server playbooks, `--no-preflight`; playbook schema v4 (safety backup, rebuild position, `server.verify`) | "Skip server check" switch; wizard sends the v4 blocks |
 | 0.74.0+ | `step_start` / `step_progress` events, step names in `step_done` | Live line with position and clock in the playbook log |
+| 0.75.0+ | `server.restore` works without root through a helper container | No GUI change |
+| 0.75.5+ | ZIP / tar.zst backups are staged in a hidden `.odoodev_backup_*` directory next to the output; `db backup` may print a free-space warning line | No GUI change; the line is shown as-is because backup output is streamed raw |
+| 0.75.6+ | `server.restore` accepts `temp_dir` (hand-written playbooks only); the preflight reports an error when no writable extraction directory exists | No GUI change |
+| 0.75.7+ | New server playbook step `server.uninstall` (args: `target`, `modules` [required list], `restart=true`, `timeout=1800`, `odoo_bin_path`, `config_path`) | Appears in the step list automatically (the list comes from `run --steps --output json`); the wizard cannot author it, its schema (still version 4) comes from the CLI |
+| 0.76.0+ | `export modules --via-shell` (no Odoo login) | "Without Odoo login" switch in the export dialog; hidden on older versions |
+| 0.76.1+ | The Apple Container PostgreSQL container is created with 4 GB memory | No GUI change; existing containers keep the old limit until recreated via Down/Up |
+| 0.77.0+ | `export modules` reads through `odoo-bin shell` by default; XML-RPC only with `--via-rpc` (`--via-shell` + `--via-rpc` is a usage error); the `--json` result is unchanged | "Without Odoo login" checkbox maps to `--via-shell` / `--via-rpc` by version (see section 11b) |
+| 0.77.0+ | `db restore --allow-psql-meta`; a restore refuses a dump with psql backslash commands and names the line; playbook step argument `allow_psql_meta` (`server.restore`, `db.restore`) | Restore dialog offers "Allow psql commands in the backup" (off, with warning); the wizard does not author `allow_psql_meta`, schema stays version 4 |
+| 0.77.0+ | `docker up` runs the placeholder-password check of `odoodev start` and fails (exit 1, `[ERROR] Aborted. Configure a real password and try again.`) unless `--allow-default-credentials` is passed | Docker panel offers "Allow default credentials" next to Start (off, not persisted, with the existing warning); the dashboard quick action stays without it and shows the CLI's error |
+| 0.77.0+ | The dev PostgreSQL container is published on `127.0.0.1` only (`DB_BIND=0.0.0.0` in the version's `.env` restores the old behaviour; an existing container keeps its binding until it is recreated) | No GUI change; the port detection (`localhost`) is unaffected |
+| 0.77.0+ | `rpc.execute` in server playbooks refuses plaintext logins to remote hosts (`http://<remote>` or a bare remote host name); use `https://` or set `allow_insecure_remote: true` in the `rpc:` section | No GUI change; the wizard does not author it |
 | Future | May add `--json` to more commands | GUI prefers JSON when available |
+
+**`odoodev playbook create --answers` and the files it writes** (verified against 0.77.0): the
+playbook goes to `-o` (default `./playbooks/<slug>.yaml`), and when `env_file.generate` is true and
+`env_file.path` is non-empty a secrets file is written to that path (`write_env_file` in
+`core/playbook_builder.py`: `~` expanded, relative paths resolved against the **process working
+directory**, not the playbook's, parent directories created, mode 0600, an existing file refused
+without `--force`; the raw path string is also recorded as `env_file:` in the playbook). Those are
+the only two files it writes. The interview defaults the secrets file to
+`~/.config/odoodev/<slug>.env` for a server playbook and `./playbooks/<slug>.env` for a dev
+playbook (`_wizard_secrets`, `commands/playbook_cmd.py`); the config directory is
+`Path.home() / ".config" / "odoodev"` on every platform (`get_config_dir`, `core/global_config.py`).
+The GUI therefore checks both paths in the backend (playbook: inside the playbook directories;
+secrets file: inside the playbook directories or the config directory, see `TAURI_API.md`) and
+hands the CLI absolute paths.
 
 **Minimum required version:** 0.49.0. The database update view additionally needs
 odoodev ≥ 0.69.0 for `db update --output ndjson`; older installs keep every other

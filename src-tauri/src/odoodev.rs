@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::process::Stdio;
 use tauri::Emitter;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 
 pub const EXTRA_PATHS_UNIX: &[&str] = &[
@@ -109,6 +109,10 @@ pub fn find_odoodev() -> PathBuf {
 /// argument injection. Every legitimate value here (versions, DB names, module
 /// lists, file paths) never starts with '-', so a leading '-' is rejected early
 /// with a clear message instead of producing a confusing downstream CLI error.
+///
+/// This is the check for free-form values (paths, module lists, host names,
+/// image tags). Versions and names have the stricter `validate_version` /
+/// `validate_name`.
 pub fn reject_flag_like(field: &str, value: &str) -> Result<(), String> {
     if value.starts_with('-') {
         Err(format!("Invalid {field}: value must not start with '-'"))
@@ -117,9 +121,60 @@ pub fn reject_flag_like(field: &str, value: &str) -> Result<(), String> {
     }
 }
 
-#[allow(dead_code)]
-pub fn find_uv() -> PathBuf {
-    find_binary("uv")
+/// Validate an Odoo version identifier: exactly two ASCII digits, as in the
+/// registry reported by `odoodev config versions --json` ("16" .. "20").
+pub fn validate_version(field: &str, value: &str) -> Result<(), String> {
+    if value.len() == 2 && value.bytes().all(|b| b.is_ascii_digit()) {
+        Ok(())
+    } else {
+        Err(format!(
+            "Invalid {field}: expected a two-digit Odoo version, e.g. \"18\""
+        ))
+    }
+}
+
+/// Validate a database, migration-group or playbook-step name that is passed
+/// as a CLI value. Deliberately lenient (existing databases may carry names
+/// the CLI would no longer accept for new ones): non-blank, at most 255
+/// characters, no leading '-' and no control characters.
+pub fn validate_name(field: &str, value: &str) -> Result<(), String> {
+    if value.trim().is_empty() {
+        return Err(format!("Invalid {field}: value must not be empty"));
+    }
+    if value.chars().count() > 255 {
+        return Err(format!("Invalid {field}: value is too long"));
+    }
+    if value.chars().any(char::is_control) {
+        return Err(format!(
+            "Invalid {field}: value must not contain control characters"
+        ));
+    }
+    reject_flag_like(field, value)
+}
+
+/// Strip the line ending (`\n` or `\r\n`) from one raw output line and decode
+/// it lossily.
+pub fn decode_line(buf: &[u8]) -> String {
+    let line = buf.strip_suffix(b"\n").unwrap_or(buf);
+    let line = line.strip_suffix(b"\r").unwrap_or(line);
+    String::from_utf8_lossy(line).into_owned()
+}
+
+/// The next line of a child pipe, or `None` at EOF (or on a read error).
+///
+/// Unlike `AsyncBufReadExt::lines()`, invalid UTF-8 does not end the loop:
+/// `lines()` errors on the first bad byte, the caller stops reading, the pipe
+/// is no longer drained and the child can block on a full buffer. `buf` is a
+/// caller-owned scratch buffer that is reused between calls.
+pub async fn next_lossy_line<R>(reader: &mut R, buf: &mut Vec<u8>) -> Option<String>
+where
+    R: AsyncBufRead + Unpin,
+{
+    buf.clear();
+    match reader.read_until(b'\n', buf).await {
+        Ok(0) | Err(_) => None,
+        Ok(_) => Some(decode_line(buf)),
+    }
 }
 
 pub fn build_odoodev_command(args: &[&str]) -> Command {
@@ -216,16 +271,16 @@ pub async fn run_odoodev_streaming(
     let win_err = window.clone();
     let event_err = event_name.to_string();
     tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        while let Some(line) = next_lossy_line(&mut reader, &mut buf).await {
             let _ = win_err.emit(&event_err, &line);
         }
     });
 
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
-    while let Ok(Some(line)) = lines.next_line().await {
+    let mut reader = BufReader::new(stdout);
+    let mut buf = Vec::new();
+    while let Some(line) = next_lossy_line(&mut reader, &mut buf).await {
         let _ = window.emit(event_name, &line);
     }
 
@@ -270,7 +325,10 @@ pub async fn get_odoodev_version() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{find_binary_opt, reject_flag_like};
+    use super::{
+        decode_line, find_binary_opt, next_lossy_line, reject_flag_like, validate_name,
+        validate_version,
+    };
 
     #[test]
     fn find_binary_opt_none_for_unknown() {
@@ -295,5 +353,61 @@ mod tests {
     fn rejects_flag_like_values() {
         assert!(reject_flag_like("name", "--drop").is_err());
         assert!(reject_flag_like("version", "-d").is_err());
+    }
+
+    #[test]
+    fn validate_version_accepts_registry_versions_only() {
+        for v in ["16", "17", "18", "19", "20"] {
+            assert!(validate_version("version", v).is_ok(), "{v}");
+        }
+        for v in [
+            "", "1", "180", "-1", "--", "v18", "1a", " 18", "18 ", "１８", "all",
+        ] {
+            assert!(validate_version("version", v).is_err(), "{v:?}");
+        }
+    }
+
+    #[test]
+    fn validate_name_accepts_real_names() {
+        for n in [
+            "v19_exam",
+            "my-db.old",
+            "db with space",
+            "18-to-19",
+            "db.backup",
+            "Müller_2026",
+            "a",
+        ] {
+            assert!(validate_name("name", n).is_ok(), "{n:?}");
+        }
+    }
+
+    #[test]
+    fn validate_name_rejects_unsafe_names() {
+        for n in ["", "   ", "-d", "--force", "a\nb", "a\0b", "tab\there"] {
+            assert!(validate_name("name", n).is_err(), "{n:?}");
+        }
+        assert!(validate_name("name", &"x".repeat(256)).is_err());
+        assert!(validate_name("name", &"x".repeat(255)).is_ok());
+    }
+
+    #[test]
+    fn decode_line_trims_line_endings_and_replaces_invalid_utf8() {
+        assert_eq!(decode_line(b"abc\n"), "abc");
+        assert_eq!(decode_line(b"abc\r\n"), "abc");
+        assert_eq!(decode_line(b"no newline"), "no newline");
+        assert_eq!(decode_line(b"bad \xff byte\n"), "bad \u{FFFD} byte");
+    }
+
+    #[tokio::test]
+    async fn reading_continues_past_an_invalid_utf8_line() {
+        let data: &[u8] = b"first\nbad \xff\r\nlast";
+        let mut reader = tokio::io::BufReader::new(data);
+        let mut buf = Vec::new();
+        let mut lines = Vec::new();
+        while let Some(line) = next_lossy_line(&mut reader, &mut buf).await {
+            lines.push(line);
+        }
+        assert_eq!(lines, vec!["first", "bad \u{FFFD}", "last"]);
     }
 }

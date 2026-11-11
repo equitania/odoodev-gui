@@ -78,7 +78,7 @@
 
 **Date:** 2025-07-10
 **Status:** Confirmed
-**Decision:** Separate repository at `/Users/picard/gitbase/odoodev-gui`
+**Decision:** Separate repository at `~/gitbase/odoodev-gui`
 
 **Rationale:**
 - Clean separation: CLI stays Python (PyPI package), GUI is Rust/TypeScript (native bundle)
@@ -128,9 +128,8 @@
 - Silent install reduces friction for first-time users
 
 **Architectural impact:**
-- `ensure_uv()` in Rust: checks PATH → checks common paths → installs if missing → re-checks
-- No Tauri event for "uv not installed" — installation happens transparently
-- Only surfaces errors if installation fails
+- **Superseded (security fix):** status probes use the read-only `find_uv()` (PATH → common paths) and never install. The InstallDialog states that uv is downloaded from astral.sh; install happens only on explicit click (`install_uv`, and `install_odoodev` via `ensure_uv()`).
+- Installer: official astral.sh script over HTTPS (`--proto =https --tlsv1.2`), exit status checked, stderr returned on failure; no pinning/checksum (trust assumption)
 
 ---
 

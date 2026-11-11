@@ -119,6 +119,14 @@ pub async fn migrate_create(
     name: Option<String>,
     pg_version: Option<String>,
 ) -> Result<OpResult, String> {
+    odoodev::validate_version("from", &from)?;
+    odoodev::validate_version("to", &to)?;
+    if let Some(n) = &name {
+        odoodev::validate_name("name", n)?;
+    }
+    if let Some(pg) = &pg_version {
+        odoodev::reject_flag_like("pg_version", pg)?;
+    }
     let mut args = vec!["migrate".to_string(), "create".to_string()];
     args.push("--from".to_string());
     args.push(from);
@@ -146,6 +154,7 @@ pub async fn migrate_create(
 
 #[tauri::command]
 pub async fn migrate_activate(name: String) -> Result<OpResult, String> {
+    odoodev::validate_name("name", &name)?;
     match odoodev::run_odoodev_text(&["migrate", "activate", &name]).await {
         Ok(_) => Ok(OpResult {
             success: true,
@@ -174,6 +183,7 @@ pub async fn migrate_deactivate() -> Result<OpResult, String> {
 
 #[tauri::command]
 pub async fn migrate_remove(name: String) -> Result<OpResult, String> {
+    odoodev::validate_name("name", &name)?;
     match odoodev::run_odoodev_text(&["migrate", "remove", &name, "-y"]).await {
         Ok(_) => Ok(OpResult {
             success: true,

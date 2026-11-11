@@ -28,8 +28,12 @@ export function useMigrations() {
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(() => {
-    invokeCmd<MigrationGroup[]>("migrate_list").then(setGroups).catch(() => {});
-    invokeCmd<MigrationStatus>("migrate_status").then(setStatus).catch(() => {});
+    invokeCmd<MigrationGroup[]>("migrate_list")
+      .then(setGroups)
+      .catch(logError("useMigrations: migrate_list"));
+    invokeCmd<MigrationStatus>("migrate_status")
+      .then(setStatus)
+      .catch(logError("useMigrations: migrate_status"));
   }, []);
 
   useEffect(() => {

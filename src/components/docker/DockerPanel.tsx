@@ -13,6 +13,8 @@ import { DockerLogViewer } from "./DockerLogViewer";
 import { BenchPanel } from "./BenchPanel";
 import { Tabs } from "../ui/tabs";
 import { POLL_INTERVALS, effectivePorts } from "../../lib/constants";
+import { useAppStore } from "../../store/appStore";
+import { isAtLeast, MIN_ODOODEV_DOCKER_DEFAULT_CREDS } from "../../lib/version";
 import type {
   ContainerInfo,
   CuratedFiles,
@@ -38,6 +40,13 @@ export function DockerPanel({ onNavigate }: DockerPanelProps) {
   const [busyVersion, setBusyVersion] = useState<string | null>(null);
   const [activeVersion, setActiveVersion] = useState<string>("");
   const [mode, setMode] = useState<PanelMode>("overview");
+
+  // Per-version, deliberately not persisted: a placeholder password must be
+  // allowed again on every start. Version unknown -> show the option.
+  const odoodevVersion = useAppStore((s) => s.odoodevInfo?.version ?? null);
+  const offersDefaultCreds =
+    odoodevVersion === null || isAtLeast(odoodevVersion, MIN_ODOODEV_DOCKER_DEFAULT_CREDS);
+  const [allowCreds, setAllowCreds] = useState<Record<string, boolean>>({});
 
   const dockerLogs = useDockerLogs();
   const dockerBench = useDockerBench();
@@ -80,10 +89,12 @@ export function DockerPanel({ onNavigate }: DockerPanelProps) {
     () => {
       invokeCmd<ContainerInfo[]>("list_containers")
         .then(setContainers)
+        // polling: stay silent, a down daemon would spam the console every interval (see lib/errors.ts)
         .catch(() => {});
       if (runtimeInfo) {
         invokeCmd<RuntimeInfo>("get_runtime_info")
           .then(setRuntimeInfo)
+          // polling: stay silent (see lib/errors.ts)
           .catch(() => {});
       }
     },
@@ -134,7 +145,11 @@ export function DockerPanel({ onNavigate }: DockerPanelProps) {
     try {
       const result = await invokeCmd<{ success: boolean; error: string | null }>(
         "docker_up",
-        { version, runtime: dockerStatuses[version]?.runtime },
+        {
+          version,
+          runtime: dockerStatuses[version]?.runtime,
+          allowDefaultCredentials: offersDefaultCreds && !!allowCreds[version],
+        },
       );
       if (result.success) {
         toastUpdate(tid, "success", `PostgreSQL started for v${version}`);
@@ -243,6 +258,9 @@ export function DockerPanel({ onNavigate }: DockerPanelProps) {
                 container={findContainer(ver)}
                 busy={busyVersion === ver}
                 onUp={() => handleUp(ver)}
+                offersDefaultCreds={offersDefaultCreds}
+                allowDefaultCreds={!!allowCreds[ver]}
+                onAllowDefaultCredsChange={(v) => setAllowCreds((prev) => ({ ...prev, [ver]: v }))}
                 onDown={() => handleDown(ver)}
                 onLogs={() => handleLogs(ver)}
                 benchAvailable={appleAvailable}

@@ -147,7 +147,7 @@
   2. `docker ps --format "{{.Names}}"` → parse output → contains expected name?
   3. Apple Container: `which("container")` → `container ls` → parse
   4. Return: `DockerStatus { running: bool, container_name: String, runtime: "docker"|"apple"|"none" }`
-- [ ] Container-Namen-Ermittlung: aus `config versions --json` + Version → `picard-dev-db-XX-native` Pattern
+- [ ] Container-Namen-Ermittlung: aus `config versions --json` + Version → `<user>-dev-db-XX-native` Pattern
   - Besser: `odoodev docker status <ver>` ausführen und Output parsen (info-Zeile mit container name)
   - Oder: `.env`-Datei im native_dir lesen (POSTGRES_CONTAINER Variable)
 
@@ -460,7 +460,7 @@ interface AppState {
   - Progress indicator während update
 - [ ] Section: "uv"
   - Version: "uv 0.11.28"
-  - Path: `/Users/picard/.local/bin/uv`
+  - Path: `/Users/<user>/.local/bin/uv`
   - [Reinstall uv] button (secondary)
 - [ ] Section: "GUI"
   - Version: "1.0.0"

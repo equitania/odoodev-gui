@@ -1,5 +1,5 @@
 use tauri::Emitter;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
 use tokio::process::Command;
 
 use crate::models::{EnvCheckResult, OpResult};
@@ -7,6 +7,7 @@ use crate::odoodev;
 
 #[tauri::command]
 pub async fn env_check(version: String) -> Result<EnvCheckResult, String> {
+    odoodev::validate_version("version", &version)?;
     let output = odoodev::run_odoodev_text(&["env", "check", &version]).await;
     match output {
         Ok(text) => {
@@ -27,16 +28,19 @@ pub async fn env_check(version: String) -> Result<EnvCheckResult, String> {
 
 #[tauri::command]
 pub async fn env_dir(version: String) -> Result<String, String> {
+    odoodev::validate_version("version", &version)?;
     odoodev::run_odoodev_text(&["env", "dir", &version]).await
 }
 
 #[tauri::command]
 pub async fn env_show(version: String) -> Result<String, String> {
+    odoodev::validate_version("version", &version)?;
     odoodev::run_odoodev_text(&["env", "show", &version]).await
 }
 
 #[tauri::command]
 pub async fn env_setup(version: String, window: tauri::Window) -> Result<OpResult, String> {
+    odoodev::validate_version("version", &version)?;
     let args = [
         "env".to_string(),
         "setup".to_string(),
@@ -57,16 +61,16 @@ pub async fn env_setup(version: String, window: tauri::Window) -> Result<OpResul
     let win_err = window.clone();
     let err_event = event_name.clone();
     tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
             let _ = win_err.emit(&err_event, &line);
         }
     });
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
+    let mut reader = BufReader::new(stdout);
+    let mut buf = Vec::new();
     let mut last = String::new();
-    while let Ok(Some(line)) = lines.next_line().await {
+    while let Some(line) = odoodev::next_lossy_line(&mut reader, &mut buf).await {
         let _ = window.emit(&event_name, &line);
         last = line;
     }

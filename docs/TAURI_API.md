@@ -11,18 +11,18 @@
 ### System & Self-Update
 
 #### `check_uv`
-Check if `uv` is installed and available.
+Check if `uv` is installed and available. Read-only: never installs.
 
 ```typescript
 invoke('check_uv') → {
   installed: boolean,
-  path?: string,      // e.g. "/Users/picard/.local/bin/uv"
+  path?: string,      // e.g. "/Users/<user>/.local/bin/uv"
   version?: string,   // e.g. "0.11.28"
 }
 ```
 
 #### `install_uv`
-Install `uv` (platform-specific download).
+Install `uv` (platform-specific download from astral.sh). Only on explicit user action; errors carry the installer stderr.
 
 ```typescript
 invoke('install_uv') → {
@@ -54,7 +54,7 @@ invoke('install_odoodev') → {
   error?: string,
 }
 ```
-Prerequisite: `uv` must be installed (calls `ensure_uv()` internally).
+Installs `uv` first if missing (`ensure_uv()`), so call only after user confirmation.
 Emits events: `install-progress` (stdout lines)
 
 #### `upgrade_odoodev`
@@ -389,6 +389,8 @@ invoke('restore_db', { args: {
   recompute?: boolean,            // --recompute / --no-recompute (ALWAYS sent, see below)
   keep_temp?: boolean,            // --keep-temp
   check_space?: boolean,          // --check-space / --no-check-space (CLI default: on)
+  without_pgvector?: boolean,     // --without-pgvector (odoodev >= 0.71.0)
+  allow_psql_meta?: boolean,      // --allow-psql-meta (odoodev >= 0.77.0), trusted backups only; sent only when true
   delete_backup?: boolean,        // --delete-backup (else --keep-backup)
   dry_run?: boolean,              // --dry-run
 }}) → RestoreResult
@@ -480,6 +482,39 @@ invoke('rename_db', {
 ```
 CLI: `odoodev db rename 18 -s v18_old -d v18_new -y`
 
+#### `export_modules`
+Export the module list of a database as CSV (odoodev ≥ 0.59.0; `viaShell` needs ≥ 0.76.0, `viaRpc` ≥ 0.77.0).
+
+```typescript
+invoke('export_modules', {
+  version: "18",
+  database: "v18_exam",
+  scope: "all",            // "all" | "no-enterprise" | "installed" (validated in Rust)
+  updateList: false,       // --update-list
+  cleanup: false,          // --cleanup (runs before --update-list)
+  viaShell: true,          // --via-shell, no Odoo login; the frontend never sends true below 0.76.0
+  viaRpc: false,           // --via-rpc (XML-RPC with a login); NEW, odoodev >= 0.77.0 only. Both true -> error
+}) → ExportModulesResult
+```
+CLI: `odoodev export modules 18 -d v18_exam --scope all --via-shell --json`
+
+The CLI default flipped in 0.77.0, so the unticked "Without Odoo login" box sends
+`viaRpc: true` on 0.77.0+ and nothing on older or unknown versions (see
+`CLI_INTEGRATION.md`, section 11b). `viaShell` and `viaRpc` are never both true.
+
+```typescript
+interface ExportModulesResult {
+  version: string;
+  database: string;
+  scope: "all" | "no-enterprise" | "installed";
+  path: string | null;     // null when count is 0 (nothing written)
+  count: number;
+  updated: number | null;  // null when updateList was false
+  cleaned: number | null;  // null when cleanup was false
+}
+```
+No `--output` is sent: the CLI writes `~/Downloads/modules_<db>_<scope>_<timestamp>.csv`. Resolves with `count: 0` for an empty module list (not an error). Rejects with the CLI's failure reason (first `[ERROR]` line of stderr). Validation: `version` two digits, `database` via `validate_name`, `scope` one of the three values. Frontend mapping: `src/components/database/exportArgs.ts`.
+
 #### `plan_db_update`
 Dry run of `db update`: which databases would be updated and why.
 ```typescript
@@ -527,10 +562,16 @@ Start PostgreSQL service for a version.
 invoke('docker_up', {
   version: "18",
   runtime?: "docker" | "apple",   // overrides config
+  allowDefaultCredentials?: boolean, // --allow-default-credentials (odoodev >= 0.77.0; sent only when true)
 }) → { success: boolean, error?: string }
 ```
-CLI: `odoodev docker up 18`
-Emits events: `docker-up-progress` (stdout lines)
+CLI: `odoodev docker up --runtime apple 18 [--allow-default-credentials]`
+Emits events: `docker-up-progress` (stdout and stderr lines)
+
+Changed: `allowDefaultCredentials` is new. On failure `error` is now the first
+`[ERROR]` line of the run (for the placeholder-password refusal: "Aborted.
+Configure a real password and try again."), not the last stdout line. A refusal
+resolves with `success: false`, it does not reject.
 
 #### `docker_down`
 Stop PostgreSQL service for a version.
@@ -564,6 +605,117 @@ invoke('docker_logs', {
 ```
 CLI: `odoodev docker logs 18 -n 100`
 If `follow: true`: streams as `docker-logs:<version>` events.
+
+### Editor & Playbooks (path handling)
+
+The editor's path allowlist lives in Rust. `curated_files` computes the roots
+(`~/.config/odoodev`, each active version's playbook dir, `./playbooks`,
+`native_dir`, `conf_dir`, `myconfs_dir` and the parent dirs of the listed
+files), stores them in managed state (`EditorRoots`) and returns the file
+list. The webview never supplies roots.
+
+#### `curated_files`
+```typescript
+invoke('curated_files') → CuratedFiles
+// CuratedFiles = { config, version_groups, playbooks, playbook_roots, paths_command_available }
+```
+Refreshes the server-side allowlist as a side effect. The former
+`extra_roots` field was removed from the result.
+
+#### `fs_read_file`
+```typescript
+invoke('fs_read_file', { path: string }) → FileContent
+```
+Changed: the `extraRoots` argument was removed. Rejects any path outside the
+server-side roots (canonicalised: symlinks and `..` cannot escape). If
+`curated_files` has not run yet, the roots are computed on demand.
+
+#### `fs_write_file`
+```typescript
+invoke('fs_write_file', { path: string, content: string, allowCreate: boolean }) → void
+```
+Changed: the `extraRoots` argument was removed; same allowlist as `fs_read_file`.
+
+#### `playbook_validate_semantic`
+```typescript
+invoke('playbook_validate_semantic', { path: string }) → SemanticValidation
+```
+Changed: the `extraRoots` argument was removed; same allowlist as `fs_read_file`.
+
+#### `playbook_inspect`, `playbook_validate`, `playbook_run`, `playbook_create`
+Signatures unchanged, new checks. `playbook_inspect` / `playbook_validate` /
+`playbook_run` (path form) require an existing regular `.yml`/`.yaml` file
+(not the editor allowlist: `odoodev run --list` also reports playbooks bundled
+inside the odoodev package). `playbook_run` also validates `steps` (name rules),
+`version` (two digits) and rejects flag-like `vars`.
+
+`playbook_create` writes only into the **playbook directories**: each version's
+`<native_dir>/scripts/playbooks` (first, in registry order) and the project's
+`./playbooks` (last). These are the `playbook_roots` of `curated_files`, which is
+narrower than the editor allowlist (that also covers the config directories). A
+`./playbooks` that resolves directly below a filesystem root (`/playbooks`, which
+is what an installed app started from Finder gets when its working directory is
+`/`) is dropped from `playbook_roots` and from the write targets in one place
+(`playbook_dirs_for` in `editor.rs`); the editor can still read and edit it.
+
+Two paths are checked with the same rules (`check_write_target`):
+- `outputPath`: a `.yml`/`.yaml` file name.
+- `env_file.path` inside `answers`, when `env_file.generate` is true and a path
+  is given (that is exactly when the CLI writes the secrets file): a file name
+  ending in `.env`, inside the playbook directories **or odoodev's config
+  directory** (`~/.config/odoodev`, subfolders allowed; the same directory as the
+  editor's built-in root, `config_dir()` in `editor.rs`). The playbook path may
+  not use the config directory. The path is rewritten in the answers to its absolute form
+  before they go to the CLI. Answers without an env file, or with
+  `generate: false`, are not touched.
+
+Rules: a leading `~` is expanded and a relative path is made absolute against the
+app's working directory (the CLI resolves both against its own working directory,
+not the playbook's); the expanded absolute path is what the CLI receives, and
+`playbook_create` returns the playbook's. Missing parent directories are fine
+(the CLI creates them), but `..` in a directory that does not exist yet is
+refused, symlinks are resolved (a link pointing out of the directories, or a
+dangling one, is refused) and an existing target must be a regular file. `force`
+is passed to the CLI as before. Rejections are strings
+`playbook_output:<code>: <English detail>` (playbook path) or
+`playbook_env_file:<code>: <English detail>` (secrets file) with `<code>` one of
+`flag_like`, `empty`, `bad_tilde`, `bad_extension`, `parent_escape`,
+`unresolvable`, `outside_roots`, `not_a_file`, and for the env file also
+`malformed` (answers or `env_file` of the wrong shape). The wizard translates
+them. Error texts contain no answer values apart from the path itself.
+
+#### `playbook_check_output` (new)
+Read-only dry run of the path check, used by the wizard to show the reason
+before submitting.
+
+```typescript
+invoke('playbook_check_output', {
+  outputPath: string,
+  kind?: "output" | "env_file",   // default "output"; "env_file" = secrets file (.env name)
+}) → string  // absolute path that would be written
+```
+Rejects with the same `playbook_output:` / `playbook_env_file:` strings as
+`playbook_create`.
+
+#### `playbook_env_dirs` (new)
+Read-only list of where the secrets `.env` file may be written, for the wizard.
+
+```typescript
+invoke('playbook_env_dirs') → { dirs: string[], config_dir: string }
+// dirs: playbook directories first, odoodev's config directory last
+// config_dir: the CLI's default location for a server playbook's secrets file
+```
+The wizard suggests `<config_dir>/<slug>.env` for a server playbook and
+`<playbook dir>/<slug>.env` for a dev playbook, as the CLI's interview does.
+
+### Argument validation (all commands that forward strings to the CLI)
+
+`version`, `from`, `to`: exactly two ASCII digits. Database, migration and
+step names: non-blank, at most 255 characters, no control characters, no
+leading `-`. Free-form values (paths, module lists, host, image tags,
+runtime): no leading `-`. `backup_db`: `type` must be `sql`, `zip` or
+`tar.zst`, `level` 1-22. Violations return an error (or `OpResult` with
+`success: false` for the database drop/copy/rename commands).
 
 ---
 

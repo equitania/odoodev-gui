@@ -227,10 +227,13 @@
       "uninstallModules": "Comma-separated technical module names, uninstalled before the cleanup steps run.",
       "withoutPgvector": "Required when the dump creates the \"vector\" extension but the database server does not offer it — the restore stops otherwise (a dry run does not detect this). The AI tables are missing afterwards; alternatively set PGVECTOR=true in the .env and restart Docker.",
       "checkSpace": "Verifies free space before extracting. Turn off only if the check blocks a restore wrongly.",
+      "allowPsqlMeta": "Since odoodev 0.77 a restore refuses a dump that contains psql backslash commands (for example \\! or \\copy … program) and names the line. The dry run does not read the dump, so it cannot show this; the refusal only appears during the real restore, after an existing database of the same name has already been dropped.",
+      "allowPsqlMetaWarning": "Such a command in the backup runs on this machine with your user rights during the restore. Use this only for backups from a source you trust.",
       "recomputeNeedsAnonymize": "Only has an effect together with “Anonymize” — the CLI skips the step otherwise."
     },
     "checkSpace": "Check free disk space",
     "withoutPgvector": "Restore without AI tables (pgvector)",
+    "allowPsqlMeta": "Allow psql commands in the backup",
     "nameRuleHint": "Only letters, digits and underscore; must not start with a digit.",
     "nameExists": "A database with this name already exists.",
     "backupTitle": "Backup Database",
@@ -304,6 +307,7 @@
     "updateRunningIndicator": "Update v{{version}} running ({{done}}/{{total}})"
   },
   "docker": {
+    "allowDefaultCredentials": "Allow default credentials",
     "title": "Docker / Containers",
     "overview": "Overview",
     "logs": "Logs",
@@ -542,7 +546,7 @@
     "installNow": "Install now",
     "skip": "Skip",
     "uvNotInstalled": "uv is not installed",
-    "uvNotInstalledText": "uv is the Python package manager needed to install and update odoodev.",
+    "uvNotInstalledText": "uv is the Python package manager needed to install and update odoodev. Nothing is downloaded until you click the button: uv is then downloaded from astral.sh and installed, followed by odoodev.",
     "installUvNow": "Install uv now",
     "installing": "Installing..."
   },
@@ -828,6 +832,30 @@
       "runNow": "Run now",
       "summary": "Summary",
       "outputPath": "Output path",
+      "outputAllowed": "New playbooks can be saved in these directories (subfolders and the file name are free):",
+      "outputAllowedUnknown": "The playbook directories could not be determined.",
+      "envFileAllowed": "The secrets file can be saved in these directories (the file name must end in .env):",
+      "envFileError": {
+        "flag_like": "The path must not start with a dash.",
+        "empty": "Enter a path for the secrets file.",
+        "bad_tilde": "Only ~ and ~/… are supported; ~name for another account is not.",
+        "bad_extension": "The file name of the secrets file must end in .env.",
+        "parent_escape": "The path contains “..” in a folder that does not exist yet. Write the path without “..”.",
+        "unresolvable": "The path cannot be resolved (broken link or no access).",
+        "outside_roots": "This location is not allowed for the secrets file. Choose a path inside one of the playbook directories listed below.",
+        "not_a_file": "The target exists but is not a regular file.",
+        "malformed": "The secrets file settings are malformed."
+      },
+      "outputError": {
+        "flag_like": "The path must not start with a dash.",
+        "empty": "Enter an output path.",
+        "bad_tilde": "Only ~ and ~/… are supported; ~name for another account is not.",
+        "bad_extension": "The file name must end in .yml or .yaml.",
+        "parent_escape": "The path contains “..” in a folder that does not exist yet. Write the path without “..”.",
+        "unresolvable": "The path cannot be resolved (broken link or no access).",
+        "outside_roots": "This location is not allowed. Choose a path inside one of the playbook directories listed below.",
+        "not_a_file": "The target exists but is not a regular file."
+      },
       "overwriteExisting": "Overwrite existing files (--force)",
       "loadFailed": "Could not load the wizard schema (odoodev >= 0.55 required)",
       "sourceTarget": "Source target (backup from)",
@@ -858,5 +886,34 @@
         "summary": "Summary"
       }
     }
+  },
+  "exportModules": {
+    "title": "Export module list",
+    "description": "Export the modules of <0>{{name}}</0> (v{{version}}) as a CSV file",
+    "scope": "Scope",
+    "scopeAll": "All modules",
+    "scopeNoEnterprise": "All without Enterprise",
+    "scopeInstalled": "Installed only",
+    "updateList": "Update module list first",
+    "updateListHint": "Scans the addons paths and registers new modules before exporting (Update Apps List).",
+    "cleanup": "Clean up module list first",
+    "cleanupHint": "Removes module records that are not installed from the database's module list; installed modules are untouched.",
+    "viaShell": "Without Odoo login",
+    "viaShellHint": "Reads the modules directly through odoo-bin shell; the server need not be running. Switched off, the export goes over XML-RPC and needs a running server and the stored Odoo login.",
+    "outputHint": "The CSV is written to your Downloads folder.",
+    "export": "Export",
+    "runningShort": "Exporting...",
+    "running": "Exporting modules of {{name}}...",
+    "doneToast": "{{count}} modules exported from {{name}}",
+    "emptyToast": "No modules found in {{name}}",
+    "failedToast": "Module export failed for {{name}}",
+    "done": "{{count}} modules exported",
+    "empty": "No modules found, nothing written.",
+    "copyPath": "Copy path",
+    "copied": "Copied",
+    "cleanedCount": "{{count}} module records removed",
+    "updatedCount": "{{count}} modules added to the catalog",
+    "retryWithoutLogin": "Retry without Odoo login",
+    "action": "Export module list"
   }
 }
