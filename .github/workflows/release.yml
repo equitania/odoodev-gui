@@ -42,7 +42,7 @@ jobs:
       # No fallback to a plain `pnpm install`: the release must be built from
       # exactly the locked dependency versions.
       - run: pnpm install --frozen-lockfile
-      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Updater signing (minisign / Ed25519). Required so tauri-action emits the
