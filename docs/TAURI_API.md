@@ -511,6 +511,9 @@ interface ExportModulesResult {
   count: number;
   updated: number | null;  // null when updateList was false
   cleaned: number | null;  // null when cleanup was false
+  // Modules left out by scope "no-enterprise" because they depend on an Enterprise
+  // module (odoodev >= 0.77.3); [] on older versions and for the other scopes
+  skipped_enterprise_dependents: string[];
 }
 ```
 No `--output` is sent: the CLI writes `~/Downloads/modules_<db>_<scope>_<timestamp>.csv`. Resolves with `count: 0` for an empty module list (not an error). Rejects with the CLI's failure reason (first `[ERROR]` line of stderr). Validation: `version` two digits, `database` via `validate_name`, `scope` one of the three values. Frontend mapping: `src/components/database/exportArgs.ts`.

@@ -13,6 +13,9 @@ Alignment with odoodev 0.75 – 0.77.0, plus the fixes from a security and depen
   server stopped; the box "Without Odoo login" is ticked by default. odoodev 0.77.0 made the shell
   its own default, so the dialog now sends `--via-rpc` when the box is unticked — the box does
   what it says on every version. If the export with login fails, one click repeats it without.
+  With odoodev ≥ 0.77.3 "all without Enterprise" also leaves out the modules that depend on an
+  Enterprise module - otherwise a later dependency search brings the Enterprise modules back -
+  and the dialog names the modules it left out.
 - **Restore: allow psql commands in the backup.** odoodev 0.77.0 refuses a backup that
   contains psql backslash commands and names the line; the failure message is shown as is. A new
   option "Allow psql commands in the backup" (off, with a warning) restores such a backup

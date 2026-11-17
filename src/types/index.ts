@@ -174,6 +174,9 @@ export interface ExportModulesResult {
   count: number;
   updated: number | null;
   cleaned: number | null;
+  /** Modules the scope "no-enterprise" left out because they depend on an
+   *  Enterprise module (odoodev >= 0.77.3; empty on older versions). */
+  skipped_enterprise_dependents: string[];
 }
 
 export interface RestoreResult {

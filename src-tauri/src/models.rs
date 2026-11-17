@@ -224,6 +224,9 @@ pub struct OpResult {
 /// Result line of `odoodev export modules --json`. `path` is `None` for an
 /// empty module list (`count` 0, nothing written); `updated`/`cleaned` are
 /// `None` when the respective flag was not given.
+/// `skipped_enterprise_dependents` (odoodev >= 0.77.3) names the modules the
+/// scope `no-enterprise` left out because they depend on an Enterprise module;
+/// older CLIs do not send the key, which reads as an empty list.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ExportModulesResult {
     pub version: String,
@@ -233,6 +236,8 @@ pub struct ExportModulesResult {
     pub count: u32,
     pub updated: Option<i64>,
     pub cleaned: Option<i64>,
+    #[serde(default)]
+    pub skipped_enterprise_dependents: Vec<String>,
 }
 
 #[cfg(test)]
@@ -249,6 +254,22 @@ mod export_modules_result_tests {
         assert_eq!(r.updated, Some(3));
         assert_eq!(r.cleaned, Some(5));
         assert!(r.path.unwrap().ends_with("101500.csv"));
+        // A CLI before 0.77.3 does not send the key.
+        assert!(r.skipped_enterprise_dependents.is_empty());
+    }
+
+    #[test]
+    fn parses_the_skipped_enterprise_dependents() {
+        let line = r#"{"version":"19","database":"d","scope":"no-enterprise","path":"/x/m.csv","count":935,"updated":null,"cleaned":null,"skipped_enterprise_dependents":["eq_datev_export","ai_fields"]}"#;
+        let r: ExportModulesResult = serde_json::from_str(line).unwrap();
+        assert_eq!(
+            r.skipped_enterprise_dependents,
+            vec!["eq_datev_export", "ai_fields"]
+        );
+        // The frontend reads the same key.
+        assert!(serde_json::to_string(&r)
+            .unwrap()
+            .contains(r#""skipped_enterprise_dependents":["eq_datev_export","ai_fields"]"#));
     }
 
     #[test]

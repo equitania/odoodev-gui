@@ -94,7 +94,8 @@ die Zahl veralteter Datenbanken je Version.
 **Modul-Export** (neu in 1.10.0) — je Datenbank die Modulliste als CSV in den
 Downloads-Ordner schreiben: alle Module, alle ohne Enterprise oder nur die installierten,
 auf Wunsch mit vorherigem Aktualisieren oder Bereinigen der Modulliste. Ab odoodev ≥ 0.76.0
-läuft der Export ohne Odoo-Login und auch bei gestopptem Server.
+läuft der Export ohne Odoo-Login und auch bei gestopptem Server. Ab odoodev ≥ 0.77.3 lässt
+„alle ohne Enterprise“ auch Module aus, die von einem Enterprise-Modul abhängen, und nennt sie.
 
 **Datenbanken** — DB-Liste, Backup (SQL/ZIP/tar.zst mit Level), Restore (3-Schritt-Wizard
 mit Dry-Run (benötigt odoodev ≥ 0.61.0; zeigt den vollständigen CLI-Bericht: Backup-Datei

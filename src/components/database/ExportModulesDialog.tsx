@@ -198,6 +198,21 @@ export function ExportModulesDialog({
             )}
           </div>
         )}
+        {result && result.skipped_enterprise_dependents.length > 0 && (
+          <div className="space-y-1 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm">
+            <div className="flex items-start gap-2">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
+              <span>
+                {t("exportModules.skippedEnterprise", {
+                  count: result.skipped_enterprise_dependents.length,
+                })}
+              </span>
+            </div>
+            <code className="block max-h-24 overflow-y-auto break-words rounded bg-muted px-1 text-xs">
+              {result.skipped_enterprise_dependents.join(", ")}
+            </code>
+          </div>
+        )}
         {result && (result.updated !== null || result.cleaned !== null) && (
           <ul className="list-inside list-disc text-xs text-muted-foreground">
             {result.cleaned !== null && (
