@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 1.10.1 (17.11.2026)
+
+### Changed
+- **Export dialog: the warning about left-out modules names both reasons.** With odoodev ≥ 0.77.4
+  "all without Enterprise" also leaves out a module whose dependency the database does not know
+  at all - a Community database does not list the Enterprise modules. The warning now reads
+  "need an Enterprise module or one missing in this database".
+
 ## Version 1.10.0 (11.11.2026)
 
 Alignment with odoodev 0.75 – 0.77.0, plus the fixes from a security and dependency audit.

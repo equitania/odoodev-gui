@@ -175,7 +175,8 @@ export interface ExportModulesResult {
   updated: number | null;
   cleaned: number | null;
   /** Modules the scope "no-enterprise" left out because they depend on an
-   *  Enterprise module (odoodev >= 0.77.3; empty on older versions). */
+   *  Enterprise module (odoodev >= 0.77.3) or on a module the database does
+   *  not know (>= 0.77.4); empty on older versions. */
   skipped_enterprise_dependents: string[];
 }
 

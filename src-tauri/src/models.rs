@@ -225,7 +225,8 @@ pub struct OpResult {
 /// empty module list (`count` 0, nothing written); `updated`/`cleaned` are
 /// `None` when the respective flag was not given.
 /// `skipped_enterprise_dependents` (odoodev >= 0.77.3) names the modules the
-/// scope `no-enterprise` left out because they depend on an Enterprise module;
+/// scope `no-enterprise` left out because they depend on an Enterprise module
+/// or (>= 0.77.4) on a module the database has no record for;
 /// older CLIs do not send the key, which reads as an empty list.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ExportModulesResult {

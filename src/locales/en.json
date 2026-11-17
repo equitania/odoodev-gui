@@ -913,7 +913,7 @@
     "copied": "Copied",
     "cleanedCount": "{{count}} module records removed",
     "updatedCount": "{{count}} modules added to the catalog",
-    "skippedEnterprise": "{{count}} modules left out because they depend on an Enterprise module:",
+    "skippedEnterprise": "{{count}} modules left out because they need an Enterprise module or one missing in this database:",
     "retryWithoutLogin": "Retry without Odoo login",
     "action": "Export module list"
   }

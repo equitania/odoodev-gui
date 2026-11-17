@@ -913,7 +913,7 @@
     "copied": "Kopiert",
     "cleanedCount": "{{count}} Modul-Einträge entfernt",
     "updatedCount": "{{count}} Module zum Katalog hinzugefügt",
-    "skippedEnterprise": "{{count}} Module ausgelassen, weil sie von einem Enterprise-Modul abhängen:",
+    "skippedEnterprise": "{{count}} Module ausgelassen, weil sie ein Enterprise-Modul brauchen oder eines, das in dieser Datenbank fehlt:",
     "retryWithoutLogin": "Ohne Odoo-Login erneut versuchen",
     "action": "Modulliste exportieren"
   }

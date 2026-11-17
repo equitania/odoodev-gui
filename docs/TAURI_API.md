@@ -512,7 +512,8 @@ interface ExportModulesResult {
   updated: number | null;  // null when updateList was false
   cleaned: number | null;  // null when cleanup was false
   // Modules left out by scope "no-enterprise" because they depend on an Enterprise
-  // module (odoodev >= 0.77.3); [] on older versions and for the other scopes
+  // module (odoodev >= 0.77.3) or on a module the database does not know
+  // (>= 0.77.4); [] on older versions and for the other scopes
   skipped_enterprise_dependents: string[];
 }
 ```
